@@ -130,15 +130,18 @@ for a particular financial year and for preparation of vouchers there is a modul
     'js': [
         'static/src/js/account_move_reconciliation.js',
         'static/src/js/account_move_line_quickadd.js',
+        'static/src/js/account_bank_statement_reconciliation.js',
     ],
     'qweb' : [
         "static/src/xml/account_move_reconciliation.xml",
         "static/src/xml/account_move_line_quickadd.xml",
+        "static/src/xml/account_bank_statement_reconciliation.xml",
     ],
     'css':[
         'static/src/css/account_move_reconciliation.css',
         'static/src/css/account_move_line_quickadd.css',
         'static/src/css/account_bank_and_cash.css',
+        'static/src/css/account_bank_statement_reconciliation.css',
     ],
     'demo': [
         'demo/account_demo.xml',

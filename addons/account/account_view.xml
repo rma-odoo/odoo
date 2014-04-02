@@ -636,7 +636,22 @@
                 </xpath>
             </field>
         </record>
-
+        
+        
+        
+        <!-- En cours -->
+        
+        <record id="action_bank_reconcile_bank_statements" model="ir.actions.client">
+            <field name="name">Bank Statements Reconciliation</field>
+            <field name="tag">bank_statement_reconciliation_view</field>
+        </record>
+        
+        <menuitem id="menu_bank_reconcile_bank_statements" name="Reconciliation" parent="menu_finance_bank_and_cash" action="action_bank_reconcile_bank_statements" sequence="20"/>
+           
+        <!-- / En cours -->        
+        
+        
+        
         <record id="action_bank_statement_tree" model="ir.actions.act_window">
             <field name="name">Bank Statements</field>
             <field name="res_model">account.bank.statement</field>
@@ -1595,11 +1610,11 @@
                 <form string="Payment Term" version="7.0">
                     <group>
                         <group string="Amount Computation">
-	                        <field name="value"/>
-	                        <label for="value_amount" string="Amount To Pay"  attrs="{'invisible':[('value','=','balance')]}"/>
-	                        <div attrs="{'invisible':[('value','=','balance')]}">
-	                            <field name="value_amount" class="oe_inline"/>
-	                        </div>
+                            <field name="value"/>
+                            <label for="value_amount" string="Amount To Pay"  attrs="{'invisible':[('value','=','balance')]}"/>
+                            <div attrs="{'invisible':[('value','=','balance')]}">
+                                <field name="value_amount" class="oe_inline"/>
+                            </div>
                         </group>
                         <group string="Due Date Computation">
                             <field name="days"/>
