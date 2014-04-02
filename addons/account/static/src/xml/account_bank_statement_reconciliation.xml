@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- t-esc : interprets javascript, escapes html characters -->
+<!-- contraire : t-raw -->
+<!-- t-if, t-foreach et t-as -->
+<!-- https://doc.openerp.com/trunk/web/qweb/ -->
+
+<templates xml:space="preserve">
+
+    <t t-name="bankStatementReconciliation">
+        <h1><t t-esc="statementName"/></h1>
+        <progress class="globalProgress" value="0" t-att-max="totalLines">0%</progress>
+        <div class="clearer"></div>
+    </t>
+    
+    <t t-name="bankStatementReconciliationLine">
+        <table class="main_line">
+            <tr>
+                <td>
+                    <table class="accounting_view">
+                        <caption>
+                            <button class="button_ok"></button>
+                            <span class="partner"><t t-esc="widget.line.partner_id[1]"/> <span class="editPartner glyphicon glyphicon-pencil"></span></span>
+                        </caption>
+                        <tr class="initial_line">
+                            <td><span class="showMatching glyphicon glyphicon-cog"></span></td>
+                            <td><t t-esc="widget.line.account_id[1]"/></td>
+                            <td><t t-esc="widget.line.date"/></td>
+                            <td><t t-esc="widget.line.name"/></td>
+                            <td></td>
+                            <td><t t-esc="widget.line.amount"/></td>
+                            <td><span class="line_info_button glyphicon glyphicon-info-sign" data-content="&lt;table class='details'&gt;&lt;tr&gt;&lt;td&gt;Date&lt;/td&gt;&lt;td&gt;03/11/2014&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Nom&lt;/td&gt;&lt;td&gt;Solirem&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Type&lt;/td&gt;&lt;td&gt;Customer&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Transaction&lt;/td&gt;&lt;td&gt;017&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Label&lt;/td&gt;&lt;td&gt;2014/151&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Montant en EURO&lt;/td&gt;&lt;td&gt;3000.00&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Compte&lt;/td&gt;&lt;td&gt;550000&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;"></span></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td class="tab-content">
+                
+                    <div class="tab-pane create">
+                        <div class="btn-group btn-group-sm quickAdd">
+                            <button type="button" class="btn btn-default" data-type="escompte">Escompte</button>
+                            <button type="button" class="btn btn-default" data-type="diffChange">Différence de change</button>
+                            <button type="button" class="btn btn-default" data-type="pertesEtProfits">Pertes et profits</button>
+                        </div>
+        
+                        <table>
+                            <tr><td>Account</td><td><select class="create_account required">
+                                    <option></option><option>401000 Effets à recevoir</option><option>440000 Truc</option><option>580000 Compte de transfert</option>
+                                </select>
+                                </td>
+                                <td>Label</td><td><input type="text" class="create_label required"/></td></tr>
+                            <tr><td>Tax</td><td><input type="text" class="create_tax"/></td>
+                                <td>Amount</td><td><input type="text" class="create_amount required"/></td></tr>
+                            <tr>
+                                <td>Analytical Acc.</td>
+                                <td><input type="text" class="create_analytical_account"/></td>
+                                <td></td>
+                                <td><div class="add_line"><a href="#">New</a></div></td></tr>
+                        </table>
+                    </div>
+                    
+                    <div class="tab-pane currency"></div>
+                    
+                    <div class="tab-pane active match">
+                        <div class="match_extended_controls" data-pagerindex="0">
+                            <input type="text" class="filter" placeholder="Filter" value="" />
+                            <span class="pull-right pagerControlRight glyphicon glyphicon-chevron-right"></span>
+                            <span class="pull-right pagerControlLeft glyphicon glyphicon-chevron-left"></span>
+                        </div>
+                        <table></table>
+                        <a href="#" class="show_more">Show 13 more</a>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </t>
+    
+    <t t-name="bankStatementReconciliationMoveLine">
+        <tr>
+            <td><span class="glyphicon glyphicon-add-remove"></span></td>
+            <td><t t-esc="line.account_id[1]"/></td>
+            <td><t t-if="line.date_maturity !== false"><t t-esc="line.date_maturity"/></t><t t-if="line.date_maturity === false"><t t-esc="line.date"/></t></td>
+            <td><t t-esc="line.ref"/> (<t t-esc="line.name"/>)</td>
+            <td><t t-if="line.debit !== 0"><t t-esc="line.debit"/></t></td>
+            <td><t t-if="line.credit !== 0"><t t-esc="line.credit"/></t></td>
+            <td><span class="line_info_button glyphicon glyphicon-info-sign" data-content="&lt;table class='details'&gt;&lt;tr&gt;&lt;td&gt;Account&lt;/td&gt;&lt;td&gt;401000 Effets à recevoir&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Journal&lt;/td&gt;&lt;td&gt;ING14&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Period&lt;/td&gt;&lt;td&gt;X 02/2014&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Date&lt;/td&gt;&lt;td&gt;02/23/2014&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Due Date&lt;/td&gt;&lt;td&gt;03/07/2014&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;"></span></td>
+        </tr>
+    </t>
+</templates>
