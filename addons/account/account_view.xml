@@ -644,6 +644,7 @@
         <record id="action_bank_reconcile_bank_statements" model="ir.actions.client">
             <field name="name">Bank Statements Reconciliation</field>
             <field name="tag">bank_statement_reconciliation_view</field>
+            <field name="context">{'statement_id':1}</field>
         </record>
         
         <menuitem id="menu_bank_reconcile_bank_statements" name="Reconciliation" parent="menu_finance_bank_and_cash" action="action_bank_reconcile_bank_statements" sequence="20"/>
