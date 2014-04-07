@@ -505,15 +505,7 @@ class account_bank_statement(osv.osv):
         'context':ctx,
       }
     
-    def get_lines(self, cr, uid, id, context=None):
-        """ Returns the lines for a given statement
-            
-            :param integer id: the id of the bank statement
-        """
-        # TODO : RPC Query ?
-        return self.pool.get('account.bank.statement.line').search_read(cr, uid, [('statement_id','=',id)])
-        
-        
+
 class account_bank_statement_line(osv.osv):
     
     def get_resolution_proposition(self, cr, uid, id, context=None):
@@ -531,7 +523,7 @@ class account_bank_statement_line(osv.osv):
         ]
         fields = ["id", "name", "ref", "account_id", "date_maturity", "date", "credit", "debit", "period_id", "journal_id"]
         
-        return self.pool.get('account.move.line').search_read(cr, uid, domain=domain, fields=fields, context=context)
+        return self.pool.get('account.move.line').search_read(cr, uid, domain=domain, fields=fields, order="date_maturity desc", limit=1, context=context)
     
     def get_move_lines(self, cr, uid, id, excluded_ids, str, offset, limit, count=False, context=None):
         """ Returns move lines that could be used to resolve this statement line.
@@ -544,26 +536,11 @@ class account_bank_statement_line(osv.osv):
             :param boolean count: just return the number of records
         """
         
-        #        rs = {
-        #            'name':line.move_id.name,
-        #            'type': line.credit and 'dr' or 'cr',
-        #            'move_line_id':line.id,
-        #            'account_id':line.account_id.id,
-        #            'amount_original': amount_original,
-        #            'amount': (line.id in move_lines_found) and min(abs(price), amount_unreconciled) or 0.0,
-        #            'date_original':line.date,
-        #            'date_due':line.date_maturity,
-        #            'amount_unreconciled': amount_unreconciled,
-        #            'currency_id': line_currency_id,
-        #        }
-        
         st_line = self.browse(cr, uid, id, context=context)
                 
         domain = [
-            ('state','=','valid'),
-            #? ('account_id.type', '=', account_type),
+            ('partner_id', '=', st_line.partner_id.id),
             ('reconcile_id', '=', False),
-            ('partner_id', '=', partner_id),
             ('id', 'not in', excluded_ids),
             '|',('name', 'ilike', str),
             ('ref', 'ilike', str),
@@ -573,7 +550,7 @@ class account_bank_statement_line(osv.osv):
         if count:
             return self.pool.get('account.move.line').search_count(cr, uid, domain, context=context)
         else:
-            return self.pool.get('account.move.line').search_read(cr, uid, offset=offset, limit=limit, domain=domain, fields=fields, order='date_maturity asc', context=context)
+            return self.pool.get('account.move.line').search_read(cr, uid, offset=offset, limit=limit, domain=domain, fields=fields, order="date_maturity desc", context=context)
     
     
     def onchange_partner_id(self, cr, uid, ids, partner_id, context=None):

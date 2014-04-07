@@ -8,12 +8,17 @@
 
     <t t-name="bank_statement_reconciliation">
         <h1><t t-esc="statement_name"/></h1>
-        <progress class="global_progress" value="0" t-att-max="total_lines">0%</progress>
+        <!--<progress class="global_progress" value="0" t-att-max="total_lines">0%</progress>-->
+        <div class="progress progress-striped">
+        	<div class="progress-text"><span class="valuenow">0</span> / <span class="valuemax"><t t-esc="total_lines"/></span></div>
+        	<div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" t-att-aria-valuemax="total_lines" style="width: 0%;">
+        	</div>
+        </div>
         <div class="clearer"></div>
     </t>
     
     <t t-name="bank_statement_reconciliation_line">
-        <table class="reconciliation">
+        <table class="oe_bank_statement_reconciliation_line" t-att-data-mode="widget.q_mode">
             <tr>
                 <td>
                     <table class="accounting_view">
@@ -22,7 +27,7 @@
                             <span class="partner"><t t-esc="widget.st_line.partner_id[1]"/> <span class="editPartner glyphicon glyphicon-pencil"></span></span>
                         </caption>
                         <tr class="initial_line">
-                            <td><span class="showMatching glyphicon glyphicon-cog"></span></td>
+                            <td><span class="toggle_match glyphicon glyphicon-cog"></span></td>
                             <td><t t-esc="widget.st_line.q_account_num"/></td>
                             <td><t t-esc="widget.st_line.date"/></td>
                             <td><t t-esc="widget.st_line.name"/></td>
@@ -34,9 +39,8 @@
                 </td>
             </tr>
             <tr>
-                <td class="tab-content">
-                
-                    <div class="tab-pane create">
+                <td>
+                    <div class="action_pane create">
                         <div class="btn-group btn-group-sm quickAdd">
                             <button type="button" class="btn btn-default" data-type="escompte">Escompte</button>
                             <button type="button" class="btn btn-default" data-type="diffChange">Différence de change</button>
@@ -59,9 +63,9 @@
                         </table>
                     </div>
                     
-                    <div class="tab-pane currency"></div>
+                    <div class="action_pane currency"></div>
                     
-                    <div class="tab-pane active match">
+                    <div class="action_pane active match folded">
                         <div class="match_extended_controls" data-pagerindex="0">
                             <input type="text" class="filter" placeholder="Filter" value="" />
                             <span class="pull-right pagerControlRight glyphicon glyphicon-chevron-right"></span>
@@ -80,7 +84,7 @@
             <td><span class="glyphicon glyphicon-add-remove"></span></td>
             <td><t t-esc="line.q_account_num"/></td>
             <td><t t-esc="line.q_due_date"/></td>
-            <td><t t-esc="line.ref"/> (<t t-esc="line.name"/>)</td>
+            <td><t t-esc="line.ref"/> : <t t-esc="line.name"/></td>
             <td><t t-esc="line.q_debit"/></td>
             <td><t t-esc="line.q_credit"/></td>
             <td><span class="line_info_button glyphicon glyphicon-info-sign" t-att-data-content="line.q_popover"></span></td>
@@ -101,7 +105,7 @@
     
     <t t-name="bank_statement_reconciliation_line_open_balance">
         <tr class="line_open_balance">
-            <td><span class="glyphicon glyphicon-play"></span></td>
+            <td><span class="toggle_create glyphicon glyphicon-play"></span></td>
             <td>401000</td>
             <td></td>
             <td>Open balance</td>

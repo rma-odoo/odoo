@@ -7,10 +7,21 @@
 
 /* TODO
     Extraire méthodes de account voucher (load, commit)
-    flicker ?
-    progressbar jquery
-    change partner et no_partner
-    ctrl-enter
+    pattern state ?
+    create
+    change partner :
+        - query pour update statement_line (set partner_id = ...)
+        - self.start ? Extraire la méthode loadMoveLines
+    MVC : méthodes load… ou update… ; les properties appellent les méthodes …changed
+    i18n
+    demo data
+    tests
+    
+    css transform speed ?
+    si montant facture > montant st_line : afficher /!\ jaune : hover "partial reconcile ?", clic split (quelle logique des données ?)
+    set as state in bank statement action ; get satetment id via domain field ; place in sheet ; use openerp widgets
+    BYE !!! becomes a custom message, with buttons to next probable actions
+    
 */
 
 openerp.account = function(instance) {
@@ -31,6 +42,7 @@ openerp.account = function(instance) {
             this.max_reconciliations_displayed = 3; // Don't wanna congest the page
             this.statement_id = context.context.statement_id;
             this.model_bank_statement = new instance.web.Model("account.bank.statement");
+            this.model_bank_statement_line = new instance.web.Model("account.bank.statement.line");
             
             this.st_lines = []; // The raw data from the model
             this.last_displayed_reconciliation_index = undefined; // Flow control
@@ -40,7 +52,11 @@ openerp.account = function(instance) {
         start: function() {
             this._super();
             var self = this;
-            var display = self.displayReconciliation.bind(self);
+            
+            // Bind keyboard events TODO : méthode standard ?
+            $("body").on("keypress", function (e) {
+                self.keyboardShortcutsHandler(e);
+            });
             
             // Retreive statement infos and reconciliation data from the model
             var deferred_statement = self.model_bank_statement
@@ -50,13 +66,15 @@ openerp.account = function(instance) {
                 .then(function(statement_name){
                     self.statement_name = statement_name.name;
                 });
-            var deferred_lines = self.model_bank_statement
-                .call("get_lines", [self.statement_id])
-                .then(function (data) {
+            var deferred_lines = self.model_bank_statement_line
+                .query(['id', 'analytic_account_id', 'ref', 'statement_id', 'sequence', 'type', 'company_id', 'name', 'note', 'journal_id', 'amount', 'date', 'partner_id', 'account_id', 'voucher_id', 'coda_account_number'])
+                .filter([['statement_id', '=', self.statement_id]])
+                .all().then(function (data) {
                     self.st_lines = data;
                     var reconciliations_to_show = data.slice(0, self.max_reconciliations_displayed);
-                    _(reconciliations_to_show).each(display);
                     self.last_displayed_reconciliation_index = reconciliations_to_show.length;
+                    self.displayReconciliation(reconciliations_to_show.shift(), 'match');
+                    _(reconciliations_to_show).each(function(o){ self.displayReconciliation(o, 'inactive'); });
                 });
                         
             // When queries are done, render template
@@ -84,23 +102,33 @@ openerp.account = function(instance) {
             </table>";
         },
         
-        displayReconciliation: function(st_line) {
+        keyboardShortcutsHandler: function(e) {
+            var self = this;
+            if (e.which === 13 && (e.ctrlKey || e.metaKey)) {
+                $.each(self.getChildren(), function(i, o){
+                    o.persistAndDestroy();
+                });
+            }
+        },
+        
+        displayReconciliation: function(st_line, mode) {
             var self = this;
             self.prepareStatementLineForRendering(st_line);
-            // TODO pas envie de garder la référence
-            new instance.web.account.bankStatementReconciliationLine(self, {st_line: st_line}).appendTo(self.$el);
+            new instance.web.account.bankStatementReconciliationLine(self, {st_line: st_line, mode: mode}).appendTo(self.$el);
         },
         
         childValidated: function(child) {
             var self = this;
-            var display = self.displayReconciliation.bind(self);
             
             self.resolved_lines++;
             self.updateProgressbar();
             
             // Display new line if there are left ; say goobye if the work is done
             if (self.last_displayed_reconciliation_index < self.st_lines.length) {
-                display(self.st_lines[self.last_displayed_reconciliation_index++]);
+                self.displayReconciliation(self.st_lines[self.last_displayed_reconciliation_index++], 'inactive');
+                // TODO : first-child
+                var first_child = self.getChildren()[0]; // $.when() ?
+                first_child.set("mode", first_child.mode_match);
             } else if (self.resolved_lines === self.st_lines.length) {
                 self.$el.append("<br/><br/><center><button class='button_ok'>Success !</button></center>");
                 self.$(".button_ok").click(function(){
@@ -112,9 +140,10 @@ openerp.account = function(instance) {
         
         updateProgressbar: function() {
             var self = this;
-            var prog_bar = self.$(".global_progress");
-            prog_bar.attr("value", self.resolved_lines);
-            prog_bar.text((self.resolved_lines / self.st_lines.length) + "%");
+            var prog_bar = self.$(".progress .progress-bar");
+            prog_bar.attr("aria-valuenow", self.resolved_lines);
+            prog_bar.css("width", (self.resolved_lines/self.st_lines.length*100)+"%");
+            self.$(".progress .progress-text .valuenow").text(self.resolved_lines);
         },
     });
     
@@ -124,7 +153,8 @@ openerp.account = function(instance) {
         events: {
             "click .button_ok": "persistAndDestroy",
             "click .mv_line": "moveLineClickHandler",
-            "click .line_open_balance": "lineOpenBalanceHandler",
+            "click .initial_line": "initialLineClickHandler",
+            "click .line_open_balance": "lineOpenBalanceClickHandler",
             "click .show_more": "showMoreClickHandler",
             "click .pagerControlLeft:not(.disabled)": "pagerControlLeftHandler",
             "click .pagerControlRight:not(.disabled)": "pagerControlRightHandler",
@@ -142,46 +172,56 @@ openerp.account = function(instance) {
             
             this.total_move_lines_num = undefined; // Used for pagers and "show X more"
             this.match_view_folded = undefined;
+            
+            this.mode_no_partner = 0;
+            this.mode_inactive = 1;
+            this.mode_match = 2;
+            this.mode_create = 3;
+            
+            this.q_mode = context.mode; // for QWeb ; the mode is applied through an attribute set on the main table
+            
+            this.set("balance", undefined); // Debit is +, credit is -
+            this.set("mode", undefined);
+            if (context.mode === 'no_partner') this.set("mode", this.mode_no_partner);
+            else if (context.mode === 'inactive') this.set("mode", this.mode_inactive);
+            else if (context.mode === 'match') this.set("mode", this.mode_match);
+            else if (context.mode === 'create') this.set("mode", this.mode_create);
+            this.set("pager_index", 0);
+            this.set("mv_lines", []);
+            this.set("mv_lines_selected", []);
+            this.set("lines_created", []);
         },
         
         start: function() {
             this._super();
             var self = this;
             
-            // bind events on the statement line
+            // bins not covered by the events section
             self.bindPopoverTo(self.$(".line_info_button"));
             
+            
             // properties
-            self.set("pager_index", 0);
-            self.on("change:pager_index", self, self.updateMatches);
-            self.set("mv_lines", []);
-            self.on("change:mv_lines", self, self.updateMatchView);
-            self.set("mv_lines_selected", []);
-            self.on("change:mv_lines_selected", self, self.updateAccountingView);
-            self.set("lines_created", []);
-            self.on("change:lines_created", self, self.updateAccountingView);
+            self.on("change:balance", self, self.balanceChanged);
+            self.on("change:mode", self, self.modeChanged);
+            self.on("change:pager_index", self, self.pagerChanged);
+            self.on("change:mv_lines", self, self.mvLinesChanged);
+            self.on("change:mv_lines_selected", self, self.mvLinesSelectedChanged);
+            self.on("change:lines_created", self, self.createdLinesChanged);
             
-            // Load the resolution proposition
-            var deferred_resolution_proposition = self.model_bank_statement_line
-                .call("get_resolution_proposition", [self.st_line.id])
-                .then(function (lines) {
-                    _(lines).each(function(line){ self.prepareMoveLineForRendering(line); });
-                    self.set("mv_lines_selected", self.get("mv_lines_selected").concat(lines));
-                    
-                    // Load move lines and set up the match view
-                    $.when(self.updateMatches()).then(function(){
-                        self.foldMatchView(0);
-                    });
+            // load and display
+            self.$el.css("opacity", "0");
+            $.when(self.loadResolutionProposition()).then(function(){
+                $.when(self.updateMatches()).then(function(){
+                    self.foldMatchView(0); // TODO : RM (cf showMoreClickHandler)
+                    self.$el.animate({opacity: 1}, this.animation_speed);
                 });
+            });
             
-            // TODO Doesn't include the deferred from self.updateMatches
-            return deferred_resolution_proposition;
+            return; // TODO return what ?
         },
         
-        
-        /** Utils
-            Useful misc stuffs
-        */
+
+        /** Utils */
         
         // adds fields, prefixed with q_, to the move line for qweb rendering
         prepareMoveLineForRendering: function(line){
@@ -196,6 +236,7 @@ openerp.account = function(instance) {
                 <tr><td>Period</td><td>"+line.period_id[1]+"</td></tr>\
                 <tr><td>Date</td><td>"+line.date+"</td></tr>\
                 <tr><td>Due Date</td><td>"+line.q_due_date+"</td></tr>\
+                <tr><td>Amount</td><td>"+(line.q_debit !== "" ? line.q_debit : "")+(line.q_credit !== "" ? "- "+line.q_credit : "")+"</td></tr>\
             </table>";
         },
         
@@ -215,129 +256,56 @@ openerp.account = function(instance) {
             var self = this;
             speed = (typeof speed !== 'undefined' ? speed : self.animation_speed);
             
-            // Should check for all td
-            if ($row.find("td > div").length === 0) { $row.find('td').wrapInner('<div></div>'); }
-            $row.find('td > div').slideUp(speed, function(){/* return deferred ?*/});
+            if ($row.context.dataset.suitableforsliding !== "true") {
+                $row.find('td').wrapInner('<div />');
+                $row.context.dataset.suitableforsliding = "true";
+            }
+            $row.find('td > div').slideUp(speed);
+            // TODO : td padding
+            $row.css("opacity", 1).animate({opacity: 0}, speed/2);
         },
         
         slideDownTableRow: function($row, speed) {
             var self = this;
             speed = (typeof speed !== 'undefined' ? speed : self.animation_speed);
             
-            // Should check for all td
-            if ($row.find("td > div").length === 0) {$row.find('td').wrapInner('<div></div>');}
-            $row.find('td > div').slideDown(speed, function(){/* return deferred ?*/});
+            if ($row.context.dataset.suitableforsliding !== "true") {
+                $row.find('td').wrapInner('<div />');
+                $row.context.dataset.suitableforsliding = "true";
+            }
+            $row.find('td > div').slideDown(speed);
+            $row.css("opacity", 0).animate({opacity: 1}, speed, "easeInCubic");
         },
         
         
-        /** Matching
-            Functions related to the matching of existing move lines
-        */
+        /** Matching */
         
         moveLineClickHandler: function(e) {
             var self = this;
             if (e.currentTarget.dataset.selected === "true") {
-                self.deselectMoveLine(e.currentTarget); // TODO
+                self.deselectMoveLine(e.currentTarget);
             } else {
                 self.selectMoveLine(e.currentTarget);
             }
         },
         
-        // Takes a move line from the match view and adds it to the mv_lines_selected array, triggering view update
-        selectMoveLine: function($mv_line) {
+        // Takes a move line from the match view and adds it to the mv_lines_selected array
+        selectMoveLine: function(mv_line) {
             var self = this;
-            var line_id = $mv_line.dataset.lineid;
+            var line_id = mv_line.dataset.lineid;
             var line = _.find(self.get("mv_lines"), function(o){ return o.id == line_id; });
             self.set("mv_lines_selected", self.get("mv_lines_selected").concat(line));
-            self.updateMatches();
         },
         
-        // Removes a move line from the mv_lines_selected array, triggering view update
-        deselectMoveLine: function($mv_line) {
+        // Removes a move line from the mv_lines_selected array
+        deselectMoveLine: function(mv_line) {
             var self = this;
-            var line_id = $mv_line.dataset.lineid;
+            var line_id = mv_line.dataset.lineid;
             self.set("mv_lines_selected", _.filter(self.get("mv_lines_selected"), function(o) { return o.id != line_id; }));
-            self.updateMatches();
         },
         
         
-        /** Creating
-            Functions related to the creation of new move lines
-        */
-        
-        lineOpenBalanceHandler: function() {
-        
-        },
-        
-        addLine: function() {
-            var self = this;
-        },
-        
-        removeLine: function() {
-            var self = this;
-        },
-        
-        
-        /** Display
-            Functions for controlling the widget's appareance
-        */
-        
-        // Switches between showing min_move_lines_displayed and max_move_lines_displayed
-        showMoreClickHandler: function(event) {
-            var self = this;
-            event.preventDefault();
-            // self.match_view_folded = !self.match_view_folded;
-            if (self.match_view_folded)
-                self.unfoldMatchView();
-            else
-                self.foldMatchView();
-        },
-        
-        foldMatchView: function(speed) {
-            var self = this;
-            speed = (typeof speed !== 'undefined' ? speed : self.animation_speed);
-
-            self.$(".match_extended_controls").slideUp(speed, function() { self.$(".match").addClass("folded"); });
-            $.each(self.$(".match tr:nth-child(n+3)"), function(i, o) { self.slideUpTableRow($(o), speed); });
-            
-            if (self.total_move_lines_num <= self.min_move_lines_displayed) {
-                self.$(".match .show_more").hide();
-            } else {
-                self.$(".match .show_more").show().text("Show "+(self.total_move_lines_num !== undefined ? self.total_move_lines_num - self.min_move_lines_displayed : "")+" more");
-            }
-            self.match_view_folded = true;
-        },
-        
-        unfoldMatchView: function(speed) {
-            var self = this;
-            speed = typeof speed !== 'undefined' ? speed : self.animation_speed;
-            
-            self.$(".match_extended_controls").slideDown(speed, function() { self.$(".match").addClass("folded"); });
-            $.each(self.$(".match tr:nth-child(n+3)"), function(i, o) { self.slideDownTableRow($(o), speed); });
-            
-            self.$(".match .show_more").text("Show less");
-            self.match_view_folded = false;
-        },
-        
-        showMatchView: function() {
-            var self = this;
-        },
-        
-        hideMatchView: function() {
-            var self = this;
-        },
-        
-        showCreateView: function() {
-            var self = this;
-        },
-        
-        hideCreateView: function() {
-            var self = this;
-        },
-        
-        
-        /** Matches pagination
-        */
+        /** Matches pagination */
         
         pagerControlLeftHandler: function() {
             var self = this;
@@ -359,8 +327,122 @@ openerp.account = function(instance) {
         },
         
         
-        /** Views updating
-        */
+        /** Creating */
+        
+        addLine: function() {
+            var self = this;
+        },
+        
+        removeLine: function() {
+            var self = this;
+        },
+        
+        
+        /** Display */
+        
+        // Switches between showing min_move_lines_displayed and max_move_lines_displayed
+        showMoreClickHandler: function(event) {
+            var self = this;
+            event.preventDefault();
+            
+            /* TODO
+                should be self.match_view_folded = !self.match_view_folded;
+                but foldMatchView needs to be called after updateMatches.
+                When folded, lines should be hidden via CSS. (animation callback
+                adds or rm the class). Problem is : how to set the css selector
+                according to min_move_lines_displayed ?
+            */
+            
+            if (self.match_view_folded) self.unfoldMatchView();
+            else self.foldMatchView();
+        },
+        
+        foldMatchView: function(speed) {
+            var self = this;
+            speed = (typeof speed !== 'undefined' ? speed : self.animation_speed);
+
+            self.$(".match_extended_controls").slideUp(speed, function() { self.$(".match").addClass("folded"); });
+            $.each(self.$(".match tr:nth-child(n+"+(self.min_move_lines_displayed+1)+")"), function(i, o) { self.slideUpTableRow($(o), speed); });
+            
+            if (self.total_move_lines_num <= self.min_move_lines_displayed) {
+                self.$(".match .show_more").hide();
+            } else {
+                self.$(".match .show_more").show().text("Show "+(self.total_move_lines_num !== undefined ? self.total_move_lines_num - self.min_move_lines_displayed : "")+" more");
+            }
+            self.match_view_folded = true;
+        },
+        
+        unfoldMatchView: function(speed) {
+            var self = this;
+            speed = typeof speed !== 'undefined' ? speed : self.animation_speed;
+            
+            self.$(".match_extended_controls").slideDown(speed, function() { self.$(".match").addClass("folded"); });
+            $.each(self.$(".match tr:nth-child(n+"+(self.min_move_lines_displayed+1)+")"), function(i, o) { self.slideDownTableRow($(o), speed); });
+            
+            self.$(".match .show_more").text("Show less");
+            self.match_view_folded = false;
+        },
+        
+        initialLineClickHandler: function() {
+            var self = this;
+            if (self.get("mode") === self.mode_match) {
+                self.set("mode", self.mode_inactive);
+            } else {
+                self.set("mode", self.mode_match);
+            }
+        },
+        
+        lineOpenBalanceClickHandler: function() {
+            var self = this;
+            if (self.get("mode") === self.mode_create) {
+                self.set("mode", self.mode_inactive);
+            } else {
+                self.set("mode", self.mode_create);
+            }
+        },
+        
+        showMatchView: function() {
+            var self = this;
+            self.$(".match").slideDown(self.animation_speed);
+            self.$(".toggle_match").css("visibility", "visible")
+                                   .css("-webkit-transform", "rotate(90deg)")
+                                   .css("-moz-transform", "rotate(90deg)")
+                                   .css("-ms-transform", "rotate(90deg)")
+                                   .css("transform", "rotate(90deg)");
+        },
+        
+        hideMatchView: function() {
+            var self = this;
+            self.$(".match").slideUp(self.animation_speed);
+            self.$(".toggle_match").css("visibility", "hidden")
+                                   .css("-webkit-transform", "rotate(0deg)")
+                                   .css("-moz-transform", "rotate(0deg)")
+                                   .css("-ms-transform", "rotate(0deg)")
+                                   .css("transform", "rotate(0deg)");
+        },
+        
+        showCreateView: function() {
+            var self = this;
+            self.$(".create").slideDown(self.animation_speed);
+            self.$(".toggle_create").css("visibility", "visible")
+                                    .css("-webkit-transform", "rotate(90deg)")
+                                    .css("-moz-transform", "rotate(90deg)")
+                                    .css("-ms-transform", "rotate(90deg)")
+                                    .css("transform", "rotate(90deg)");
+        },
+        
+        hideCreateView: function() {
+            var self = this;
+            self.$(".create").slideUp(self.animation_speed);
+            self.$(".toggle_create").css("visibility", "hidden")
+                                    .css("-webkit-transform", "rotate(0deg)")
+                                    .css("-moz-transform", "rotate(0deg)")
+                                    .css("-ms-transform", "rotate(0deg)")
+                                    .css("transform", "rotate(0deg)");
+        },
+        
+        
+        /** Views updating */
         
         updateAccountingView: function() {
             var self = this;
@@ -377,8 +459,6 @@ openerp.account = function(instance) {
             _(self.added_lines).each(function(line){
                 // TODO
             });
-            
-            self.updateBalance();
         },
         
         updateMatchView: function() {
@@ -393,28 +473,31 @@ openerp.account = function(instance) {
                 self.bindPopoverTo($line.find(".line_info_button"));
                 table.append($line);
             });
-            if (self.match_view_folded) self.foldMatchView(0); // Un peu hack
+            if (self.match_view_folded) self.foldMatchView(0); // TODO : rm (cf showMoreClickHandler)
         },
-
         
-        /** Model
-        */
-        
-        // TODO : balance is a property ?
-        // Checks the balance, updates the validation button and the "open balance" line
-        updateBalance: function() {
+        updatePagerControls: function() {
             var self = this;
-            var balance = 0; // Debit is +, credit is -
+            
+            if (self.get("pager_index") === 0)
+                self.$(".pagerControlLeft").addClass("disabled");
+            else
+                self.$(".pagerControlLeft").removeClass("disabled");
+            if (self.total_move_lines_num <= ((self.get("pager_index")+1) * self.max_move_lines_displayed))
+                self.$(".pagerControlRight").addClass("disabled");
+            else
+                self.$(".pagerControlRight").removeClass("disabled");
+        },
+        
+        
+        /** Model */
+        
+        // Updates the validation button and the "open balance" line
+        balanceChanged: function() {
+            var self = this;
+            var balance = self.get("balance");
             self.$(".line_open_balance").remove();
             
-            // Compute balance
-            balance -= self.st_line.amount;
-            _.each(self.get("mv_lines_selected"), function(o) {
-                balance += o.debit;
-                balance -= o.credit;
-            });
-            
-            // Update line_open_balance and button_ok
             if (balance === 0) {
                 self.$(".button_ok").addClass("oe_highlight");
                 self.$(".button_ok").text("OK");
@@ -431,9 +514,77 @@ openerp.account = function(instance) {
             }
         },
         
-        // Loads move lines according to the widget's state and updates the pagers
+        modeChanged: function() {
+            var self = this;
+
+            self.$(".action_pane.active").removeClass("active");
+            if (self.get("mode") === self.mode_inactive) {
+                self.hideMatchView();
+                self.hideCreateView(); // TODO returns deferred instead of timeout
+                window.setTimeout(function(){ self.el.dataset.mode = "inactive"; }, self.animation_speed);
+            } else if (self.get("mode") === self.mode_match) {
+                self.showMatchView();
+                self.hideCreateView();
+                self.$(".action_pane.match").addClass("active");
+                window.setTimeout(function(){ self.el.dataset.mode = "match"; }, self.animation_speed);
+            } else if (self.get("mode") === self.mode_create) {
+                self.hideMatchView();
+                self.showCreateView();
+                self.$(".action_pane.create").addClass("active");
+                window.setTimeout(function(){ self.el.dataset.mode = "create"; }, self.animation_speed);
+            }
+        },
+        
+        pagerChanged: function() {
+            var self = this;
+            self.updateMatches();
+        },
+        
+        mvLinesChanged: function() {
+            var self = this;
+            self.updateMatchView();
+            self.updatePagerControls();
+        },
+        
+        mvLinesSelectedChanged: function() {
+            var self = this;
+            $.when(self.updateMatches()).then(function(){
+                self.updateAccountingView();
+                self.updateBalance();
+            });
+        },
+        
+        createdLinesChanged: function() {
+            var self = this;
+            self.updateAccountingView();
+            self.updateBalance();
+        },
+        
+        updateBalance: function() {
+            var self = this;
+            var balance = 0;
+            balance -= self.st_line.amount;
+            _.each(self.get("mv_lines_selected"), function(o) {
+                balance += o.debit;
+                balance -= o.credit;
+            });
+            self.set("balance", balance);
+        },
+        
+        loadResolutionProposition: function() {
+            var self = this;
+            return self.model_bank_statement_line
+                .call("get_resolution_proposition", [self.st_line.id])
+                .then(function (lines) {
+                    _(lines).each(function(line){ self.prepareMoveLineForRendering(line); });
+                    self.set("mv_lines_selected", self.get("mv_lines_selected").concat(lines));
+                });
+        },
+        
+        // Loads move lines according to the widget's state
         updateMatches: function() {
             var self = this;
+            
             // Load move lines
             var offset = self.get("pager_index") * self.max_move_lines_displayed;
             var filter_str = self.$(".filter").val();
@@ -451,16 +602,16 @@ openerp.account = function(instance) {
                     self.total_move_lines_num = num;
                 });
             
-            // Update pager controls
-            return $.when(deferred_move_lines, deferred_total_move_lines_num).then(function (lines) {
-                if (self.get("pager_index") === 0)
-                    self.$(".pagerControlLeft").addClass("disabled");
-                else
-                    self.$(".pagerControlLeft").removeClass("disabled");
-                if (self.total_move_lines_num <= ((self.get("pager_index")+1) * self.max_move_lines_displayed))
-                    self.$(".pagerControlRight").addClass("disabled");
-                else
-                    self.$(".pagerControlRight").removeClass("disabled");
+            return $.when(deferred_move_lines, deferred_total_move_lines_num).then(function(){
+                
+                // If pager_index is out of range, set it to display the last page
+                if (self.total_move_lines_num <= (self.get("pager_index") * self.max_move_lines_displayed)) {
+                    if (self.get("pager_index") !== 0) {
+                        self.set("pager_index", Math.ceil(self.total_move_lines_num/self.max_move_lines_displayed)-1);
+                    } else {
+                        self.foldMatchView();
+                    }
+                }
             });
         },
         
@@ -468,10 +619,41 @@ openerp.account = function(instance) {
         persistAndDestroy: function() {
             var self = this;
             // TODO call
-            self.getParent().childValidated(self);
-            self.$el.slideUp(300, function(){
+            
+            // Prepare sliding animation
+            var height = self.$el.outerHeight();
+            var container = $("<div />");
+            container.css("height", height)
+                     .css("marginTop", self.$el.css("marginTop"))
+                     .css("marginBottom", self.$el.css("marginBottom"));
+            self.$el.wrap(container);
+            
+            // Bow out
+            self.$el.parent().slideUp(self.animation_speed*height/150, function(){
+                self.getParent().childValidated(self);
                 self.destroy();
             });
+            
+            
+            /*
+                // Prepare sliding animation
+                var height = self.$el.outerHeight();
+                var container = $("<div />");
+                container.css("overflow", "hidden")
+                         .css("position", "relative")
+                         .css("height", height)
+                         .css("marginTop", self.$el.css("marginTop"))
+                         .css("marginBottom", self.$el.css("marginBottom"));
+                self.$el.wrap(container);
+                self.$el.css("position", "absolute").css("top", "0px");
+                
+                // Bow out
+                self.$el.animate({top: -height, opacity: 0}, self.animation_speed*height/150);
+                self.$el.parent().animate({height: 0}, self.animation_speed*height/150, function(){
+                    self.getParent().childValidated(self);
+                    self.destroy();
+                });
+            */
         },
     });
 };
