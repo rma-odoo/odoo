@@ -65,6 +65,25 @@ class account_bank_statement(osv.osv):
         if periods:
             return periods[0]
         return False
+    
+    def _compute_default_statement_name(self, cr, uid, context=None):
+        st = self.browse(cr, uid, id, context=context)
+        period = self.pool.get('account.period').browse(cr, uid, self._get_period(cr, uid, context=context), None)
+        journal = self.pool.get('account.journal').browse(cr, uid, self._default_journal_id(cr, uid, context=context), None)
+        obj_seq = self.pool.get('ir.sequence')
+        
+        c = {'fiscalyear_id': period.fiscalyear_id.id}
+        if journal.sequence_id:
+            return obj_seq.next_by_id(cr, uid, journal.sequence_id.id, context=c)
+        else:
+            return obj_seq.next_by_code(cr, uid, 'account.bank.statement', context=c)
+        
+#        TODO : à la base on utilise le browse record, comment faire lors d'un appel via _defaults = { … }
+#        c = {'fiscalyear_id': st.period_id.fiscalyear_id.id}
+#        if st.journal_id.sequence_id:
+#            st_number = obj_seq.next_by_id(cr, uid, st.journal_id.sequence_id.id, context=c)
+#        else:
+#            st_number = obj_seq.next_by_code(cr, uid, 'account.bank.statement', context=c)
 
     def _currency(self, cursor, user, ids, name, args, context=None):
         res = {}
@@ -91,13 +110,22 @@ class account_bank_statement(osv.osv):
         for line in self.pool.get('account.bank.statement.line').browse(cr, uid, ids, context=context):
             result[line.statement_id.id] = True
         return result.keys()
+    
+    def _all_lines_reconciled(self, cr, uid, ids, name, args, context=None):
+        res = {}
+        for statement in self.browse(cr, uid, ids, context=context):
+            res[statement.id] = True
+            for line in statement.line_ids:
+                if line.journal_entry_id.id == False:
+                    res[statement.id] = False
+        return res
 
     _order = "date desc, id desc"
     _name = "account.bank.statement"
     _description = "Bank Statement"
     _inherit = ['mail.thread']
     _columns = {
-        'name': fields.char('Reference', size=64, required=True, states={'draft': [('readonly', False)]}, readonly=True, help='if you give the Name other then /, its created Accounting Entries Move will be with same name as statement name. This allows the statement entries to have the same references than the statement itself'), # readonly for account_cash_statement
+        'name': fields.char('Reference', size=64, states={'draft': [('readonly', False)]}, readonly=True, help='if you give the Name other then /, its created Accounting Entries Move will be with same name as statement name. This allows the statement entries to have the same references than the statement itself'), # readonly for account_cash_statement
         'date': fields.date('Date', required=True, states={'confirm': [('readonly', True)]}, select=True),
         'journal_id': fields.many2one('account.journal', 'Journal', required=True,
             readonly=True, states={'draft':[('readonly',False)]}),
@@ -129,17 +157,18 @@ class account_bank_statement(osv.osv):
             type='many2one', relation='res.currency'),
         'account_id': fields.related('journal_id', 'default_debit_account_id', type='many2one', relation='account.account', string='Account used in this journal', readonly=True, help='used in statement reconciliation domain, but shouldn\'t be used elswhere.'),
         'cash_control': fields.related('journal_id', 'cash_control' , type='boolean', relation='account.journal',string='Cash control'),
+        'all_lines_reconciled': fields.function(_all_lines_reconciled, string='All lines reconciled', type='boolean'),
     }
 
     _defaults = {
-        'name': "/",
+        'name': _compute_default_statement_name,
         'date': fields.date.context_today,
         'state': 'draft',
         'journal_id': _default_journal_id,
         'period_id': _get_period,
         'company_id': lambda self,cr,uid,c: self.pool.get('res.company')._company_default_get(cr, uid, 'account.bank.statement',context=c),
     }
-
+    
     def _check_company_id(self, cr, uid, ids, context=None):
         for statement in self.browse(cr, uid, ids, context=context):
             if statement.company_id.id != statement.period_id.company_id.id:
@@ -207,7 +236,6 @@ class account_bank_statement(osv.osv):
            :param int/long company_currency_id: ID of currency of the concerned company
            :return: dict of value to create() the bank account.move.line
         """
-        anl_id = st_line.analytic_account_id and st_line.analytic_account_id.id or False
         debit = ((amount<0) and -amount) or 0.0
         credit =  ((amount>0) and amount) or 0.0
         cur_id = False
@@ -221,7 +249,7 @@ class account_bank_statement(osv.osv):
             amt_cur = -res_currency_obj.compute(cr, uid, company_currency_id, cur_id, amount, context=context)
 
         res = self._prepare_move_line_vals(cr, uid, st_line, move_id, debit, credit,
-            amount_currency=amt_cur, currency_id=cur_id, analytic_id=anl_id, context=context)
+            amount_currency=amt_cur, currency_id=cur_id, context=context)
         return res
 
     def _get_counter_part_account(sefl, cr, uid, st_line, context=None):
@@ -277,8 +305,7 @@ class account_bank_statement(osv.osv):
             partner_id = partner_id, context=context)
 
     def _prepare_move_line_vals(self, cr, uid, st_line, move_id, debit, credit, currency_id = False,
-                amount_currency= False, account_id = False, analytic_id = False,
-                partner_id = False, context=None):
+                amount_currency= False, account_id = False, partner_id = False, context=None):
         """Prepare the dict of values to create the move line from a
            statement line. All non-mandatory args will replace the default computed one.
            This method may be overridden to implement custom move generation (making sure to
@@ -293,7 +320,6 @@ class account_bank_statement(osv.osv):
            :param float amount_currency: amount of the debit/credit expressed in the currency_id
            :param int/long account_id: ID of the account to use in the move line if different
                   from the statement line account ID
-           :param int/long analytic_id: ID of analytic account to put on the move line
            :param int/long partner_id: ID of the partner to put on the move line
            :return: dict of value to create() the account.move.line
         """
@@ -314,63 +340,63 @@ class account_bank_statement(osv.osv):
             'period_id': st_line.statement_id.period_id.id,
             'currency_id': amount_currency and cur_id,
             'amount_currency': amount_currency,
-            'analytic_account_id': analytic_id,
         }
 
-    def create_move_from_st_line(self, cr, uid, st_line_id, company_currency_id, st_line_number, context=None):
-        """Create the account move from the statement line.
-
-           :param int/long st_line_id: ID of the account.bank.statement.line to create the move from.
-           :param int/long company_currency_id: ID of the res.currency of the company
-           :param char st_line_number: will be used as the name of the generated account move
-           :return: ID of the account.move created
-        """
-
-        if context is None:
-            context = {}
-        res_currency_obj = self.pool.get('res.currency')
-        account_move_obj = self.pool.get('account.move')
-        account_move_line_obj = self.pool.get('account.move.line')
-        account_bank_statement_line_obj = self.pool.get('account.bank.statement.line')
-        st_line = account_bank_statement_line_obj.browse(cr, uid, st_line_id, context=context)
-        st = st_line.statement_id
-
-        context.update({'date': st_line.date})
-
-        move_vals = self._prepare_move(cr, uid, st_line, st_line_number, context=context)
-        move_id = account_move_obj.create(cr, uid, move_vals, context=context)
-        account_bank_statement_line_obj.write(cr, uid, [st_line.id], {
-            'move_ids': [(4, move_id, False)]
-        })
-        torec = []
-        acc_cur = ((st_line.amount<=0) and st.journal_id.default_debit_account_id) or st_line.account_id
-
-        context.update({
-                'res.currency.compute.account': acc_cur,
-            })
-        amount = res_currency_obj.compute(cr, uid, st.currency.id,
-                company_currency_id, st_line.amount, context=context)
-
-        bank_move_vals = self._prepare_bank_move_line(cr, uid, st_line, move_id, amount,
-            company_currency_id, context=context)
-        move_line_id = account_move_line_obj.create(cr, uid, bank_move_vals, context=context)
-        torec.append(move_line_id)
-
-        counterpart_move_vals = self._prepare_counterpart_move_line(cr, uid, st_line, move_id,
-            amount, company_currency_id, context=context)
-        account_move_line_obj.create(cr, uid, counterpart_move_vals, context=context)
-
-        for line in account_move_line_obj.browse(cr, uid, [x.id for x in
-                account_move_obj.browse(cr, uid, move_id,
-                    context=context).line_id],
-                context=context):
-            if line.state <> 'valid':
-                raise osv.except_osv(_('Error!'),
-                        _('Journal item "%s" is not valid.') % line.name)
-
-        # Bank statements will not consider boolean on journal entry_posted
-        account_move_obj.post(cr, uid, [move_id], context=context)
-        return move_id
+#    TODO : remove
+#    def create_move_from_st_line(self, cr, uid, st_line_id, company_currency_id, st_line_number, context=None):
+#        """Create the account move from the statement line.
+#
+#           :param int/long st_line_id: ID of the account.bank.statement.line to create the move from.
+#           :param int/long company_currency_id: ID of the res.currency of the company
+#           :param char st_line_number: will be used as the name of the generated account move
+#           :return: ID of the account.move created
+#        """
+#
+#        if context is None:
+#            context = {}
+#        res_currency_obj = self.pool.get('res.currency')
+#        account_move_obj = self.pool.get('account.move')
+#        account_move_line_obj = self.pool.get('account.move.line')
+#        account_bank_statement_line_obj = self.pool.get('account.bank.statement.line')
+#        st_line = account_bank_statement_line_obj.browse(cr, uid, st_line_id, context=context)
+#        st = st_line.statement_id
+#
+#        context.update({'date': st_line.date})
+#
+#        move_vals = self._prepare_move(cr, uid, st_line, st_line_number, context=context)
+#        move_id = account_move_obj.create(cr, uid, move_vals, context=context)
+#        account_bank_statement_line_obj.write(cr, uid, [st_line.id], {
+#            'move_ids': [(4, move_id, False)]
+#        })
+#        torec = []
+#        acc_cur = ((st_line.amount<=0) and st.journal_id.default_debit_account_id) or st_line.account_id
+#
+#        context.update({
+#                'res.currency.compute.account': acc_cur,
+#            })
+#        amount = res_currency_obj.compute(cr, uid, st.currency.id,
+#                company_currency_id, st_line.amount, context=context)
+#
+#        bank_move_vals = self._prepare_bank_move_line(cr, uid, st_line, move_id, amount,
+#            company_currency_id, context=context)
+#        move_line_id = account_move_line_obj.create(cr, uid, bank_move_vals, context=context)
+#        torec.append(move_line_id)
+#
+#        counterpart_move_vals = self._prepare_counterpart_move_line(cr, uid, st_line, move_id,
+#            amount, company_currency_id, context=context)
+#        account_move_line_obj.create(cr, uid, counterpart_move_vals, context=context)
+#
+#        for line in account_move_line_obj.browse(cr, uid, [x.id for x in
+#                account_move_obj.browse(cr, uid, move_id,
+#                    context=context).line_id],
+#                context=context):
+#            if line.state <> 'valid':
+#                raise osv.except_osv(_('Error!'),
+#                        _('Journal item "%s" is not valid.') % line.name)
+#
+#        # Bank statements will not consider boolean on journal entry_posted
+#        account_move_obj.post(cr, uid, [move_id], context=context)
+#        return move_id
 
     def get_next_st_line_number(self, cr, uid, st_number, st_line, context=None):
         return st_number + '/' + str(st_line.sequence)
@@ -387,8 +413,8 @@ class account_bank_statement(osv.osv):
 
     def check_status_condition(self, cr, uid, state, journal_type='bank'):
         return state in ('draft','open')
-
-    def button_confirm_bank(self, cr, uid, ids, context=None):
+    
+    def confirm_bank_statement(self, cr, uid, ids, context=None):
         obj_seq = self.pool.get('ir.sequence')
         if context is None:
             context = {}
@@ -405,27 +431,14 @@ class account_bank_statement(osv.osv):
                 raise osv.except_osv(_('Configuration Error!'),
                         _('Please verify that an account is defined in the journal.'))
 
-            if not st.name == '/':
-                st_number = st.name
-            else:
-                c = {'fiscalyear_id': st.period_id.fiscalyear_id.id}
-                if st.journal_id.sequence_id:
-                    st_number = obj_seq.next_by_id(cr, uid, st.journal_id.sequence_id.id, context=c)
-                else:
-                    st_number = obj_seq.next_by_code(cr, uid, 'account.bank.statement', context=c)
-
             for line in st.move_line_ids:
                 if line.state <> 'valid':
                     raise osv.except_osv(_('Error!'),
                             _('The account entries lines are not in valid state.'))
             for st_line in st.line_ids:
-                if st_line.analytic_account_id:
-                    if not st.journal_id.analytic_journal_id:
-                        raise osv.except_osv(_('No Analytic Journal!'),_("You have to assign an analytic journal on the '%s' journal!") % (st.journal_id.name,))
                 if not st_line.amount:
                     continue
-                st_line_number = self.get_next_st_line_number(cr, uid, st_number, st_line, context)
-                self.create_move_from_st_line(cr, uid, st_line.id, company_currency_id, st_line_number, context)
+                self.pool.get('account.move').post(cr, uid, [st_line.journal_entry_id], context=context)
 
             self.write(cr, uid, [st.id], {
                     'name': st_number,
@@ -505,112 +518,209 @@ class account_bank_statement(osv.osv):
         'context':ctx,
       }
     
-
 class account_bank_statement_line(osv.osv):
     
-    def get_resolution_proposition(self, cr, uid, id, context=None):
-        """ Returns move lines that could be used to resolve this statement line.
-            
-            :param integer id: the id of the statement line
-        """
-        # get_move_lines puis filtrer les résultats ?
-        st_line = self.browse(cr, uid, id, context=context)
-        #import pudb;pudb.set_trace()
-        domain = [
-            ('debit', '=', st_line.amount),
-            ('partner_id', '=', st_line.partner_id.id),
-            ('reconcile_id', '=', False),
-        ]
-        fields = ["id", "name", "ref", "account_id", "date_maturity", "date", "credit", "debit", "period_id", "journal_id"]
+    def get_statement_line_for_reconciliation(self, cr, uid, id, context=None):
+        """ Returns the data required by the bank statement reconciliation use case """
         
-        return self.pool.get('account.move.line').search_read(cr, uid, domain=domain, fields=fields, order="date_maturity desc", limit=1, context=context)
+        line = self.browse(cr, uid, id, context=context)
+        currency = line.journal_id.currency.name or line.journal_id.company_id.currency_id.name
+        
+        return {
+            'id': line.id,
+            'ref': line.ref,
+            'note': line.note or "",
+            'name': line.name,
+            'date': line.date,
+            'amount': line.amount,
+            'statement_id': line.statement_id.id,
+            'account_code': line.journal_id.default_debit_account_id.code,
+            'account_name': line.journal_id.default_debit_account_id.name,
+            'partner_name': line.partner_id.name,
+            'currency_name': currency,
+            'has_no_partner': line.partner_id.id == False,
+        }
     
-    def get_move_lines(self, cr, uid, id, excluded_ids, str, offset, limit, count=False, context=None):
-        """ Returns move lines that could be used to resolve this statement line.
+    def get_reconciliation_proposition(self, cr, uid, id = True, context=None):
+        """ Returns move lines that constitute the best guess to reconcile a statement line. """
+        
+        st_line = self.browse(cr, uid, id, context=context)
+        company_currency = st_line.journal_id.company_id.currency_id.id
+        statement_currency = st_line.journal_id.currency.id or company_currency # st_line's journal currency is only set if it's not the same as company's currency
+        
+        # either use the unsigned debit/credit fields or the signed amount_currency field
+        sign = 1
+        if statement_currency == company_currency:
+            if st_line.amount > 0:
+                amount_field = 'debit'
+            else:
+                amount_field = 'credit'
+        else:
+            amount_field = 'amount_currency'
+            if st_line.amount < 0:
+                sign = -1
+        
+        # look for exact match
+        exact_match_id = self.get_move_lines_counterparts(cr, uid, id, limit=1, additional_domain=[(amount_field,'=',(sign*st_line.amount))])
+        if exact_match_id:
+            return exact_match_id
+        
+        # select oldest move lines
+        if sign == -1:
+            mv_lines = self.get_move_lines_counterparts(cr, uid, id, limit=50, additional_domain=[(amount_field,'<',0)])
+        else:
+            mv_lines = self.get_move_lines_counterparts(cr, uid, id, limit=50, additional_domain=[(amount_field,'>',0)])
+        ret = []
+        total = 0
+        # get_move_lines_counterparts inverts debit and credit
+        amount_field = 'debit' if amount_field == 'credit' else 'credit'
+        for line in mv_lines:
+            if total + line[amount_field] <= st_line.amount:
+                ret.append(line)
+                total += line[amount_field]
+            else:
+                break
+        
+        return ret
+        
+    def get_move_lines_counterparts(self, cr, uid, id, excluded_ids=[], str="", offset=0, limit=None, count=False, additional_domain=[], context=None):
+        """ Find the move lines that could be used to reconcile a statement line and returns the counterpart that could be created to reconcile them
+            If count is true, only returns the count.
             
             :param integer id: the id of the statement line
-            :param integer list excluded_ids: ids of move lines that should not be fetched
+            :param integers list excluded_ids: ids of move lines that should not be fetched
             :param string str: string to filter lines
             :param integer offset: offset of the request
             :param integer limit: number of lines to fetch
             :param boolean count: just return the number of records
+            :param tuples list domain: additional domain restrictions
         """
         
         st_line = self.browse(cr, uid, id, context=context)
-                
-        domain = [
+        mv_line_pool = self.pool.get('account.move.line')
+        
+        domain = additional_domain + [
             ('partner_id', '=', st_line.partner_id.id),
             ('reconcile_id', '=', False),
+            ('state','=','valid'),
+            '|',('account_id.type', '=', 'receivable'),
+            ('account_id.type', '=', 'payable'), #Let the front-end warn the user if he tries to mix payable and receivable in the same reconciliation
             ('id', 'not in', excluded_ids),
-            '|',('name', 'ilike', str),
-            ('ref', 'ilike', str),
+            '|',('move_id.name', 'ilike', str),
+            ('move_id.ref', 'ilike', str),
         ]
-        fields = ["id", "name", "ref", "account_id", "date_maturity", "date", "credit", "debit", "period_id", "journal_id"]
         
         if count:
-            return self.pool.get('account.move.line').search_count(cr, uid, domain, context=context)
+            return mv_line_pool.search_count(cr, uid, domain, context=context)
         else:
-            return self.pool.get('account.move.line').search_read(cr, uid, offset=offset, limit=limit, domain=domain, fields=fields, order="date_maturity desc", context=context)
+            ids = mv_line_pool.search(cr, uid, domain, offset=offset, limit=limit, order="date_maturity asc, id asc", context=context)
+            ret = []
+            for line in mv_line_pool.browse(cr, uid, ids, context=context):
+                ret_line = {
+                    'id': line.id,
+                    'name': line.move_id.name,
+                    'ref': line.move_id.ref,
+                    'account_code': line.account_id.code,
+                    'account_name': line.account_id.name,
+                    'account_type': line.account_id.type,
+                    'debit':  line.amount_residual if line.amount_residual < 0 else 0,
+                    'credit': line.amount_residual if line.amount_residual > 0 else 0,
+                    'initial_debit':  line.amount_residual if line.amount_residual < 0 else 0,
+                    'initial_credit': line.amount_residual if line.amount_residual > 0 else 0,
+                    'date_maturity': line.date_maturity,
+                    'date': line.date,
+                    'period_name': line.period_id.name,
+                    'journal_name': line.journal_id.name,
+                }
+                ret.append(ret_line);
+            return ret
     
+    def change_partner(self, cr, uid, id, partner_id, context=None):
+        """ :param integer id: the id of the statement line whose partner is to be changed
+            :param integer partner_id: the id of the new partner
+        """
+        return self.write(cr, uid, [id], {'partner_id': partner_id})
+        
+        
+    def process_reconciliation(self, cr, uid, id, mv_line_dicts, context=None):
+        """ :param int id: id of the bank statement line
+            :param list of dicts mv_line_dicts: move lines to create. If counterpart_move_line_id is specified, reconcile with it 
+        """
+        st_line = self.browse(cr, uid, id, context=context)
+        company_currency_id = st_line.company_id.currency_id.id
+        bs_pool = self.pool.get('account.bank.statement')
+        am_pool = self.pool.get('account.move')
+        aml_pool = self.pool.get('account.move.line')
+        currency_pool = self.pool.get('res.currency')
+        
+        # Checks
+        if st_line.journal_entry_id.id != False:
+            raise osv.except_osv(_('Error!'), _('The bank statement line was already reconciled.'))
+        for mv_line_dict in mv_line_dicts:
+            if mv_line_dict.get('counterpart_move_line_id'):
+                mv_line = aml_pool.browse(cr, uid, mv_line_dict.get('counterpart_move_line_id'), context=context)
+                if mv_line.reconcile_id or mv_line.reconcile_partial_id:
+                    raise osv.except_osv(_('Error!'), _('A selected move line was already reconciled.'))
+        
+        # Create the move
+        move_name = st_line.statement_id.name + str(st_line.sequence)
+        move_vals = bs_pool._prepare_move(cr, uid, st_line, move_name, context=context)
+        move_id = am_pool.create(cr, uid, move_vals, context=context)
+        
+        # Create the move line for the statement line
+        amount = currency_pool.compute(cr, uid, st_line.statement_id.currency.id, company_currency_id, st_line.amount, context=context)
+        bank_move_vals = bs_pool._prepare_counterpart_move_line(cr, uid, st_line, move_id, amount, company_currency_id, context=context)
+        move_line_id = aml_pool.create(cr, uid, bank_move_vals, context=context)
+        
+        # Complete the dicts
+        st_line_statement_id = st_line.statement_id.id
+        st_line_journal_id = st_line.journal_id.id
+        st_line_partner_id = st_line.partner_id.id
+        st_line_company_id = st_line.company_id.id
+        for mv_line_dict in mv_line_dicts:
+            mv_line_dict['move_id'] = move_id
+            mv_line_dict['period_id'] = 5 # TODO
+            mv_line_dict['journal_id'] = st_line_journal_id
+            mv_line_dict['partner_id'] = st_line_partner_id
+            mv_line_dict['company_id'] = st_line_company_id
+            mv_line_dict['statement_id'] = st_line_statement_id
+            if mv_line_dict.get('counterpart_move_line_id'):
+                mv_line = aml_pool.browse(cr, uid, mv_line_dict['counterpart_move_line_id'], context=context)
+                mv_line_dict['account_id'] = mv_line.account_id.id
+        
+        # Create move lines
+        move_line_pairs_to_reconcile = []
+        for mv_line_dict in mv_line_dicts:
+            if mv_line_dict.get('counterpart_move_line_id'):
+                counterpart_move_line_id = mv_line_dict['counterpart_move_line_id']
+                del mv_line_dict['counterpart_move_line_id']
+            
+            new_aml_id = aml_pool.create(cr, uid, mv_line_dict, context=context)
+            if counterpart_move_line_id:
+                move_line_pairs_to_reconcile.append([new_aml_id, counterpart_move_line_id])
+        
+        # Reconcile
+        for pair in move_line_pairs_to_reconcile:
+            aml_pool.reconcile_partial(cr, uid, pair, context=context)
+        
+        # Mark the statement line as reconciled
+        self.write(cr, uid, id, {'journal_entry_id': move_id}, context=context)
     
-    def onchange_partner_id(self, cr, uid, ids, partner_id, context=None):
-        obj_partner = self.pool.get('res.partner')
-        if context is None:
-            context = {}
-        if not partner_id:
-            return {}
-        part = obj_partner.browse(cr, uid, partner_id, context=context)
-        if not part.supplier and not part.customer:
-            type = 'general'
-        elif part.supplier and part.customer:
-            type = 'general'
-        else:
-            if part.supplier == True:
-                type = 'supplier'
-            if part.customer == True:
-                type = 'customer'
-        res_type = self.onchange_type(cr, uid, ids, partner_id=partner_id, type=type, context=context)
-        if res_type['value'] and res_type['value'].get('account_id', False):
-            return {'value': {'type': type, 'account_id': res_type['value']['account_id']}}
-        return {'value': {'type': type}}
-
-    def onchange_type(self, cr, uid, line_id, partner_id, type, context=None):
-        res = {'value': {}}
-        obj_partner = self.pool.get('res.partner')
-        if context is None:
-            context = {}
-        if not partner_id:
-            return res
-        account_id = False
-        line = self.browse(cr, uid, line_id, context=context)
-        if not line or (line and not line[0].account_id):
-            part = obj_partner.browse(cr, uid, partner_id, context=context)
-            if type == 'supplier':
-                account_id = part.property_account_payable.id
-            else:
-                account_id = part.property_account_receivable.id
-            res['value']['account_id'] = account_id
-        return res
-
+    def _needaction_domain_get(self, cr, uid, context=None):
+        return [('journal_entry_id', '=', False)]
+    
     _order = "statement_id desc, sequence"
     _name = "account.bank.statement.line"
     _description = "Bank Statement Line"
+    _inherit = ['ir.needaction_mixin']
     _columns = {
         'name': fields.char('Description', required=True),
         'date': fields.date('Date', required=True),
         'amount': fields.float('Amount', digits_compute=dp.get_precision('Account')),
-        'type': fields.selection([
-            ('supplier','Supplier'),
-            ('customer','Customer'),
-            ('general','General')
-            ], 'Type', required=True),
         'partner_id': fields.many2one('res.partner', 'Partner'),
-        'account_id': fields.many2one('account.account','Account',
-            required=True),
-        'statement_id': fields.many2one('account.bank.statement', 'Statement',
-            select=True, required=True, ondelete='cascade'),
+        'bank_account_id': fields.many2one('res.partner.bank','Bank Account'),
+        'statement_id': fields.many2one('account.bank.statement', 'Statement', select=True, required=True, ondelete='cascade'),
         'journal_id': fields.related('statement_id', 'journal_id', type='many2one', relation='account.journal', string='Journal', store=True, readonly=True),
-        'analytic_account_id': fields.many2one('account.analytic.account', 'Analytic Account'),
         'move_ids': fields.many2many('account.move',
             'account_bank_statement_line_move_rel', 'statement_line_id','move_id',
             'Moves'),
@@ -618,11 +728,11 @@ class account_bank_statement_line(osv.osv):
         'note': fields.text('Notes'),
         'sequence': fields.integer('Sequence', select=True, help="Gives the sequence order when displaying a list of bank statement lines."),
         'company_id': fields.related('statement_id', 'company_id', type='many2one', relation='res.company', string='Company', store=True, readonly=True),
+        'journal_entry_id': fields.many2one('account.move', 'Reconciliation Journal Entry'),
     }
     _defaults = {
         'name': lambda self,cr,uid,context={}: self.pool.get('ir.sequence').get(cr, uid, 'account.bank.statement.line'),
         'date': lambda self,cr,uid,context={}: context.get('date', fields.date.context_today(self,cr,uid,context=context)),
-        'type': 'general',
     }
 
 

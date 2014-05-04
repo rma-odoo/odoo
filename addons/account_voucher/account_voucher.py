@@ -1634,60 +1634,6 @@ class account_bank_statement(osv.osv):
                     raise osv.except_osv(_('Unable to Change Journal!'), _('You can not change the journal as you already reconciled some statement lines!'))
         return super(account_bank_statement, self).write(cr, uid, ids, vals, context=context)
 
-
-class account_bank_statement_line(osv.osv):
-    _inherit = 'account.bank.statement.line'
-
-    def onchange_partner_id(self, cr, uid, ids, partner_id, context=None):
-        res = super(account_bank_statement_line, self).onchange_partner_id(cr, uid, ids, partner_id, context=context)
-        if 'value' not in res:
-            res['value'] = {}
-        res['value'].update({'voucher_id' : False})
-        return res
-
-    def onchange_amount(self, cr, uid, ids, amount, context=None):
-        return {'value' :  {'voucher_id' : False}}
-
-    def _amount_reconciled(self, cursor, user, ids, name, args, context=None):
-        if not ids:
-            return {}
-        res = {}
-        for line in self.browse(cursor, user, ids, context=context):
-            if line.voucher_id:
-                res[line.id] = line.voucher_id.amount#
-            else:
-                res[line.id] = 0.0
-        return res
-
-    def _check_amount(self, cr, uid, ids, context=None):
-        for obj in self.browse(cr, uid, ids, context=context):
-            if obj.voucher_id:
-                diff = abs(obj.amount) - obj.voucher_id.amount
-                if not self.pool.get('res.currency').is_zero(cr, uid, obj.statement_id.currency, diff):
-                    return False
-        return True
-
-    _constraints = [
-        (_check_amount, 'The amount of the voucher must be the same amount as the one on the statement line.', ['amount']),
-    ]
-
-    _columns = {
-        'amount_reconciled': fields.function(_amount_reconciled,
-            string='Amount reconciled', type='float'),
-        'voucher_id': fields.many2one('account.voucher', 'Reconciliation'),
-    }
-
-    def unlink(self, cr, uid, ids, context=None):
-        voucher_obj = self.pool.get('account.voucher')
-        statement_line = self.browse(cr, uid, ids, context=context)
-        unlink_ids = []
-        for st_line in statement_line:
-            if st_line.voucher_id:
-                unlink_ids.append(st_line.voucher_id.id)
-        voucher_obj.unlink(cr, uid, unlink_ids, context=context)
-        return super(account_bank_statement_line, self).unlink(cr, uid, ids, context=context)
-
-
 def resolve_o2m_operations(cr, uid, target_osv, operations, fields, context):
     results = []
     for operation in operations:
