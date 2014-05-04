@@ -1,3 +1,4 @@
+/** @jsx React.DOM */
 openerp.account = function(instance) {
 var _t = instance.web._t,
     _lt = instance.web._lt;
@@ -23,14 +24,14 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
         this.last_displayed_reconciliation_index = undefined; // Flow control
         this.reconciled_lines = 0; // idem
         
+        // Only for statistical purposes
+        this.lines_reconciled_with_ctrl_enter = 0;
+        this.time_widget_loaded = Date.now();
+        
         // preferences of children bankStatementReconciliationLine
         this.max_move_lines_displayed = 5;
         this.animation_speed = 300;
         this.map_account_id_code = {}; // We'll need to get the code of an account selected in a many2one (whose value is the id)
-        
-        // Only for statistical purposes
-        this.lines_reconciled_with_ctrl_enter = 0;
-        this.time_widget_loaded = Date.now();
     },
     
     start: function() {
@@ -57,34 +58,32 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
         }
         
         // Retreive statement infos and reconciliation data from the model
+        var lines_filter = [['journal_entry_id', '=', false]];
+        var deferred_promises = [];
+        
         if (self.statement_id) {
-            var deferred_statement = self.model_bank_statement
+            lines_filter.push(['statement_id', '=', self.statement_id]);
+            deferred_promises.push(self.model_bank_statement
                 .query(["name"])
                 .filter([['id', '=', self.statement_id]])
                 .first()
                 .then(function(title){
-                    self.title = title.name || _t("Reconciliation");
-                });
-                
-            var deferred_lines = self.model_bank_statement_line
-                .query(['id'])
-                .filter([['statement_id', '=', self.statement_id], ['journal_entry_id', '=', false]])
-                .all().then(function (data) {
-                    self.st_lines_ids = _.collect(data, function(o) { return o.id; });
-                });
-        } else {
-            var deferred_lines = self.model_bank_statement_line
-                .query(['id'])
-                .filter([['journal_entry_id', '=', false]])
-                .order_by('id')
-                .all().then(function (data) {
-                    console.log(data);
-                    self.st_lines_ids = _.collect(data, function(o) { return o.id; });
-                });
+                    self.title = title.name;
+                })
+            );
         }
         
+        deferred_promises.push(self.model_bank_statement_line
+            .query(['id'])
+            .filter(lines_filter)
+            .order_by('id')
+            .all().then(function (data) {
+                self.st_lines_ids = _.collect(data, function(o) { return o.id; });
+            })
+        );
+        
         // When queries are done, render template and reconciliation lines
-        return $.when(deferred_statement, deferred_lines)
+        return $.when.apply($, deferred_promises)
             .then(function(){
                 
                 // If there is no statement line to reconcile, stop here
@@ -105,11 +104,10 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
                     self.keyboardShortcutsHandler(e);
                 });
                 
+                // Render and display
                 self.$el.prepend(QWeb.render("bank_statement_reconciliation", {title: self.title, total_lines: self.st_lines_ids.length}));
                 var reconciliations_to_show = self.st_lines_ids.slice(0, self.max_reconciliations_displayed);
                 self.last_displayed_reconciliation_index = reconciliations_to_show.length;
-                
-                // Render and display children
                 self.$(".reconciliation_lines_container").css("opacity", 0);
                 var child_promises = [];
                 child_promises.push(self.displayReconciliation(reconciliations_to_show.shift(), 'match', false));

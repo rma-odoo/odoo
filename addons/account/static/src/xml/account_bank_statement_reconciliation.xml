@@ -4,7 +4,10 @@
     
     <t t-name="bank_statement_nothing_to_reconcile">
         <div class="oe_form_sheetbg"><div class="oe_form_sheet oe_form_sheet_width">
-            <h1 style="width: 100%; text-align: center; margin-top: 3em;">No.<br/><br/>Go away.</h1>
+            <div class="oe_view_nocontent"><p>
+                <b>Good Job!</b> Bank statements are fully reconciled.</p>
+                <p>This page displays all the bank transactions that are to be reconciled and provides with a neat interface to do so.</p>
+            </div>
         </div></div>
     </t>
     
