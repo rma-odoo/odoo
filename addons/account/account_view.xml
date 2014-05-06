@@ -604,6 +604,11 @@
                                          attrs="{'readonly' : [('journal_entry_id', '!=', False)] }"/>
                                     <field name="amount"
                                         attrs="{'readonly' : [('journal_entry_id', '!=', False)] }"/>
+                                        
+                                    <!-- TODO : remove -->
+                                    <field invisible="1" name="type"/>
+                                    <field invisible="1" name="account_id" options='{"no_open":True}' domain="[('journal_id','=',parent.journal_id), ('company_id', '=', parent.company_id)]"/>
+                                    <field invisible="1" name="analytic_account_id" groups="analytic.group_analytic_accounting" domain="[('company_id', '=', parent.company_id), ('type', '&lt;&gt;', 'view')]"/>
                                 </tree>
                                 <form string="Statement lines" version="7.0">
                                     <group col="4">
@@ -615,6 +620,11 @@
                                         <field name="bank_account_id" groups="base.group_no_one"/>
                                         <field name="partner_id"/>
                                         <field name="amount"/>
+                                        
+                                        <!-- TODO : remove -->
+                                        <field invisible="1" name="type"/>
+                                        <field invisible="1" name="account_id" domain="[('journal_id', '=', parent.journal_id), ('type', '&lt;&gt;', 'view'), ('company_id', '=', parent.company_id)]"/>
+                                        <field invisible="1" name="analytic_account_id" groups="analytic.group_analytic_accounting" domain="[('company_id', '=', parent.company_id), ('type', '&lt;&gt;', 'view')]"/>
                                     </group>
                                     <separator string="Notes"/>
                                     <field name="note"/>
@@ -2304,6 +2314,11 @@
                                     <field name="ref"/>
                                     <field name="partner_id"/>
                                     <field name="amount"/>
+                                    
+                                    <!-- TODO : remove -->
+                                    <field invisible="1" name="type" />
+                                    <field invisible="1" domain="[('journal_id','=',parent.journal_id), ('company_id', '=', parent.company_id)]" name="account_id"/>
+                                    <field invisible="1" name="analytic_account_id" domain="[('company_id', '=', parent.company_id), ('type', '&lt;&gt;', 'view')]" groups="analytic.group_analytic_accounting" />
                                 </tree>
                                 <form string="Statement lines" version="7.0">
                                     <group col="4">
@@ -2313,6 +2328,11 @@
                                         <field name="partner_id"/>
                                         <field name="amount"/>
                                         <field name="sequence"/>
+                                        
+                                        <!-- TODO : remove -->
+                                        <field invisible="1" name="type"/>
+                                        <field invisible="1" domain="[('journal_id', '=', parent.journal_id), ('type', '&lt;&gt;', 'view'), ('company_id', '=', parent.company_id)]" name="account_id"/>
+                                        <field invisible="1" name="analytic_account_id" domain="[('company_id', '=', parent.company_id), ('type', '&lt;&gt;', 'view')]" groups="analytic.group_analytic_accounting" />
                                     </group>
                                     <separator string="Notes"/>
                                     <field name="note"/>
