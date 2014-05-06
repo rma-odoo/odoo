@@ -536,12 +536,13 @@ class account_bank_statement_line(osv.osv):
             'statement_id': line.statement_id.id,
             'account_code': line.journal_id.default_debit_account_id.code,
             'account_name': line.journal_id.default_debit_account_id.name,
+            'partner_id': line.partner_id.id,
             'partner_name': line.partner_id.name,
             'currency_name': currency,
             'has_no_partner': line.partner_id.id == False,
         }
     
-    def get_reconciliation_proposition(self, cr, uid, id = True, context=None):
+    def get_reconciliation_proposition(self, cr, uid, id, excluded_ids=[], context=None):
         """ Returns move lines that constitute the best guess to reconcile a statement line. """
         
         st_line = self.browse(cr, uid, id, context=context)
@@ -561,15 +562,15 @@ class account_bank_statement_line(osv.osv):
                 sign = -1
         
         # look for exact match
-        exact_match_id = self.get_move_lines_counterparts(cr, uid, id, limit=1, additional_domain=[(amount_field,'=',(sign*st_line.amount))])
+        exact_match_id = self.get_move_lines_counterparts(cr, uid, id, excluded_ids=excluded_ids, limit=1, additional_domain=[(amount_field,'=',(sign*st_line.amount))])
         if exact_match_id:
             return exact_match_id
         
         # select oldest move lines
         if sign == -1:
-            mv_lines = self.get_move_lines_counterparts(cr, uid, id, limit=50, additional_domain=[(amount_field,'<',0)])
+            mv_lines = self.get_move_lines_counterparts(cr, uid, id, excluded_ids=excluded_ids, limit=50, additional_domain=[(amount_field,'<',0)])
         else:
-            mv_lines = self.get_move_lines_counterparts(cr, uid, id, limit=50, additional_domain=[(amount_field,'>',0)])
+            mv_lines = self.get_move_lines_counterparts(cr, uid, id, excluded_ids=excluded_ids, limit=50, additional_domain=[(amount_field,'>',0)])
         ret = []
         total = 0
         # get_move_lines_counterparts inverts debit and credit
