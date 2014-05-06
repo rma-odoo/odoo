@@ -730,6 +730,8 @@ class account_bank_statement_line(osv.osv):
         'sequence': fields.integer('Sequence', select=True, help="Gives the sequence order when displaying a list of bank statement lines."),
         'company_id': fields.related('statement_id', 'company_id', type='many2one', relation='res.company', string='Company', store=True, readonly=True),
         'journal_entry_id': fields.many2one('account.move', 'Reconciliation Journal Entry'),
+        # TODO : remove ?
+        'analytic_account_id': fields.many2one('account.analityc.account', 'Analytic Account'),
     }
     _defaults = {
         'name': lambda self,cr,uid,context={}: self.pool.get('ir.sequence').get(cr, uid, 'account.bank.statement.line'),
