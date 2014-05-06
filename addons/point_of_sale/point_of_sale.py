@@ -517,7 +517,8 @@ class pos_order(osv.osv):
         
         # Keep only new orders
         submitted_references = [o['data']['name'] for o in orders]
-        existing_orders = self.search_read(cr, uid, domain=[('pos_reference', 'in', submitted_references)], fields=['pos_reference'], context=context)
+        existing_order_ids = self.search(cr, uid, [('pos_reference', 'in', submitted_references)], context=context)
+        existing_orders = self.read(cr, uid, existing_order_ids, ['pos_reference'], context=context)
         existing_references = set([o['pos_reference'] for o in existing_orders])
         orders_to_save = [o for o in orders if o['data']['name'] not in existing_references]
 
@@ -604,7 +605,6 @@ class pos_order(osv.osv):
         return {'value': {'pricelist_id': pricelist}}
 
     def _amount_all(self, cr, uid, ids, name, args, context=None):
-        tax_obj = self.pool.get('account.tax')
         cur_obj = self.pool.get('res.currency')
         res = {}
         for order in self.browse(cr, uid, ids, context=context):
@@ -857,9 +857,7 @@ class pos_order(osv.osv):
                     'qty': -order_line.qty
                 }, context=context)
 
-        new_order = ','.join(map(str,clone_list))
         abs = {
-            #'domain': "[('id', 'in', ["+new_order+"])]",
             'name': _('Return Products'),
             'view_type': 'form',
             'view_mode': 'form',
@@ -921,8 +919,6 @@ class pos_order(osv.osv):
                                                                line.product_id.uom_id.id,
                                                                line.qty, partner_id = order.partner_id.id,
                                                                fposition_id=order.partner_id.property_account_position.id)['value'])
-                if line.product_id.description_sale:
-                    inv_line['note'] = line.product_id.description_sale
                 inv_line['price_unit'] = line.price_unit
                 inv_line['discount'] = line.discount
                 inv_line['name'] = inv_name

@@ -384,47 +384,17 @@ function openerp_pos_devices(instance,module){ //module is instance.point_of_sal
             return this.message('help_canceled');
         },
 
-        //the client is starting to weight
-        weighting_start: function(){
-            var ret = new $.Deferred();
-            if(!this.weighting){
-                this.weighting = true;
-                this.message('weighting_start').always(function(){
-                    ret.resolve();
-                });
-            }else{
-                console.error('Weighting already started!!!');
-                ret.resolve();
-            }
-            return ret;
-        },
-
-        // the client has finished weighting products
-        weighting_end: function(){
-            var ret = new $.Deferred();
-            if(this.weighting){
-                this.weighting = false;
-                this.message('weighting_end').always(function(){
-                    ret.resolve();
-                });
-            }else{
-                console.error('Weighting already ended !!!');
-                ret.resolve();
-            }
-            return ret;
-        },
-
-        //returns the weight on the scale. 
-        // is called at regular interval (up to 10x/sec) between a weighting_start()
-        // and a weighting_end()
-        weighting_read_kg: function(){
+        // returns the weight on the scale. 
+        scale_read: function(){
             var self = this;
             var ret = new $.Deferred();
-            this.message('weighting_read_kg',{})
+            console.log('scale_read');
+            this.message('scale_read',{})
                 .then(function(weight){
+                    console.log(weight)
                     ret.resolve(self.use_debug_weight ? self.debug_weight : weight);
                 }, function(){ //failed to read weight
-                    ret.resolve(self.use_debug_weight ? self.debug_weight : 0.0);
+                    ret.resolve(self.use_debug_weight ? self.debug_weight : {weight:0.0, unit:'Kg', info:'ok'});
                 });
             return ret;
         },
@@ -511,43 +481,8 @@ function openerp_pos_devices(instance,module){ //module is instance.point_of_sal
             return this.message('open_cashbox');
         },
 
-        /* ask the printer to print a receipt
-         * receipt is a JSON object with the following specs:
-         * receipt{
-         *  - orderlines : list of orderlines :
-         *     {
-         *          quantity:           (number) the number of items, or the weight, 
-         *          unit_name:          (string) the name of the item's unit (kg, dozen, ...)
-         *          price:              (number) the price of one unit of the item before discount
-         *          discount:           (number) the discount on the product in % [0,100] 
-         *          product_name:       (string) the name of the product
-         *          price_with_tax:     (number) the price paid for this orderline, tax included
-         *          price_without_tax:  (number) the price paid for this orderline, without taxes
-         *          tax:                (number) the price paid in taxes on this orderline
-         *          product_description:         (string) generic description of the product
-         *          product_description_sale:    (string) sales related information of the product
-         *     }
-         *  - paymentlines : list of paymentlines :
-         *     {
-         *          amount:             (number) the amount paid
-         *          journal:            (string) the name of the journal on wich the payment has been made  
-         *     }
-         *  - total_with_tax:     (number) the total of the receipt tax included
-         *  - total_without_tax:  (number) the total of the receipt without taxes
-         *  - total_tax:          (number) the total amount of taxes paid
-         *  - total_paid:         (number) the total sum paid by the client
-         *  - change:             (number) the amount of change given back to the client
-         *  - name:               (string) a unique name for this order
-         *  - client:             (string) name of the client. or null if no client is logged
-         *  - cashier:            (string) the name of the cashier
-         *  - date: {             the date at wich the payment has been done
-         *      year:             (number) the year  [2012, ...]
-         *      month:            (number) the month [0,11]
-         *      date:             (number) the day of the month [1,31]
-         *      day:              (number) the day of the week  [0,6] 
-         *      hour:             (number) the hour [0,23]
-         *      minute:           (number) the minute [0,59]
-         *    }
+        /* 
+         * ask the printer to print a receipt
          */
         print_receipt: function(receipt){
             var self = this;
@@ -558,7 +493,7 @@ function openerp_pos_devices(instance,module){ //module is instance.point_of_sal
             function send_printing_job(){
                 if (self.receipt_queue.length > 0){
                     var r = self.receipt_queue.shift();
-                    self.message('print_receipt',{ receipt: r },{ timeout: 5000 })
+                    self.message('print_xml_receipt',{ receipt: r },{ timeout: 5000 })
                         .then(function(){
                             send_printing_job();
                         },function(){

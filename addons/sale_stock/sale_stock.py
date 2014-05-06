@@ -21,7 +21,6 @@
 ##############################################################################
 from datetime import datetime, timedelta
 from openerp.tools import DEFAULT_SERVER_DATE_FORMAT, DEFAULT_SERVER_DATETIME_FORMAT, DATETIME_FORMATS_MAP, float_compare
-from dateutil.relativedelta import relativedelta
 from openerp.osv import fields, osv
 from openerp.tools.translate import _
 import pytz
@@ -160,7 +159,7 @@ class sale_order(osv.osv):
             if s['state'] in ['draft', 'cancel']:
                 unlink_ids.append(s['id'])
             else:
-                raise osv.except_osv(_('Invalid Action!'), _('In order to delete a confirmed sales order, you must cancel it.\nTo do so, you must first cancel related picking for delivery orders.'))
+                raise osv.except_osv(_('Invalid Action!'), _('In order to delete a confirmed sales order, you must cancel it. \nTo do so, you must first cancel all related delivery order(s).'))
 
         return osv.osv.unlink(self, cr, uid, unlink_ids, context=context)
 
@@ -257,7 +256,7 @@ class sale_order(osv.osv):
         if tz_name:
             utc = pytz.timezone('UTC')
             context_tz = pytz.timezone(tz_name)
-            user_datetime = user_date + relativedelta(hours=12.0)
+            user_datetime = user_date + timedelta(hours=12.0)
             local_timestamp = context_tz.localize(user_datetime, is_dst=False)
             user_datetime = local_timestamp.astimezone(utc)
             return user_datetime.strftime(DEFAULT_SERVER_DATETIME_FORMAT)
@@ -357,7 +356,6 @@ class sale_order(osv.osv):
         }
 
     def ship_recreate(self, cr, uid, order, line, move_id, proc_id):
-        # FIXME: deals with potentially cancelled shipments, seems broken (specially if shipment has production lot)
         """
         Define ship_recreate for process after shipping exception
         param order: sales order to which the order lines belong
@@ -366,21 +364,31 @@ class sale_order(osv.osv):
         param proc_id: the ID of procurement
         """
         move_obj = self.pool.get('stock.move')
-        if order.state == 'shipping_except':
-            for pick in order.picking_ids:
-                for move in pick.move_lines:
-                    if move.state == 'cancel':
-                        mov_ids = move_obj.search(cr, uid, [('state', '=', 'cancel'),('sale_line_id', '=', line.id),('picking_id', '=', pick.id)])
-                        if mov_ids:
-                            for mov in move_obj.browse(cr, uid, mov_ids):
-                                # FIXME: the following seems broken: what if move_id doesn't exist? What if there are several mov_ids? Shouldn't that be a sum?
-                                move_obj.write(cr, uid, [move_id], {'product_qty': mov.product_qty, 'product_uos_qty': mov.product_uos_qty})
-                                self.pool.get('procurement.order').write(cr, uid, [proc_id], {'product_qty': mov.product_qty, 'product_uos_qty': mov.product_uos_qty})
+        proc_obj = self.pool.get('procurement.order')
+        if move_id and order.state == 'shipping_except':
+            current_move = move_obj.browse(cr, uid, move_id)
+            moves = []
+            for picking in order.picking_ids:
+                if picking.id != current_move.picking_id.id and picking.state != 'cancel':
+                    moves.extend(move for move in picking.move_lines if move.state != 'cancel' and move.sale_line_id.id == line.id)
+            if moves:
+                product_qty = current_move.product_qty
+                product_uos_qty = current_move.product_uos_qty
+                for move in moves:
+                    product_qty -= move.product_qty
+                    product_uos_qty -= move.product_uos_qty
+                if product_qty > 0 or product_uos_qty > 0:
+                    move_obj.write(cr, uid, [move_id], {'product_qty': product_qty, 'product_uos_qty': product_uos_qty})
+                    proc_obj.write(cr, uid, [proc_id], {'product_qty': product_qty, 'product_uos_qty': product_uos_qty})
+                else:
+                    current_move.unlink()
+                    proc_obj.unlink(cr, uid, [proc_id])
         return True
 
     def _get_date_planned(self, cr, uid, order, line, start_date, context=None):
+        """Compute the Stock Move date for the Sale Order Line"""
         start_date = self.date_to_datetime(cr, uid, start_date, context)
-        date_planned = datetime.strptime(start_date, DEFAULT_SERVER_DATETIME_FORMAT) + relativedelta(days=line.delay or 0.0)
+        date_planned = datetime.strptime(start_date, DEFAULT_SERVER_DATETIME_FORMAT) + timedelta(days=line.delay or 0.0)
         date_planned = (date_planned - timedelta(days=order.company_id.security_lead)).strftime(DEFAULT_SERVER_DATETIME_FORMAT)
         return date_planned
 

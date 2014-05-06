@@ -16,6 +16,9 @@ class SaleOrder(osv.Model):
         ),
     }
 
+    def _get_errors(self, cr, uid, order, context=None):
+        return []
+
     def _get_website_data(self, cr, uid, order, context):
         return {
             'partner': order.partner_id.id,
@@ -30,7 +33,7 @@ class SaleOrder(osv.Model):
 class SaleOrderLine(osv.Model):
     _inherit = "sale.order.line"
 
-    def _recalculate_product_values(self, cr, uid, ids, product_id=0, context=None):
+    def _recalculate_product_values(self, cr, uid, ids, product_id=0, fiscal_position=False, context=None):
         # TDE FIXME: seems to be defined several times -> fix me ?
         if context is None:
             context = {}
@@ -46,5 +49,6 @@ class SaleOrderLine(osv.Model):
             pricelist=context.pop('pricelist'),
             product=product_id,
             partner_id=user_obj.browse(cr, SUPERUSER_ID, uid).partner_id.id,
+            fiscal_position=fiscal_position,
             context=context
         )['value']

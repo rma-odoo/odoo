@@ -1,6 +1,11 @@
 (function () {
     'use strict';
 
+    if (!openerp.website.translatable) {
+        // Temporary hack until the editor bar is moved to the web client
+        return;
+    }
+
     var website = openerp.website;
     website.add_template_file('/website/static/src/xml/website.translator.xml');
     var nodialog = 'website_translator_nodialog';
@@ -34,11 +39,17 @@
                     dialog.$el.modal('hide');
                     self.translate().then(function () {
                         mysuper.call(self);
+                        if(self.gengo_translate){
+                            self.translation_gengo_display()
+                        }
                     });
                 });
             } else {
                 this.translate().then(function () {
                     mysuper.call(self);
+                    if(self.gengo_translate){
+                        self.translation_gengo_display()
+                    }
                 });
             }
         },
@@ -68,7 +79,7 @@
             var source_attr = 'data-oe-source-id';
             var $editables = $('[data-oe-model="ir.ui.view"]')
                     .not('link, script')
-                    .not('.oe_snippets,.oe_snippet, .oe_snippet *')
+                    .not('.oe_snippets,.oe_snippet, .oe_snippet *, .navbar-toggle')
                     .not('[data-oe-type]');
 
             $editables.each(function () {
@@ -92,7 +103,7 @@
                         self.sanitizeNode($node[0]);
                     }
                     if (self.getInitialContent($node[0]) !== $node.text()) {
-                        $node.addClass('oe_dirty').removeClass('oe_translatable_todo');
+                        $node.addClass('oe_dirty').removeClass('oe_translatable_todo oe_translatable_inprogress');
                     }
                 }, 0);
             });
@@ -119,6 +130,9 @@
             });
             if (trans.length) {
                 node.setAttribute('data-oe-translation-id', trans[0].id);
+                if(trans[0].gengo_translation && (trans[0].state == 'inprogress' || trans[0].state == 'to_translate')){
+                        node.className += ' oe_translatable_inprogress';
+                }
             } else {
                 node.className += ' oe_translatable_todo';
             }

@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
+import datetime
+import hashlib
 import logging
 import re
 import traceback
-
 import werkzeug
 import werkzeug.routing
 
 import openerp
 from openerp.addons.base import ir
 from openerp.addons.base.ir import ir_qweb
-from openerp.addons.website.models.website import slug
+from openerp.addons.website.models.website import slug, url_for
 from openerp.http import request
 from openerp.osv import orm
 
@@ -48,6 +49,7 @@ class ir_http(orm.AbstractModel):
                 self._authenticate(func.routing['auth'])
             else:
                 self._auth_method_public()
+            request.redirect = lambda url: werkzeug.utils.redirect(url_for(url))
             request.website = request.registry['website'].get_current_website(request.cr, request.uid, context=request.context)
             if first_pass:
                 request.lang = request.website.default_lang_code
@@ -65,7 +67,7 @@ class ir_http(orm.AbstractModel):
 
     def reroute(self, path):
         if not hasattr(request, 'rerouting'):
-            request.rerouting = []
+            request.rerouting = [request.httprequest.path]
         if path in request.rerouting:
             raise Exception("Rerouting loop is forbidden")
         request.rerouting.append(path)
@@ -92,16 +94,46 @@ class ir_http(orm.AbstractModel):
         except Exception:
             return self._handle_exception(werkzeug.exceptions.NotFound())
 
-        generated_path = werkzeug.url_unquote_plus(path)
-        current_path = werkzeug.url_unquote_plus(request.httprequest.path)
-        if generated_path != current_path:
-            if request.lang != request.website.default_lang_code:
-                path = '/' + request.lang + path
-            return werkzeug.utils.redirect(path)
+        if request.httprequest.method in ('GET', 'HEAD'):
+            generated_path = werkzeug.url_unquote_plus(path)
+            current_path = werkzeug.url_unquote_plus(request.httprequest.path)
+            if generated_path != current_path:
+                if request.lang != request.website.default_lang_code:
+                    path = '/' + request.lang + path
+                return werkzeug.utils.redirect(path)
+
+    def _serve_attachment(self):
+        domain = [('type', '=', 'binary'), ('url', '=', request.httprequest.path)]
+        attach = self.pool['ir.attachment'].search_read(request.cr, openerp.SUPERUSER_ID, domain, ['__last_update', 'datas', 'mimetype'], context=request.context)
+        if attach:
+            wdate = attach[0]['__last_update']
+            datas = attach[0]['datas']
+            response = werkzeug.wrappers.Response()
+            server_format = openerp.tools.misc.DEFAULT_SERVER_DATETIME_FORMAT
+            try:
+                response.last_modified = datetime.datetime.strptime(wdate, server_format + '.%f')
+            except ValueError:
+                # just in case we have a timestamp without microseconds
+                response.last_modified = datetime.datetime.strptime(wdate, server_format)
+
+            response.set_etag(hashlib.sha1(datas).hexdigest())
+            response.make_conditional(request.httprequest)
+
+            if response.status_code == 304:
+                return response
+
+            response.mimetype = attach[0]['mimetype']
+            response.data = datas.decode('base64')
+            return response
 
     def _handle_exception(self, exception=None, code=500):
         if isinstance(exception, werkzeug.exceptions.HTTPException) and hasattr(exception, 'response') and exception.response:
             return exception.response
+
+        attach = self._serve_attachment()
+        if attach:
+            return attach
+
         if getattr(request, 'website_enabled', False) and request.website:
             values = dict(
                 exception=exception,

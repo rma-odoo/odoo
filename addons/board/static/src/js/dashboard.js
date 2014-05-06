@@ -88,16 +88,13 @@ instance.web.form.DashBoard = instance.web.form.FormWidget.extend({
         var qdict = {
             current_layout : this.$el.find('.oe_dashboard').attr('data-layout')
         };
-        var $dialog = instance.web.dialog($('<div>'), {
-                            modal: true,
+        var $dialog = new instance.web.Dialog(this, {
                             title: _t("Edit Layout"),
-                            width: 'auto',
-                            height: 'auto'
-                        }).html(QWeb.render('DashBoard.layouts', qdict));
-        $dialog.find('li').click(function() {
+                        }, QWeb.render('DashBoard.layouts', qdict)).open();
+        $dialog.$el.find('li').click(function() {
             var layout = $(this).attr('data-layout');
-            $dialog.dialog('destroy');
             self.do_change_layout(layout);
+            $dialog.$dialog_box.modal('hide'); 
         });
     },
     do_change_layout: function(new_layout) {

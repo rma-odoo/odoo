@@ -33,14 +33,23 @@ class meeting_invitation(http.Controller):
         registry = openerp.modules.registry.RegistryManager.get(db)
         meeting_pool = registry.get('calendar.event')
         attendee_pool = registry.get('calendar.attendee')
+        partner_pool = registry.get('res.partner')
         with registry.cursor() as cr:
-            attendee_data = meeting_pool.get_attendee(cr, openerp.SUPERUSER_ID, id)
             attendee = attendee_pool.search_read(cr, openerp.SUPERUSER_ID, [('access_token', '=', token)], [])
+
+            if attendee and attendee[0] and attendee[0].get('partner_id'):
+                partner_id = int(attendee[0].get('partner_id')[0])
+                tz = partner_pool.read(cr, openerp.SUPERUSER_ID, partner_id, ['tz'])['tz']
+            else:
+                tz = False
+
+            attendee_data = meeting_pool.get_attendee(cr, openerp.SUPERUSER_ID, id, dict(tz=tz))
 
         if attendee:
             attendee_data['current_attendee'] = attendee[0]
-        js = "\n        ".join('<script type="text/javascript" src="%s"></script>' % i for i in webmain.manifest_list('js', db=db))
-        css = "\n       ".join('<link rel="stylesheet" href="%s">' % i for i in webmain.manifest_list('css', db=db))
+
+        css = '<link rel="stylesheet" href="/web/css/web.assets_backend"/>'
+        js = '<script type="text/javascript" src="/web/js/web.assets_backend"></script>'
 
         return webmain.html_template % {
             'js': js,

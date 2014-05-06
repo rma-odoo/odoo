@@ -258,6 +258,15 @@ class hr_payslip(osv.osv):
         for r in res:
             result[r[0]].append(r[1])
         return result
+    
+    def _count_detail_payslip(self, cr, uid, ids, field_name, arg, context=None):
+        res = {}
+        try:
+            for details in self.browse(cr, uid, ids, context=context):
+                res[details.id] = len(details.line_ids)
+        except:
+            pass
+        return res
 
     _columns = {
         'struct_id': fields.many2one('hr.payroll.structure', 'Structure', readonly=True, states={'draft': [('readonly', False)]}, help='Defines the rules that have to be applied to this payslip, accordingly to the contract chosen. If you let empty the field contract, this field isn\'t mandatory anymore and thus the rules applied will be all the rules set on the structure of all contracts of the employee valid for the chosen period'),
@@ -287,6 +296,7 @@ class hr_payslip(osv.osv):
         'details_by_salary_rule_category': fields.function(_get_lines_salary_rule_category, method=True, type='one2many', relation='hr.payslip.line', string='Details by Salary Rule Category'),
         'credit_note': fields.boolean('Credit Note', help="Indicates this payslip has a refund of another", readonly=True, states={'draft': [('readonly', False)]}),
         'payslip_run_id': fields.many2one('hr.payslip.run', 'Payslip Batches', readonly=True, states={'draft': [('readonly', False)]}),
+        'payslip_count': fields.function(_count_detail_payslip, type='integer', string="Payslip Computation Details"),
     }
     _defaults = {
         'date_from': lambda *a: time.strftime('%Y-%m-01'),
@@ -571,7 +581,7 @@ class hr_payslip(osv.osv):
         payslip_obj = Payslips(self.pool, cr, uid, payslip.employee_id.id, payslip)
         rules_obj = BrowsableObject(self.pool, cr, uid, payslip.employee_id.id, rules)
 
-        localdict = {'categories': categories_obj, 'rules': rules_obj, 'payslip': payslip_obj, 'worked_days': worked_days_obj, 'inputs': input_obj}
+        baselocaldict = {'categories': categories_obj, 'rules': rules_obj, 'payslip': payslip_obj, 'worked_days': worked_days_obj, 'inputs': input_obj}
         #get the ids of the structures on the contracts and their parent id as well
         structure_ids = self.pool.get('hr.contract').get_all_structures(cr, uid, contract_ids, context=context)
         #get the rules of the structure and thier children
@@ -581,11 +591,12 @@ class hr_payslip(osv.osv):
 
         for contract in self.pool.get('hr.contract').browse(cr, uid, contract_ids, context=context):
             employee = contract.employee_id
-            localdict.update({'employee': employee, 'contract': contract})
+            localdict = dict(baselocaldict, employee=employee, contract=contract)
             for rule in obj_rule.browse(cr, uid, sorted_rule_ids, context=context):
                 key = rule.code + '-' + str(contract.id)
                 localdict['result'] = None
                 localdict['result_qty'] = 1.0
+                localdict['result_rate'] = 100
                 #check if the rule can be applied
                 if obj_rule.satisfy_condition(cr, uid, rule.id, localdict, context=context) and rule.id not in blacklist:
                     #compute the amount of the rule
@@ -971,9 +982,20 @@ class hr_employee(osv.osv):
             res[employee.id] = {'basic': result['sum']}
         return res
 
+    def _payslip_count(self, cr, uid, ids, field_name, arg, context=None):
+        res = dict(map(lambda x: (x,0), ids))
+        try:
+            for employee in self.browse(cr, uid, ids, context=context):
+                res[employee.id] = len(employee.payslip_ids)
+        except:
+            pass
+        return res
+
     _columns = {
         'slip_ids':fields.one2many('hr.payslip', 'employee_id', 'Payslips', required=False, readonly=True),
         'total_wage': fields.function(_calculate_total_wage, method=True, type='float', string='Total Basic Salary', digits_compute=dp.get_precision('Payroll'), help="Sum of all current contract's wage of employee."),
+        'payslip_count': fields.function(_payslip_count, type='integer', string='Payslips'),
+        'payslip_ids': fields.one2many('hr.payslip', 'employee_id', 'Payslips'),
     }
 
 

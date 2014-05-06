@@ -229,7 +229,6 @@ class project_issue(osv.Model):
             if work.task_id:
                 issues += issue_pool.search(cr, uid, [('task_id','=',work.task_id.id)])
         return issues
-
     _columns = {
         'id': fields.integer('ID', readonly=True),
         'name': fields.char('Issue', size=128, required=True),
@@ -264,9 +263,9 @@ class project_issue(osv.Model):
         'priority': fields.selection(crm.AVAILABLE_PRIORITIES, 'Priority', select=True),
         'version_id': fields.many2one('project.issue.version', 'Version'),
         'stage_id': fields.many2one ('project.task.type', 'Stage',
-                        track_visibility='onchange',
+                        track_visibility='onchange', select=True,
                         domain="[('project_ids', '=', project_id)]"),
-        'project_id':fields.many2one('project.project', 'Project', track_visibility='onchange'),
+        'project_id': fields.many2one('project.project', 'Project', track_visibility='onchange', select=True),
         'duration': fields.float('Duration'),
         'task_id': fields.many2one('project.task', 'Task', domain="[('project_id','=',project_id)]"),
         'day_open': fields.function(_compute_day, string='Days to Open', \
@@ -491,21 +490,15 @@ class project(osv.Model):
         return [('project.task', "Tasks"), ("project.issue", "Issues")]
 
     def _issue_count(self, cr, uid, ids, field_name, arg, context=None):
-        """ :deprecated: this method will be removed with OpenERP v8. Use issue_ids
-                         fields instead. """
-        res = dict.fromkeys(ids, 0)
-        issue_ids = self.pool.get('project.issue').search(cr, uid, [('project_id', 'in', ids)])
-        for issue in self.pool.get('project.issue').browse(cr, uid, issue_ids, context):
-            if issue.stage_id and not issue.stage_id.fold:
-                res[issue.project_id.id] += 1
+        res={}
+        for issues in self.browse(cr, uid, ids, context):
+            res[issues.id] = len(issues.issue_ids)
         return res
-
     _columns = {
         'project_escalation_id': fields.many2one('project.project', 'Project Escalation',
             help='If any issue is escalated from the current Project, it will be listed under the project selected here.',
             states={'close': [('readonly', True)], 'cancelled': [('readonly', True)]}),
-        'issue_count': fields.function(_issue_count, type='integer', string="Unclosed Issues",
-                                       deprecated="This field will be removed in OpenERP v8. Use issue_ids one2many field instead."),
+        'issue_count': fields.function(_issue_count, type='integer', string="Issues",),
         'issue_ids': fields.one2many('project.issue', 'project_id',
                                      domain=[('stage_id.fold', '=', False)])
     }
@@ -530,8 +523,8 @@ class account_analytic_account(osv.Model):
         'use_issues': fields.boolean('Issues', help="Check this field if this project manages issues"),
     }
 
-    def on_change_template(self, cr, uid, ids, template_id, context=None):
-        res = super(account_analytic_account, self).on_change_template(cr, uid, ids, template_id, context=context)
+    def on_change_template(self, cr, uid, ids, template_id, date_start=False, context=None):
+        res = super(account_analytic_account, self).on_change_template(cr, uid, ids, template_id, date_start=date_start, context=context)
         if template_id and 'value' in res:
             template = self.browse(cr, uid, template_id, context=context)
             res['value']['use_issues'] = template.use_issues
@@ -575,5 +568,20 @@ class project_project(osv.Model):
         self._check_create_write_values(cr, uid, vals, context=context)
         return super(project_project, self).write(cr, uid, ids, vals, context=context)
 
-
+class res_partner(osv.osv):
+    def _issue_count(self, cr, uid, ids, field_name, arg, context=None):
+        res = dict(map(lambda x: (x,0), ids))
+        try:
+            for partner in self.browse(cr, uid, ids, context=context):
+                res[partner.id] = len(partner.issue_ids)
+        except:
+            pass
+        return res
+    
+    """ Inherits partner and adds Issue information in the partner form """
+    _inherit = 'res.partner'
+    _columns = {
+        'issue_ids': fields.one2many('project.issue', 'partner_id', 'Issues'),
+        'issue_count': fields.function(_issue_count, string='# Issues', type='integer'),
+    }
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

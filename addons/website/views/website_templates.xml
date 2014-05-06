@@ -8,7 +8,30 @@
 
 <template id="website.theme" name="Theme">
     <link id="bootstrap_css" rel='stylesheet' href='/web/static/lib/bootstrap/css/bootstrap.css' t-ignore="true"/>
-    <link id="website_css" rel='stylesheet' href='/website/static/src/css/website.css' t-ignore="true"/>
+    <link rel="stylesheet" href='/website/static/src/css/website.css' t-ignore="true"/>
+</template>
+
+<template id="website.assets_frontend" name="Website assets">
+    <t t-call="web.assets_common"/>
+    <t t-call="website.theme"/>
+
+    <script type="text/javascript" src="/web/static/src/js/watch.js"></script>
+    <script type="text/javascript" src="/web/static/lib/qweb/qweb2.js"></script>
+    <script type="text/javascript" src="/web/static/src/js/openerpframework.js"></script>
+
+    <script type="text/javascript" src="/website/static/src/js/website.js"></script>
+
+    <script type="text/javascript" src="/website/static/src/js/website.snippets.animation.js"></script>
+    <script type="text/javascript" src="/web/static/lib/bootstrap/js/bootstrap.js"></script>
+
+</template>
+
+<template id="assets_backend" name="website assets for backend" inherit_id="web.assets_backend">
+    <xpath expr="." position="inside">
+        <link rel="stylesheet" href="/website/static/src/css/website.backend.css"/>
+
+        <script type="text/javascript" src="/website/static/src/js/website.backend.js"></script>
+    </xpath>
 </template>
 
 <template id="website.submenu" name="Submenu">
@@ -60,28 +83,7 @@
                 and main_object.website_meta_keywords or website_meta_keywords"/>
             <title><t t-esc="title"/></title>
 
-            <!-- Load stylesheets before scripts to avoid blocking -->
-            <link rel='stylesheet' href='/web/static/lib/fontawesome/css/font-awesome.css'/>
-
-            <t t-call="website.theme"/>
-
-            <script type="text/javascript" src="/web/static/lib/es5-shim/es5-shim.min.js"></script>
-            <script type="text/javascript" src="/web/static/lib/underscore/underscore.js"></script>
-            <script type="text/javascript" src="/web/static/lib/underscore.string/lib/underscore.string.js"></script>
-            <script type="text/javascript" src="/web/static/lib/jquery/jquery.js"></script>
-            <script type="text/javascript">
-                // Bootstrap and jQuery UI conflicts
-                $.fn.bstooltip = $.fn.tooltip;
-                $.fn.bsbutton = $.fn.button;
-            </script>
-
-            <script type="text/javascript" src="/web/static/lib/qweb/qweb2.js"></script>
-            <script type="text/javascript" src="/web/static/src/js/openerpframework.js"></script>
-
-            <script type="text/javascript" src="/website/static/src/js/website.js"></script>
-            
-            <script t-if="not translatable" type="text/javascript" src="/website/static/src/js/website.snippets.animation.js"></script>
-            <script type="text/javascript" src="/web/static/lib/bootstrap/js/bootstrap.js"></script>
+            <t t-call-assets="website.assets_frontend"/>
 
             <t t-raw="head or ''" name='layout_head'/>
         </head>
@@ -221,7 +223,7 @@
     </xpath>
 </template>
 
-<template id="editor_head" inherit_id="website.layout" name="Editor" groups="base.group_website_publisher">
+<template id="editor_head" inherit_id="website.layout" name="Editor" groups="base.group_website_publisher,base.group_website_designer">
     <xpath expr="//body" position="attributes">
         <attribute name="style">padding-top: 51px;</attribute>
     </xpath>
@@ -250,41 +252,49 @@
             </div>
         </div>
     </xpath>
-    <xpath expr='//script[@src="/web/static/lib/bootstrap/js/bootstrap.js"]' position="before">
-        <link rel='stylesheet' href='/website/static/src/css/snippets.css'/>
-        <link rel='stylesheet' href='/website/static/src/css/editor.css'/>
-        <link rel='stylesheet' href='/website/static/lib/bootstrap-tour/bootstrap-tour.css'/>
-
-
-        <link rel="stylesheet" href="/web/static/lib/select2/select2.css"/>
-        <link rel="stylesheet" href="/website/static/lib/select2-bootstrap-css/select2-bootstrap.css"/>
-        <link rel='stylesheet' href="/web/static/lib/jquery.ui/css/smoothness/jquery-ui-1.9.1.custom.css"/>
-
-        <script type="text/javascript" src="/web/static/lib/select2/select2.js"></script>
-        <script type="text/javascript" src="/web/static/lib/ckeditor/ckeditor.js"></script>
-        <script t-if="not translatable" type="text/javascript" src="/website/static/lib/ace/ace.js"></script>
-        <script type="text/javascript" src="/website/static/lib/vkbeautify/vkbeautify.0.99.00.beta.js"></script>
-        <script type="text/javascript" src="/web/static/lib/jquery.ui/js/jquery-ui-1.9.1.custom.js"></script>
-        <script type="text/javascript" src="/website/static/lib/bootstrap-tour/bootstrap-tour.js"></script>
-        <!-- mutation observers shim backed by mutation events (8 < IE < 11, Safari < 6, FF < 14, Chrome < 17) -->
-        <script type="text/javascript" src="/website/static/lib//jquery.mjs.nestedSortable/jquery.mjs.nestedSortable.js"></script>
-        <script type="text/javascript" src="/website/static/lib/MutationObservers/test/sidetable.js"></script>
-        <script type="text/javascript" src='/website/static/lib/nearest/jquery.nearest.js'></script>
-        <script type="text/javascript" src="/website/static/lib/MutationObservers/MutationObserver.js"></script>
-
-        <script type="text/javascript" src="/website/static/lib/jquery.placeholder/jquery.placeholder.js"></script>
-
-        <script type="text/javascript" src="/website/static/src/js/website.editor.js"></script>
-        <script type="text/javascript" src="/website/static/src/js/website.editor.newpage.js" groups="base.group_website_designer"></script>
-        <script type="text/javascript" src="/website/static/src/js/website.menu.js" groups="base.group_website_designer"></script>
-        <script type="text/javascript" src="/website/static/src/js/website.mobile.js"></script>
-        <script type="text/javascript" src="/website/static/src/js/website.seo.js"></script>
-        <script type="text/javascript" id="website_tour_js" src="/website/static/src/js/website.tour.js"></script>
-        <script type="text/javascript" src="/website/static/src/js/website.tour.banner.js" groups="base.group_website_designer"></script>
-        <script t-if="not translatable" type="text/javascript" src="/website/static/src/js/website.snippets.editor.js"></script>
-        <script t-if="not translatable" type="text/javascript" src="/website/static/src/js/website.ace.js"></script>
-        <script t-if="translatable" type="text/javascript" src="/website/static/src/js/website.translator.js"></script>
+    <xpath expr='//t[@t-call-assets="website.assets_frontend"]' position="after">
+        <t t-call-assets="website.assets_editor"/>
     </xpath>
+</template>
+
+<template id="assets_editor" name="Editor assets">
+    <script type="text/javascript">
+        var CKEDITOR_BASEPATH = '/web/static/lib/ckeditor/';
+    </script>
+    <link rel='stylesheet' href='/website/static/src/css/snippets.css'/>
+    <link rel='stylesheet' href='/website/static/src/css/editor.css'/>
+
+    <link rel='stylesheet' href="/web/static/lib/jquery.ui/css/smoothness/jquery-ui-1.9.1.custom.css"/>
+
+    <link rel="stylesheet" href="/web/static/lib/select2/select2.css"/>
+    <link rel="stylesheet" href="/website/static/lib/select2-bootstrap-css/select2-bootstrap.css"/>
+
+    <script type="text/javascript" src="/web/static/lib/select2/select2.js"></script>
+
+    <script type="text/javascript" src="/web/static/lib/ckeditor/ckeditor.js"></script>
+    <script type="text/javascript" src="/website/static/lib/ace/ace.js"></script>
+    <script type="text/javascript" src="/website/static/lib/ace/theme-monokai.js"></script>
+    <script type="text/javascript" src="/website/static/lib/ace/mode-xml.js"></script>
+    <script type="text/javascript" src="/website/static/lib/vkbeautify/vkbeautify.0.99.00.beta.js"></script>
+    <script type="text/javascript" src="/web/static/lib/jquery.ui/js/jquery-ui-1.9.1.custom.js"></script>
+    <!-- mutation observers shim backed by mutation events (8 < IE < 11, Safari < 6, FF < 14, Chrome < 17) -->
+    <script type="text/javascript" src="/website/static/lib//jquery.mjs.nestedSortable/jquery.mjs.nestedSortable.js"></script>
+    <script type="text/javascript" src="/website/static/lib/MutationObservers/test/sidetable.js"></script>
+    <script type="text/javascript" src='/website/static/lib/nearest/jquery.nearest.js'></script>
+    <script type="text/javascript" src="/website/static/lib/MutationObservers/MutationObserver.js"></script>
+
+    <script type="text/javascript" src="/website/static/src/js/website.editor.js"></script>
+    <script type="text/javascript" src="/website/static/src/js/website.editor.newpage.js"></script> <!-- groups="base.group_website_designer" -->
+    <script type="text/javascript" src="/website/static/src/js/website.menu.js"></script> <!-- groups="base.group_website_designer" -->
+    <script type="text/javascript" src="/website/static/src/js/website.mobile.js"></script>
+    <script type="text/javascript" src="/website/static/src/js/website.seo.js"></script>
+    <script type="text/javascript" src="/website/static/src/js/website.tour.js"></script>
+    <script type="text/javascript" src="/website/static/src/js/website.tour.banner.js"></script> <!-- groups="base.group_website_designer" -->
+    <script type="text/javascript" src="/website/static/src/js/website.snippets.editor.js"></script>
+    <script type="text/javascript" src="/website/static/src/js/website.ace.js"></script>
+    <script type="text/javascript" src="/website/static/src/js/website.translator.js"></script>
+
+    <script type="text/javascript" src="/website/static/src/js/jQuery.transfo.js"></script>
 </template>
 
 <template id="debugger" inherit_option_id="website.layout" name="Debugger &amp; Tests">
@@ -592,19 +602,68 @@
             <link rel='stylesheet' href='/website/static/src/css/website.css'/>
             <script type="text/javascript" src="/web/static/lib/jquery/jquery.js"></script>
             <script type="text/javascript" src="/web/static/lib/bootstrap/js/bootstrap.js"></script>
+            <script>
+                $(document).ready(function() {
+                    var button = $('#reset_templates_button');
+                    button.click(function() {
+                        var dialog = $('#reset_template_confirmation').modal('show');
+                        var input = dialog.find('input[type="text"]').val('').focus();
+                        var dialog_form = dialog.find('form');
+                        dialog_form.submit(function() {
+                            if (input.val() == dialog.find('.confirm_word').text()) {
+                                dialog.modal('hide');
+                                button.prop('disabled', true).text('Working...');
+                                $('#reset_templates_form').trigger('submit');
+                            } else {
+                                input.val('').focus();
+                            }
+                            return false;
+                        });
+                        return false;
+                    });
+                });
+            </script>
         </head>
         <body>
-            <div id="wrapwrap">
-                    <div class="navbar navbar-default navbar-static-top">
-                        <div class="container">
-                            <div class="collapse navbar-collapse navbar-top-collapse">
-                                <ul class="nav navbar-nav pull-right">
-                                    <li><a href="/">Home</a></li>
-                                    <li><a href="javascript: window.history.back()">Back</a></li>
-                                </ul>
+            <div id="reset_template_confirmation" class="modal" tabindex="-1" role="dialog" aria-hidden="true" t-ignore="true">
+                <div class="modal-dialog">
+                    <form class="form-horizontal" role="form">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                            <h3 class="modal-title">Reset templates</h3>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-group mb0">
+                                <label for="page-name" class="col-sm-9">
+                                    <p>The selected templates will be reset to their factory settings.</p>
+                                    <p>Type '<i class="confirm_word">yes</i>' in the box below if you want to confirm.</p>
+                                </label>
+                                <div class="col-sm-3 mt16">
+                                    <input type="text" class="form-control" required="required" placeholder="yes"/>
+                                </div>
                             </div>
                         </div>
+                        <div class="modal-footer">
+                            <input type="submit" value="Confirm" class="btn btn-primary"/>
+                            <button type="button" class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button>
+                        </div>
                     </div>
+                    </form>
+                </div>
+            </div>
+
+            <div id="wrapwrap">
+                <div class="navbar navbar-default navbar-static-top">
+                    <div class="container">
+                        <div class="collapse navbar-collapse navbar-top-collapse">
+                            <ul class="nav navbar-nav pull-right">
+                                <li><a href="/">Home</a></li>
+                                <li><a href="javascript: window.history.back()">Back</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
                 <div class="mb32">
                     <div class="oe_structure">
                         <h1 class="container mt32"><t t-esc="status_code"/>: <t t-esc="status_message"/></h1>
@@ -615,7 +674,7 @@
                             <h4>Template fallback</h4>
                             <p>An error occured while rendering the template <code t-esc="qweb_exception.qweb['template']"/>.</p>
                             <p>If this error is caused by a change of yours in the templates, you have the possibility to reset one or more templates to their <strong>factory settings</strong>.</p>
-                            <form action="/website/reset_templates" method="post">
+                            <form action="/website/reset_templates" method="post" id="reset_templates_form">
                                 <ul class="oe_template_fallback">
                                     <li t-foreach="views" t-as="view">
                                         <label>
@@ -625,7 +684,7 @@
                                     </li>
                                 </ul>
                                 <input type="hidden" name="redirect" t-att-value="request.httprequest.path"/>
-                                <input type="submit" value="Reset selected templates"/>
+                                <button id="reset_templates_button">Reset selected templates</button>
                             </form>
                         </div>
                     </div>

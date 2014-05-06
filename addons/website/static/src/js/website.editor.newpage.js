@@ -3,9 +3,8 @@
 
     var website = openerp.website;
     var _t = openerp._t;
-    website.is_editable = true;
     website.is_editable_button = true;
-    
+
     website.EditorBar.include({
         start: function() {
             var res = this._super();
@@ -48,7 +47,7 @@
                     }
                 }).then(function (val, field, $dialog) {
                     if (val) {
-                        var url = '/website/add' + encodeURI(val);
+                        var url = '/website/add/' + encodeURI(val);
                         if ($dialog.find('input[type="checkbox"]').is(':checked')) url +="?add_menu=1";
                         document.location = url;
                     }

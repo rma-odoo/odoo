@@ -4,6 +4,7 @@ import inspect
 import itertools
 import logging
 import math
+import mimetypes
 import re
 import urlparse
 
@@ -203,27 +204,21 @@ class website(osv.osv):
         return self.pool['website'].browse(cr, uid, 1, context=context)
 
     def preprocess_request(self, cr, uid, ids, request, context=None):
-        # TODO FP: is_website_publisher and editable in context should be removed
-        # for performance reasons (1 query per image to load) but also to be cleaner
-        # I propose to replace this by a group 'base.group_website_publisher' on the
-        # view that requires it.
-        Access = request.registry['ir.model.access']
+        pass
+
+    def is_publisher(self, cr, uid, ids, context=None):
+        Access = self.pool['ir.model.access']
         is_website_publisher = Access.check(cr, uid, 'ir.ui.view', 'write', False, context)
-
-        lang = request.context['lang']
-        is_master_lang = lang == request.website.default_lang_code
-
-        request.redirect = lambda url: werkzeug.utils.redirect(url_for(url))
-        request.context.update(
-            editable=is_website_publisher,
-            translatable=not is_master_lang,
-        )
+        return is_website_publisher
 
     def get_template(self, cr, uid, ids, template, context=None):
-        if '.' not in template:
-            template = 'website.%s' % template
-        module, xmlid = template.split('.', 1)
-        model, view_id = request.registry["ir.model.data"].get_object_reference(cr, uid, module, xmlid)
+        if isinstance(template, (int, long)):
+            view_id = template
+        else:
+            if '.' not in template:
+                template = 'website.%s' % template
+            module, xmlid = template.split('.', 1)
+            model, view_id = request.registry["ir.model.data"].get_object_reference(cr, uid, module, xmlid)
         return self.pool["ir.ui.view"].browse(cr, uid, view_id, context=context)
 
     def _render(self, cr, uid, ids, template, values=None, context=None):
@@ -553,15 +548,13 @@ class ir_attachment(osv.osv):
     def _website_url_get(self, cr, uid, ids, name, arg, context=None):
         result = {}
         for attach in self.browse(cr, uid, ids, context=context):
-            if attach.type == 'url':
+            if attach.url:
                 result[attach.id] = attach.url
             else:
                 result[attach.id] = urlplus('/website/image', {
                     'model': 'ir.attachment',
                     'field': 'datas',
-                    'id': attach.id,
-                    'max_width': 1024,
-                    'max_height': 768,
+                    'id': attach.id
                 })
         return result
     def _datas_checksum(self, cr, uid, ids, name, arg, context=None):
@@ -574,7 +567,7 @@ class ir_attachment(osv.osv):
 
     def _compute_checksum(self, attachment_dict):
         if attachment_dict.get('res_model') == 'ir.ui.view'\
-                and not attachment_dict.get('res_id')\
+                and not attachment_dict.get('res_id') and not attachment_dict.get('url')\
                 and attachment_dict.get('type', 'binary') == 'binary'\
                 and attachment_dict.get('datas'):
             return hashlib.new('sha1', attachment_dict['datas']).hexdigest()
@@ -600,7 +593,12 @@ class ir_attachment(osv.osv):
         'website_url': fields.function(_website_url_get, string="Attachment URL", type='char'),
         'datas_big': fields.function (_datas_big, type='binary', store=True,
                                       string="Resized file content"),
+        'mimetype': fields.char('Mime Type', readonly=True),
     }
+
+    def _add_mimetype_if_needed(self, values):
+        if values.get('datas_fname'):
+            values['mimetype'] = mimetypes.guess_type(values.get('datas_fname'))[0] or 'application/octet-stream'
 
     def create(self, cr, uid, values, context=None):
         chk = self._compute_checksum(values)
@@ -608,8 +606,13 @@ class ir_attachment(osv.osv):
             match = self.search(cr, uid, [('datas_checksum', '=', chk)], context=context)
             if match:
                 return match[0]
+        self._add_mimetype_if_needed(values)
         return super(ir_attachment, self).create(
             cr, uid, values, context=context)
+
+    def write(self, cr, uid, ids, values, context=None):
+        self._add_mimetype_if_needed(values)
+        return super(ir_attachment, self).write(cr, uid, ids, values, context=context)
 
     def try_remove(self, cr, uid, ids, context=None):
         """ Removes a web-based image attachment if it is used by no view
@@ -627,7 +630,7 @@ class ir_attachment(osv.osv):
             # in-document URLs are html-escaped, a straight search will not
             # find them
             url = werkzeug.utils.escape(attachment.website_url)
-            ids = Views.search(cr, uid, [('arch', 'like', url)], context=context)
+            ids = Views.search(cr, uid, ["|", ('arch', 'like', '"%s"' % url), ('arch', 'like', "'%s'" % url)], context=context)
 
             if ids:
                 removal_blocked_by[attachment.id] = Views.read(
