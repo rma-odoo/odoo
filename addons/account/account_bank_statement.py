@@ -67,18 +67,15 @@ class account_bank_statement(osv.osv):
         return False
     
     def _compute_default_statement_name(self, cr, uid, context=None):
+        if context is None:
+            context = {}
         st = self.browse(cr, uid, id, context=context)
-        period = self.pool.get('account.period').browse(cr, uid, self._get_period(cr, uid, context=context), None)
+        period = self.pool.get('account.period').browse(cr, uid, self._get_period(cr, uid, context=context), context=context)
         obj_seq = self.pool.get('ir.sequence')
         
-        context = {'fiscalyear_id': period.fiscalyear_id.id}
+        context['fiscalyear_id'] = period.fiscalyear_id.id
         default_journal_id = self._default_journal_id(cr, uid, context=context)
-        if default_journal_id:
-            print "LOLOLOLOL\n\n\n"
-            print journal
-            print journal.sequence_id
-            print journal.sequence_id.id
-            print "LOLOLOLOL\n\n\n"
+        if default_journal_id != False:
             journal = self.pool.get('account.journal').browse(cr, uid, default_journal_id, None)
             return obj_seq.next_by_id(cr, uid, journal.sequence_id.id, context=context)
         else:
