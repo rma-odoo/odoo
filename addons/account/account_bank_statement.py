@@ -69,14 +69,20 @@ class account_bank_statement(osv.osv):
     def _compute_default_statement_name(self, cr, uid, context=None):
         st = self.browse(cr, uid, id, context=context)
         period = self.pool.get('account.period').browse(cr, uid, self._get_period(cr, uid, context=context), None)
-        journal = self.pool.get('account.journal').browse(cr, uid, self._default_journal_id(cr, uid, context=context), None)
         obj_seq = self.pool.get('ir.sequence')
         
-        c = {'fiscalyear_id': period.fiscalyear_id.id}
-        if journal:
-            return obj_seq.next_by_id(cr, uid, journal.sequence_id.id, context=c)
+        context = {'fiscalyear_id': period.fiscalyear_id.id}
+        default_journal_id = self._default_journal_id(cr, uid, context=context)
+        if default_journal_id:
+            print "LOLOLOLOL\n\n\n"
+            print journal
+            print journal.sequence_id
+            print journal.sequence_id.id
+            print "LOLOLOLOL\n\n\n"
+            journal = self.pool.get('account.journal').browse(cr, uid, default_journal_id, None)
+            return obj_seq.next_by_id(cr, uid, journal.sequence_id.id, context=context)
         else:
-            return obj_seq.next_by_code(cr, uid, 'account.bank.statement', context=c)
+            return obj_seq.next_by_code(cr, uid, 'account.bank.statement', context=context)
         
 #        TODO : à la base on utilise le browse record, comment faire lors d'un appel via _defaults = { … }
 #        c = {'fiscalyear_id': st.period_id.fiscalyear_id.id}
