@@ -608,7 +608,7 @@
                                         
                                     <!-- TODO : remove -->
                                     <!--<field invisible="1" name="partner_id" on_change="onchange_partner_id(partner_id)" domain="['|',('customer','=',True),('supplier','=',True)]" context="{'default_supplier': 1}"/>-->
-                                    <field invisible="1" name="type" on_change="onchange_type(partner_id, type)"/>
+                                    <field invisible="1" name="type"/>
                                     <field invisible="1" name="account_id" options='{"no_open":True}' domain="[('journal_id','=',parent.journal_id), ('company_id', '=', parent.company_id)]"/>
                                     <field invisible="1" name="analytic_account_id" groups="analytic.group_analytic_accounting" domain="[('company_id', '=', parent.company_id), ('type', '&lt;&gt;', 'view')]"/>
                                 </tree>
@@ -625,7 +625,7 @@
                                         
                                         <!-- TODO : remove -->
                                         <!--<field invisible="1" name="partner_id" on_change="onchange_partner_id(partner_id)"/>-->
-                                        <field invisible="1" name="type" on_change="onchange_type(partner_id, type)"/>
+                                        <field invisible="1" name="type"/>
                                         <field invisible="1" name="account_id" domain="[('journal_id', '=', parent.journal_id), ('type', '&lt;&gt;', 'view'), ('company_id', '=', parent.company_id)]"/>
                                         <field invisible="1" name="analytic_account_id" groups="analytic.group_analytic_accounting" domain="[('company_id', '=', parent.company_id), ('type', '&lt;&gt;', 'view')]"/>
                                     </group>
@@ -2330,7 +2330,7 @@
                                     <field name="amount"/>
                                     
                                     <!-- TODO : remove -->
-                                    <field invisible="1" name="type" on_change="onchange_type(partner_id, type)"/>
+                                    <field invisible="1" name="type"/>
                                     <field invisible="1" domain="[('journal_id','=',parent.journal_id), ('company_id', '=', parent.company_id)]" name="account_id"/>
                                     <field invisible="1" name="analytic_account_id" domain="[('company_id', '=', parent.company_id), ('type', '&lt;&gt;', 'view')]" groups="analytic.group_analytic_accounting" />
                                 </tree>
@@ -2344,7 +2344,7 @@
                                         <field name="sequence"/>
                                         
                                         <!-- TODO : remove -->
-                                        <field invisible="1" name="type" on_change="onchange_type(partner_id, type)"/>
+                                        <field invisible="1" name="type"/>
                                         <field invisible="1" domain="[('journal_id', '=', parent.journal_id), ('type', '&lt;&gt;', 'view'), ('company_id', '=', parent.company_id)]" name="account_id"/>
                                         <field invisible="1" name="analytic_account_id" domain="[('company_id', '=', parent.company_id), ('type', '&lt;&gt;', 'view')]" groups="analytic.group_analytic_accounting" />
                                     </group>

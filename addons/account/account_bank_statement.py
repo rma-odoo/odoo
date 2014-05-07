@@ -72,9 +72,9 @@ class account_bank_statement(osv.osv):
         st = self.browse(cr, uid, id, context=context)
         period = self.pool.get('account.period').browse(cr, uid, self._get_period(cr, uid, context=context), context=context)
         obj_seq = self.pool.get('ir.sequence')
-        
         context['fiscalyear_id'] = period.fiscalyear_id.id
         default_journal_id = self._default_journal_id(cr, uid, context=context)
+        
         if default_journal_id != False:
             journal = self.pool.get('account.journal').browse(cr, uid, default_journal_id, None)
             return obj_seq.next_by_id(cr, uid, journal.sequence_id.id, context=context)

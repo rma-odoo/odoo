@@ -48,12 +48,12 @@
                     <field name="date"/>
                     <field name="name"/>
                     <field name="ref"/>
-                    <field name="partner_id" on_change="onchange_partner_id(partner_id)"/>
+                    <field name="partner_id"/>
                     <field name="amount"/>
                     <field name="note"/>
                     
                     <!-- TODO : remove -->
-                    <field invisible="1" name="type" on_change="onchange_type(partner_id, type)"/>
+                    <field invisible="1" name="type"/>
                     <field invisible="1" name="account_id" options='{"no_open":True}' domain="[('type', '&lt;&gt;', 'view')]"/>
                     <field invisible="1" name="analytic_account_id" groups="analytic.group_analytic_accounting" domain="[('type', '&lt;&gt;', 'view')]"/>
                 </tree>

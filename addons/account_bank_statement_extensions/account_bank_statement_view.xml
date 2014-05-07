@@ -81,7 +81,7 @@
           <field name="state"/>
           
           <!-- TODO : remove -->
-          <field invisible="1" name="type" on_change="onchange_type(partner_id, type)"/>
+          <field invisible="1" name="type"/>
           <field invisible="1" name="account_id"/>
           <field invisible="1" name="analytic_account_id" groups="analytic.group_analytic_accounting" domain="[('type', '&lt;&gt;', 'view')]"/>
         </tree>
@@ -107,7 +107,7 @@
               <field name="state"/>
               
               <!-- TODO : remove -->
-              <field invisible="1" name="type" on_change="onchange_type(partner_id, type)"/>
+              <field invisible="1" name="type"/>
               <field invisible="1" domain="[('type', '&lt;&gt;', 'view')]" name="account_id"/>
               <field invisible="1" name="analytic_account_id" groups="analytic.group_analytic_accounting" domain="[('type', '&lt;&gt;', 'view')]"/>
           </group>
