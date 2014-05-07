@@ -236,6 +236,8 @@ class account_bank_statement(osv.osv):
            :param int/long company_currency_id: ID of currency of the concerned company
            :return: dict of value to create() the bank account.move.line
         """
+        # Analytic account removed
+        #anl_id = st_line.analytic_account_id and st_line.analytic_account_id.id or False
         debit = ((amount<0) and -amount) or 0.0
         credit =  ((amount>0) and amount) or 0.0
         cur_id = False
@@ -247,7 +249,9 @@ class account_bank_statement(osv.osv):
         if cur_id:
             res_currency_obj = self.pool.get('res.currency')
             amt_cur = -res_currency_obj.compute(cr, uid, company_currency_id, cur_id, amount, context=context)
-
+        
+        # Analytic account removed
+        #res = self._prepare_move_line_vals(cr, uid, st_line, move_id, debit, credit, amount_currency=amt_cur, currency_id=cur_id, analytic_id=anl_id, context=context)
         res = self._prepare_move_line_vals(cr, uid, st_line, move_id, debit, credit,
             amount_currency=amt_cur, currency_id=cur_id, context=context)
         return res
@@ -303,7 +307,9 @@ class account_bank_statement(osv.osv):
         return self._prepare_move_line_vals(cr, uid, st_line, move_id, debit, credit,
             amount_currency = amt_cur, currency_id = cur_id, account_id = account_id,
             partner_id = partner_id, context=context)
-
+    
+    # Analytic account removed
+    #def _prepare_move_line_vals(self, cr, uid, st_line, move_id, debit, credit, currency_id = False, amount_currency= False, account_id = False, analytic_id = False, partner_id = False, context=None):
     def _prepare_move_line_vals(self, cr, uid, st_line, move_id, debit, credit, currency_id = False,
                 amount_currency= False, account_id = False, partner_id = False, context=None):
         """Prepare the dict of values to create the move line from a
@@ -320,6 +326,8 @@ class account_bank_statement(osv.osv):
            :param float amount_currency: amount of the debit/credit expressed in the currency_id
            :param int/long account_id: ID of the account to use in the move line if different
                   from the statement line account ID
+           # Analytic account removed
+           #:param int/long analytic_id: ID of analytic account to put on the move line
            :param int/long partner_id: ID of the partner to put on the move line
            :return: dict of value to create() the account.move.line
         """
@@ -340,6 +348,8 @@ class account_bank_statement(osv.osv):
             'period_id': st_line.statement_id.period_id.id,
             'currency_id': amount_currency and cur_id,
             'amount_currency': amount_currency,
+            # Analytic account removed
+            #'analytic_account_id': analytic_id,
         }
 
 #    TODO : remove
@@ -414,6 +424,7 @@ class account_bank_statement(osv.osv):
     def check_status_condition(self, cr, uid, state, journal_type='bank'):
         return state in ('draft','open')
     
+    # TODO : anciennement appelé par le bouton "Confirm" du view_bank_statement_form
     def confirm_bank_statement(self, cr, uid, ids, context=None):
         obj_seq = self.pool.get('ir.sequence')
         if context is None:
@@ -519,6 +530,46 @@ class account_bank_statement(osv.osv):
       }
     
 class account_bank_statement_line(osv.osv):
+    
+#    def onchange_partner_id(self, cr, uid, ids, partner_id, context=None):
+#        obj_partner = self.pool.get('res.partner')
+#        if context is None:
+#            context = {}
+#        if not partner_id:
+#            return {}
+#        part = obj_partner.browse(cr, uid, partner_id, context=context)
+#        if not part.supplier and not part.customer:
+#            type = 'general'
+#        elif part.supplier and part.customer:
+#            type = 'general'
+#        else:
+#            if part.supplier == True:
+#                type = 'supplier'
+#            if part.customer == True:
+#                type = 'customer'
+#        res_type = self.onchange_type(cr, uid, ids, partner_id=partner_id, type=type, context=context)
+#        if res_type['value'] and res_type['value'].get('account_id', False):
+#            return {'value': {'type': type, 'account_id': res_type['value']['account_id']}}
+#        return {'value': {'type': type}}
+#
+#    def onchange_type(self, cr, uid, line_id, partner_id, type, context=None):
+#        res = {'value': {}}
+#        obj_partner = self.pool.get('res.partner')
+#        if context is None:
+#            context = {}
+#        if not partner_id:
+#            return res
+#        account_id = False
+#        line = self.browse(cr, uid, line_id, context=context)
+#        if not line or (line and not line[0].account_id):
+#            part = obj_partner.browse(cr, uid, partner_id, context=context)
+#            if type == 'supplier':
+#                account_id = part.property_account_payable.id
+#            else:
+#                account_id = part.property_account_receivable.id
+#            res['value']['account_id'] = account_id
+#        return res
+
     
     def get_statement_line_for_reconciliation(self, cr, uid, id, context=None):
         """ Returns the data required by the bank statement reconciliation use case """
@@ -730,7 +781,11 @@ class account_bank_statement_line(osv.osv):
         'sequence': fields.integer('Sequence', select=True, help="Gives the sequence order when displaying a list of bank statement lines."),
         'company_id': fields.related('statement_id', 'company_id', type='many2one', relation='res.company', string='Company', store=True, readonly=True),
         'journal_entry_id': fields.many2one('account.move', 'Reconciliation Journal Entry'),
-        # TODO : remove ?
+        
+        # TODO : remove
+        'type': fields.selection([('supplier','Supplier'),('customer','Customer'),('general','General')], 'Type'),
+        'account_id': fields.many2one('account.account','Account'),
+        'statement_id': fields.many2one('account.bank.statement', 'Statement', select=True, ondelete='cascade'),
         'analytic_account_id': fields.many2one('account.analytic.account', 'Analytic Account'),
     }
     _defaults = {

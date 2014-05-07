@@ -72,6 +72,9 @@
                                     <group col="4">
                                         <field name="amount"/>
                                         <field name="statement_id" domain="[('company_id','=',parent.company_id),('state','=','open')]"/>
+                                        
+                                        <!-- TODO : remove -->
+                                        <field invisible="1" name="account_id"/>
                                     </group>
                                 </form>
                             </field>
