@@ -73,7 +73,7 @@ class account_bank_statement(osv.osv):
         obj_seq = self.pool.get('ir.sequence')
         
         c = {'fiscalyear_id': period.fiscalyear_id.id}
-        if journal.sequence_id:
+        if journal:
             return obj_seq.next_by_id(cr, uid, journal.sequence_id.id, context=c)
         else:
             return obj_seq.next_by_code(cr, uid, 'account.bank.statement', context=c)
@@ -743,12 +743,13 @@ class account_bank_statement_line(osv.osv):
         # Create move lines
         move_line_pairs_to_reconcile = []
         for mv_line_dict in mv_line_dicts:
+            counterpart_move_line_id = None
             if mv_line_dict.get('counterpart_move_line_id'):
                 counterpart_move_line_id = mv_line_dict['counterpart_move_line_id']
                 del mv_line_dict['counterpart_move_line_id']
             
             new_aml_id = aml_pool.create(cr, uid, mv_line_dict, context=context)
-            if counterpart_move_line_id:
+            if counterpart_move_line_id != None:
                 move_line_pairs_to_reconcile.append([new_aml_id, counterpart_move_line_id])
         
         # Reconcile
