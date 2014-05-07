@@ -20,15 +20,12 @@
   I create bank statement line
 -
   !python {model: account.bank.statement.line}: |
-    partner = self.onchange_partner_id(cr, uid, [], ref('base.res_partner_4'), context=None)
     vals = {
-        'account_id': partner['value']['account_id'],
         'amount': 1000.0,
         'partner_id': ref('base.res_partner_4'),
         'statement_id': ref('account_bank_statement_0'),
         'name': 'EXT001'
     }
-    vals.update(partner.get('value',{}))
     line_id = self.create(cr, uid, vals)
     assert line_id, "Account bank statement line has not been created"
 -
