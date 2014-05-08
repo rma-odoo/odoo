@@ -28,7 +28,7 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
         
         // Stuff used by the children bankStatementReconciliationLine
         this.max_move_lines_displayed = 5;
-        this.animation_speed = 300;
+        this.animation_speed = 100;
         // We'll need to get the code of an account selected in a many2one (whose value is the id)
         this.map_account_id_code = {};
         // The same move line cannot be selected for multiple resolutions
@@ -155,6 +155,8 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
     excludeMoveLines: function(source_child, partner_id, line_ids) {
         var self = this;
         
+        debugger;
+        
         var excluded_ids = this.excluded_move_lines_ids[partner_id];
         var excluded_move_lines_changed = false;
         _.each(line_ids, function(line_id){
@@ -168,10 +170,11 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
         
         // Function that finds if an array of line objects contains at least a line identified by its id
         var contains_lines = function(lines_array, line_ids) {
-            return _.difference(
-                _.map(lines_array, function(o){ return o.id }),
-                line_ids)
-            .length !== 0;
+            for (var i = 0; i < lines_array.length; i++)
+                for (var j = 0; j < line_ids.length; j++)
+                    if (lines_array[i].id === line_ids[j])
+                        return true;
+            return false;
         }
         
         // Update children if needed
@@ -189,11 +192,11 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
         });
     },
     
-    unexcludeMoveLines: function(source_child, partner_id, line_id) {
+    unexcludeMoveLines: function(source_child, partner_id, line_ids) {
         var self = this;
         
         var initial_excluded_lines_num = this.excluded_move_lines_ids[partner_id].length;
-        this.excluded_move_lines_ids[partner_id] = _.without(this.excluded_move_lines_ids[partner_id], line_ids);
+        this.excluded_move_lines_ids[partner_id] = _.difference(this.excluded_move_lines_ids[partner_id], line_ids);
         if (this.excluded_move_lines_ids[partner_id].length === initial_excluded_lines_num)
             return;
         
@@ -400,12 +403,13 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
                     self.$el.css("opacity", "0");
                     self.updateBalance();
                     self.$(".change_partner_container").show(0);
-                    self.change_partner_field.$el.find("input").attr("placeholder", self.st_line.note);
+                    self.change_partner_field.$el.find("input").attr("placeholder", _t("Select Partner"));
                     self.$(".match").slideUp(0);
                     self.$el.addClass("no_partner");
                     self.set("mode", self.context.mode);
                     self.animation_speed = animation_speed;
                     self.$el.animate({opacity: 1}, self.animation_speed);
+                    self.is_consistent = true;
                     return;
                 } else {
                     self.$el.removeClass("no_partner");
@@ -777,7 +781,6 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         if (preset.amount) self.tax_field.set_value(preset.amount);
         if (preset.tax) self.amount_field.set_value(preset.tax);
         if (preset.a_account) self.a_account_field.set_value(preset.a_account);
-        self.addLineBeingEdited();
     },
     
     
@@ -966,7 +969,7 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
     
     mvLinesSelectedChanged: function(elt, val) {
         var self = this;
-        
+
         var added_lines_ids = _.map(_.difference(val.newValue, val.oldValue), function(o){ return o.id });
         var removed_lines_ids = _.map(_.difference(val.oldValue, val.newValue), function(o){ return o.id });
         self.getParent().excludeMoveLines(self, self.partner_id, added_lines_ids);
@@ -1021,21 +1024,17 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
     
     loadReconciliationProposition: function() {
         var self = this;
-        //console.log("Proposition for "+self.st_line.id+" : begin");
         return self.model_bank_statement_line
             .call("get_reconciliation_proposition", [self.st_line.id, self.getParent().excluded_move_lines_ids[self.partner_id]])
             .then(function (lines) {
                 _(lines).each(self.prepareMoveLineForRendering.bind(self));
                 self.set("mv_lines_selected", self.get("mv_lines_selected").concat(lines));
-                //console.log("Proposition for "+self.st_line.id+" : done");
             });
     },
     
     // Loads move lines according to the widget's state
     updateMatches: function() {
         var self = this;
-        //console.log("Matches for "+self.st_line.id+" : begin");
-        
         var deselected_lines_num = self.mv_lines_deselected.length;
         var move_lines = {};
         var move_lines_num = 0;
@@ -1065,7 +1064,6 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         return $.when(deferred_move_lines, deferred_total_move_lines_num).then(function(){
             self.total_move_lines_num = move_lines_num + deselected_lines_num;
             self.set("mv_lines", move_lines);
-            console.log(move_lines);
             
             // If pager_index is out of range, set it to display the last page
             if (self.get("pager_index") !== 0 && self.total_move_lines_num <= (self.get("pager_index") * self.max_move_lines_displayed)) {
@@ -1081,7 +1079,6 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
             } else {
                 self.$el.removeClass("no_match");
             }
-            //console.log("Matches for "+self.st_line.id+" : done");
         });
     },
     
@@ -1128,6 +1125,8 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         var balance = self.get("balance");
         var dict = {};
         
+        console.log(balance);
+        
         dict['name'] = _t("Open balance");
         if (balance > 0) dict['credit'] = balance;
         if (balance < 0) dict['debit'] = -1*balance;
@@ -1140,29 +1139,36 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         var self = this;
         if (! self.is_consistent) return;
         
+        // Prepare data
         var mv_line_dicts = [];
         _.each(self.get("mv_lines_selected"), function(o) { mv_line_dicts.push(self.prepareSelectedMoveLineForPersisting(o)); });
         _.each(self.get("lines_created"), function(o) { mv_line_dicts.push(self.prepareCreatedMoveLineForPersisting(o)); });
         if (self.get("balance") !== 0) mv_line_dicts.push(self.prepareOpenBalanceForPersisting());
         
+        // Sliding animation
+        var height = self.$el.outerHeight();
+        var container = $("<div />");
+        container.css("height", height)
+                 .css("marginTop", self.$el.css("marginTop"))
+                 .css("marginBottom", self.$el.css("marginBottom"));
+        self.$el.wrap(container);
+        var deferred_animation = self.$el.parent().slideUp(self.animation_speed*height/150);
+        
+        // RPC
         return self.model_bank_statement_line
             .call("process_reconciliation", [self.st_line_id, mv_line_dicts])
             .then(function () {
-                // Prepare sliding animation
-                var height = self.$el.outerHeight();
-                var container = $("<div />");
-                container.css("height", height)
-                         .css("marginTop", self.$el.css("marginTop"))
-                         .css("marginBottom", self.$el.css("marginBottom"));
-                self.$el.wrap(container);
-                
-                // Bow out
-                self.$el.parent().slideUp(self.animation_speed*height/150, function(){
+                return $.when(deferred_animation).then(function(){
                     self.$el.parent().remove();
                     var parent = self.getParent();
-                    $.when(self.destroy()).then(function() {
+                    return $.when(self.destroy()).then(function() {
                         parent.childValidated(self);
                     });
+                });
+            }, function(){
+                self.$el.parent().slideDown(self.animation_speed*height/150, function(){
+                    // TODO : .unwrap()
+                    //self.$el.parent().remove();
                 });
             });
     },

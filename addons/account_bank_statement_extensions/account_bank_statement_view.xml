@@ -79,11 +79,6 @@
           <field name="globalisation_id" string="Glob. Id"/>
           <field name="globalisation_amount" string="Glob. Am."/>
           <field name="state"/>
-          
-          <!-- TODO : remove -->
-          <field invisible="1" name="type"/>
-          <field invisible="1" name="account_id"/>
-          <field invisible="1" name="analytic_account_id" groups="analytic.group_analytic_accounting" domain="[('type', '&lt;&gt;', 'view')]"/>
         </tree>
       </field>
     </record>
@@ -105,11 +100,6 @@
               <field name="globalisation_id"/>
               <field name="sequence" readonly="0"/>
               <field name="state"/>
-              
-              <!-- TODO : remove -->
-              <field invisible="1" name="type"/>
-              <field invisible="1" domain="[('type', '&lt;&gt;', 'view')]" name="account_id"/>
-              <field invisible="1" name="analytic_account_id" groups="analytic.group_analytic_accounting" domain="[('type', '&lt;&gt;', 'view')]"/>
           </group>
           <separator string="Notes"/>
           <field name="note"/>
@@ -133,9 +123,6 @@
                 <field name="statement_id"/>
                 <field name="globalisation_id" string="Glob. Id"/>
                 <group string="Extended Filters..." expand="0">
-                    <!-- TODO : remove -->
-                    <field name="account_id"/>
-                    
                     <field name="partner_id"/>
                     <field name="amount"/>
                     <field name="globalisation_amount" string="Glob. Amount"/>
@@ -144,8 +131,6 @@
                 <group string="Group By..." expand="1">
                     <filter string="Journal" context="{'group_by':'journal_id'}" icon="terp-folder-green"/>
                     <filter string="Statement" context="{'group_by':'statement_id'}" icon="terp-folder-orange"/>
-                    <!-- TODO : remove -->
-                    <filter string="Fin.Account" context="{'group_by':'account_id'}" icon="terp-folder-yellow"/>
                 </group>
             </search>
         </field>

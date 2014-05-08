@@ -27,10 +27,6 @@
 					<field name="partner_id"/>
 					<field name="amount"/>
 					<field name="sequence" readonly="0"/>
-					
-					<!-- TODO : remove -->
-					<field invisible="1" name="type" />
-					<field invisible="1" domain="[('type', '&lt;&gt;', 'view')]" name="account_id"/>
 				</group>
 				<separator string="Notes"/>
 				<field name="note"/>
@@ -51,11 +47,6 @@
                     <field name="partner_id"/>
                     <field name="amount"/>
                     <field name="note"/>
-                    
-                    <!-- TODO : remove -->
-                    <field invisible="1" name="type"/>
-                    <field invisible="1" name="account_id" options='{"no_open":True}' domain="[('type', '&lt;&gt;', 'view')]"/>
-                    <field invisible="1" name="analytic_account_id" groups="analytic.group_analytic_accounting" domain="[('type', '&lt;&gt;', 'view')]"/>
                 </tree>
             </field>
         </record>
@@ -73,17 +64,11 @@
 					<field name="partner_id"/>
 					<field name="amount"/>
 					<field name="note"/>
-					
-					<!-- TODO : remove -->
-					<field invisible="1" name="account_id"/>
-					<field invisible="1" name="type"/>
 				</group>
 				<newline/>
 				<group string="Group By..." expand="0">
 					<filter string="Partner" context="{'group_by':'partner_id'}" icon="terp-folder-green"/>
 					<filter string="Statement" context="{'group_by':'statement_id'}" icon="terp-folder-orange"/>
-					<!-- TODO : remove -->
-					<filter string="Fin.Account" context="{'group_by':'account_id'}" icon="terp-folder-yellow"/>
 				</group>
 			</search>
 			</field>

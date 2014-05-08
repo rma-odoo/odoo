@@ -140,7 +140,7 @@
             cursor: pointer; }
       .openerp .oe_bank_statement_reconciliation .oe_bank_statement_reconciliation_line .accounting_view td, .openerp .oe_bank_statement_reconciliation .oe_bank_statement_reconciliation_line .match table td {
         padding: 1px 8px;
-        vertical-align: middled; }
+        vertical-align: middle; }
       .openerp .oe_bank_statement_reconciliation .oe_bank_statement_reconciliation_line .accounting_view td:nth-child(1), .openerp .oe_bank_statement_reconciliation .oe_bank_statement_reconciliation_line .accounting_view td:nth-child(7), .openerp .oe_bank_statement_reconciliation .oe_bank_statement_reconciliation_line .match table td:nth-child(1), .openerp .oe_bank_statement_reconciliation .oe_bank_statement_reconciliation_line .match table td:nth-child(7) {
         width: 15px;
         padding: 0; }

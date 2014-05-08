@@ -734,7 +734,7 @@ class account_bank_statement_line(osv.osv):
         st_line_company_id = st_line.company_id.id
         for mv_line_dict in mv_line_dicts:
             mv_line_dict['move_id'] = move_id
-            mv_line_dict['period_id'] = 5 # TODO
+            mv_line_dict['period_id'] = 5 # TODO bank statement period
             mv_line_dict['journal_id'] = st_line_journal_id
             mv_line_dict['partner_id'] = st_line_partner_id
             mv_line_dict['company_id'] = st_line_company_id
@@ -785,12 +785,7 @@ class account_bank_statement_line(osv.osv):
         'sequence': fields.integer('Sequence', select=True, help="Gives the sequence order when displaying a list of bank statement lines."),
         'company_id': fields.related('statement_id', 'company_id', type='many2one', relation='res.company', string='Company', store=True, readonly=True),
         'journal_entry_id': fields.many2one('account.move', 'Reconciliation Journal Entry'),
-        
-        # TODO : remove
-        'type': fields.selection([('supplier','Supplier'),('customer','Customer'),('general','General')], 'Type'),
-        'account_id': fields.many2one('account.account','Account'),
         'statement_id': fields.many2one('account.bank.statement', 'Statement', select=True, ondelete='cascade'),
-        'analytic_account_id': fields.many2one('account.analytic.account', 'Analytic Account'),
     }
     _defaults = {
         'name': lambda self,cr,uid,context={}: self.pool.get('ir.sequence').get(cr, uid, 'account.bank.statement.line'),
