@@ -166,15 +166,23 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
         if (! excluded_move_lines_changed)
             return;
         
+        // Function that finds if an array of line objects contains at least a line identified by its id
+        var contains_lines = function(lines_array, line_ids) {
+            return _.difference(
+                _.map(lines_array, function(o){ return o.id }),
+                line_ids)
+            .length !== 0;
+        }
+        
         // Update children if needed
         _.each(self.getChildren(), function(child){
             if (child.partner_id === partner_id && child !== source_child) {
-                if (_.find(child.get("mv_lines_selected"), function(o){ return o.id === line_id; })) {
-                    child.set("mv_lines_selected", _.filter(child.get("mv_lines_selected"), function(o){ return o.id !== line_id; }));
-                } else if (_.find(child.mv_lines_deselected, function(o){ return o.id === line_id; })) {
-                    child.mv_lines_deselected = _.filter(child.mv_lines_deselected, function(o){ return o.id !== line_id; });
+                if (contains_lines(child.get("mv_lines_selected"), line_ids)) {
+                    child.set("mv_lines_selected", _.filter(child.get("mv_lines_selected"), function(o){ return line_ids.indexOf(o.id) === -1; }));
+                } else if (contains_lines(child.mv_lines_deselected, line_ids)) {
+                    child.mv_lines_deselected = _.filter(child.mv_lines_deselected, function(o){ return line_ids.indexOf(o.id) === -1; });
                     child.updateMatches();
-                } else if (_.find(child.get("mv_lines"), function(o){ return o.id === line_id; })) {
+                } else if (contains_lines(child.get("mv_lines"), line_ids)) {
                     child.updateMatches();
                 }
             }
@@ -183,10 +191,12 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
     
     unexcludeMoveLines: function(source_child, partner_id, line_id) {
         var self = this;
-        var excluded_ids = this.excluded_move_lines_ids[partner_id];
-        if (excluded_ids.indexOf(line_id) === -1)
+        
+        var initial_excluded_lines_num = this.excluded_move_lines_ids[partner_id].length;
+        this.excluded_move_lines_ids[partner_id] = _.without(this.excluded_move_lines_ids[partner_id], line_ids);
+        if (this.excluded_move_lines_ids[partner_id].length === initial_excluded_lines_num)
             return;
-        this.excluded_move_lines_ids[partner_id] = _.without(excluded_ids, line_id);
+        
         // Update children if needed
         _.each(self.getChildren(), function(child){
             if (child.partner_id === partner_id&& child !== source_child)
