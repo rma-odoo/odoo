@@ -640,7 +640,7 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         
         // WARNING : pretty much of a ugly hack
         // The value of account_move.ref is either the move's communication or it's name without the slashes
-        if (line.ref !== line.name.replace(/\//g,''))
+        if (line.ref && line.ref !== line.name.replace(/\//g,''))
             line.q_label += " : " + line.ref;
     },
     
@@ -1128,8 +1128,8 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         console.log(balance);
         
         dict['name'] = _t("Open balance");
-        if (balance > 0) dict['credit'] = balance;
-        if (balance < 0) dict['debit'] = -1*balance;
+        if (balance > 0) dict['debit'] = balance;
+        if (balance < 0) dict['credit'] = -1*balance;
         
         return dict;
     },
@@ -1167,8 +1167,7 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
                 });
             }, function(){
                 self.$el.parent().slideDown(self.animation_speed*height/150, function(){
-                    // TODO : .unwrap()
-                    //self.$el.parent().remove();
+                    self.$el.unwrap();
                 });
             });
     },
