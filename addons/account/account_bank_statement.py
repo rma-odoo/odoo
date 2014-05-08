@@ -428,7 +428,7 @@ class account_bank_statement(osv.osv):
         return state in ('draft','open')
     
     # TODO : anciennement appelé par le bouton "Confirm" du view_bank_statement_form
-    def confirm_bank_statement(self, cr, uid, ids, context=None):
+    def button_confirm_bank(self, cr, uid, ids, context=None):
         obj_seq = self.pool.get('ir.sequence')
         if context is None:
             context = {}

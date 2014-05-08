@@ -150,15 +150,21 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
         }
     },
     
-    // Adds a move line id to the list of move lines not to fetch for a given partner
+    // Adds move line ids to the list of move lines not to fetch for a given partner
     // This is required because the same move line cannot be selected for multiple reconciliation
-    excludeMoveLine: function(source_child, partner_id, line_id) {
-        //console.log("exclude : "+source_child.st_line.amount+" partner "+partner_id+" line"+line_id);
+    excludeMoveLines: function(source_child, partner_id, line_ids) {
         var self = this;
+        
         var excluded_ids = this.excluded_move_lines_ids[partner_id];
-        if (excluded_ids.indexOf(line_id) !== -1)
+        var excluded_move_lines_changed = false;
+        _.each(line_ids, function(line_id){
+            if (excluded_ids.indexOf(line_id) === -1) {
+                excluded_ids.push(line_id);
+                excluded_move_lines_changed = true;
+            }
+        });
+        if (! excluded_move_lines_changed)
             return;
-        excluded_ids.push(line_id);
         
         // Update children if needed
         _.each(self.getChildren(), function(child){
@@ -175,9 +181,7 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
         });
     },
     
-    unexcludeMoveLine: function(source_child, partner_id, line_id) {
-        //console.log("unexclude : "+source_child.st_line.amount+" partner "+partner_id+" line"+line_id);
-        
+    unexcludeMoveLines: function(source_child, partner_id, line_id) {
         var self = this;
         var excluded_ids = this.excluded_move_lines_ids[partner_id];
         if (excluded_ids.indexOf(line_id) === -1)
@@ -953,10 +957,10 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
     mvLinesSelectedChanged: function(elt, val) {
         var self = this;
         
-        var added_lines = _.difference(val.newValue, val.oldValue);
-        var removed_lines = _.difference(val.oldValue, val.newValue);
-        _.each(added_lines, function(o){ self.getParent().excludeMoveLine(self, self.partner_id, o.id) });
-        _.each(removed_lines, function(o){ self.getParent().unexcludeMoveLine(self, self.partner_id, o.id) });
+        var added_lines_ids = _.map(_.difference(val.newValue, val.oldValue), function(o){ return o.id });
+        var removed_lines_ids = _.map(_.difference(val.oldValue, val.newValue), function(o){ return o.id });
+        self.getParent().excludeMoveLines(self, self.partner_id, added_lines_ids);
+        self.getParent().unexcludeMoveLines(self, self.partner_id, removed_lines_ids);
         
         $.when(self.updateMatches()).then(function(){
             self.updateAccountingViewMatchedLines();
