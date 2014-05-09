@@ -57,17 +57,21 @@ def url_for(path_or_uri, lang=None):
 
     return location.decode('utf-8')
 
-def is_multilang_url(path, langs=None):
+def is_multilang_url(local_url, langs=None):
     if not langs:
         langs = [lg[0] for lg in request.website.get_languages()]
-    spath = path.split('/')
+    spath = local_url.split('/')
     # if a language is already in the path, remove it
     if spath[1] in langs:
         spath.pop(1)
-        path = '/'.join(spath)
+        local_url = '/'.join(spath)
     try:
+        # Try to match an endpoint in werkzeug's routing table
+        url = local_url.split('?')
+        path = url[0]
+        query_string = url[1] if len(url) > 1 else None
         router = request.httprequest.app.get_db_router(request.db).bind('')
-        func = router.match(path)[0]
+        func = router.match(path, query_args=query_string)[0]
         return func.routing.get('multilang', False)
     except Exception:
         return False
@@ -109,10 +113,6 @@ class website(osv.osv):
         menu = menus and menus[0] or False
         return dict( map(lambda x: (x, menu), ids) )
 
-    def _get_public_user(self, cr, uid, ids, name='public_user', arg=(), context=None):
-        ref = self.get_public_user(cr, uid, context=context)
-        return dict( map(lambda x: (x, ref), ids) )
-
     _name = "website" # Avoid website.website convention for conciseness (for new api). Got a special authorization from xmo and rco
     _description = "Website"
     _columns = {
@@ -129,13 +129,17 @@ class website(osv.osv):
         'social_googleplus': fields.char('Google+ Account'),
         'google_analytics_key': fields.char('Google Analytics Key'),
         'user_id': fields.many2one('res.users', string='Public User'),
-        'public_user': fields.function(_get_public_user, relation='res.users', type='many2one', string='Public User'),
+        'partner_id': fields.related('user_id','partner_id', type='many2one', relation='res.partner', string='Public Partner'),
         'menu_id': fields.function(_get_menu, relation='website.menu', type='many2one', string='Main Menu',
             store= {
                 'website.menu': (_get_menu_website, ['sequence','parent_id','website_id'], 10)
             })
     }
 
+    _defaults = {
+        'company_id': lambda self,cr,uid,c: self.pool['ir.model.data'].xmlid_to_res_id(cr, openerp.SUPERUSER_ID, 'base.public_user'),
+    }
+    
     # cf. Wizard hack in website_views.xml
     def noop(self, *args, **kwargs):
         pass
@@ -186,11 +190,6 @@ class website(osv.osv):
         except:
             return False
 
-    def get_public_user(self, cr, uid, context=None):
-        uid = openerp.SUPERUSER_ID
-        res = self.pool['ir.model.data'].get_object_reference(cr, uid, 'base', 'public_user')
-        return res and res[1] or False
-
     @openerp.tools.ormcache(skiparg=3)
     def _get_languages(self, cr, uid, id, context=None):
         website = self.browse(cr, uid, id)
@@ -202,9 +201,6 @@ class website(osv.osv):
     def get_current_website(self, cr, uid, context=None):
         # TODO: Select website, currently hard coded
         return self.pool['website'].browse(cr, uid, 1, context=context)
-
-    def preprocess_request(self, cr, uid, ids, request, context=None):
-        pass
 
     def is_publisher(self, cr, uid, ids, context=None):
         Access = self.pool['ir.model.access']
@@ -342,7 +338,7 @@ class website(osv.osv):
         """
         router = request.httprequest.app.get_db_router(request.db)
         # Force enumeration to be performed as public user
-        uid = self.get_public_user(cr, uid, context=context)
+        uid = request.website.user_id.id
         url_list = []
         for rule in router.iter_rules():
             if not self.rule_is_enumerable(rule):
