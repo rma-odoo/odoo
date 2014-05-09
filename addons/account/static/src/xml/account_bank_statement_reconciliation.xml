@@ -147,7 +147,7 @@
     <t t-name="bank_statement_reconciliation_line_open_balance">
         <tr class="line_open_balance">
             <td><span class="toggle_create glyphicon glyphicon-play"></span></td>
-            <td>401000</td>
+            <td><t t-esc="account_code"/></td>
             <td></td>
             <td>Open balance</td>
             <td><t t-esc="debit"/></td>

@@ -152,13 +152,6 @@ $initialLineBackground: #f0f0f0;
             transform: rotate(90deg);
         }
         
-        &.initial_line > td {
-            -webkit-transition: background-color 300ms; // TODO : duplicate from js
-            -moz-transition: background-color 300ms;
-            -ms-transition: background-color 300ms;
-            transition: background-color 300ms;
-        }
-        
         .change_partner_container {
             width: 200px;
             display: none;
@@ -295,8 +288,11 @@ $initialLineBackground: #f0f0f0;
                 border-top: $lightBorder;
                 padding-top: 4px;
                 padding-bottom: 5px;
-                transition: background-color 0.3s;
                 background-color: $initialLineBackground;
+                -webkit-transition-property: background-color;
+                -moz-transition-property: background-color;
+                -ms-transition-property: background-color;
+                transition-property: background-color;
                 
                 &:nth-child(1), &:nth-child(7) {
                     border-top: none;

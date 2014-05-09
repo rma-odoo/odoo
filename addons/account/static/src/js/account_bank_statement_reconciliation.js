@@ -13,7 +13,7 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
     init: function(parent, context) {
         this._super(parent);
         
-        this.max_reconciliations_displayed = 6;
+        this.max_reconciliations_displayed = 60;
         this.statement_id = context.context.statement_id;
         this.title = context.context.title || _t("Reconciliation");
         this.st_lines = [];
@@ -28,7 +28,8 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
         
         // Stuff used by the children bankStatementReconciliationLine
         this.max_move_lines_displayed = 5;
-        this.animation_speed = 100;
+        this.animation_speed = 100; // "Blocking" animations
+        this.aestetic_animation_speed = 300; // eye candy
         // We'll need to get the code of an account selected in a many2one (whose value is the id)
         this.map_account_id_code = {};
         // The same move line cannot be selected for multiple resolutions
@@ -43,19 +44,19 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
         var style = document.createElement("style");
         style.appendChild(document.createTextNode(""));
         document.head.appendChild(style);
-        var css_selector = ".oe_bank_statement_reconciliation_line .toggle_match, .oe_bank_statement_reconciliation_line .toggle_create";
+        var css_selector = ".oe_bank_statement_reconciliation_line .toggle_match, .oe_bank_statement_reconciliation_line .toggle_create,  .oe_bank_statement_reconciliation_line .initial_line > td";
         if(style.sheet.insertRule) {
-            style.sheet.insertRule(css_selector + " { -webkit-transition-duration: "+self.animation_speed+"ms; }");
-            style.sheet.insertRule(css_selector + " { -moz-transition-duration: "+self.animation_speed+"ms; }");
-            style.sheet.insertRule(css_selector + " { -ms-transition-duration: "+self.animation_speed+"ms; }");
-            style.sheet.insertRule(css_selector + " { -o-transition-duration: "+self.animation_speed+"ms; }");
-            style.sheet.insertRule(css_selector + " { transition-duration: "+self.animation_speed+"ms; }");
+            style.sheet.insertRule(css_selector + " { -webkit-transition-duration: "+self.aestetic_animation_speed+"ms; }");
+            style.sheet.insertRule(css_selector + " { -moz-transition-duration: "+self.aestetic_animation_speed+"ms; }");
+            style.sheet.insertRule(css_selector + " { -ms-transition-duration: "+self.aestetic_animation_speed+"ms; }");
+            style.sheet.insertRule(css_selector + " { -o-transition-duration: "+self.aestetic_animation_speed+"ms; }");
+            style.sheet.insertRule(css_selector + " { transition-duration: "+self.aestetic_animation_speed+"ms; }");
         } else {
-            style.sheet.addRule(css_selector, "-webkit-transition-duration: "+self.animation_speed+"ms;");
-            style.sheet.addRule(css_selector, "-moz-transition-duration: "+self.animation_speed+"ms;");
-            style.sheet.addRule(css_selector, "-ms-transition-duration: "+self.animation_speed+"ms;");
-            style.sheet.addRule(css_selector, "-o-transition-duration: "+self.animation_speed+"ms;");
-            style.sheet.addRule(css_selector, "-webkit-transition-duration: "+self.animation_speed+"ms;");
+            style.sheet.addRule(css_selector, "-webkit-transition-duration: "+self.aestetic_animation_speed+"ms;");
+            style.sheet.addRule(css_selector, "-moz-transition-duration: "+self.aestetic_animation_speed+"ms;");
+            style.sheet.addRule(css_selector, "-ms-transition-duration: "+self.aestetic_animation_speed+"ms;");
+            style.sheet.addRule(css_selector, "-o-transition-duration: "+self.aestetic_animation_speed+"ms;");
+            style.sheet.addRule(css_selector, "-webkit-transition-duration: "+self.aestetic_animation_speed+"ms;");
         }
         
         // Retreive statement infos and reconciliation data from the model
@@ -135,7 +136,7 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
                 child_promises.push(showReconciliationsSequentially(lines, first_line_id));
             });
             $.when.apply($, child_promises).then(function(){
-                self.$(".reconciliation_lines_container").animate({opacity: 1}, self.animation_speed);
+                self.$(".reconciliation_lines_container").animate({opacity: 1}, self.aestetic_animation_speed);
             });
         });
     },
@@ -291,8 +292,8 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
         // Animate it
         var container = $("<div style='overflow: hidden;' />");
         self.$(".done_message").wrap(container).css("opacity", 0).css("position", "relative").css("left", "-50%");
-        self.$(".done_message").animate({opacity: 1, left: 0}, self.animation_speed*2, "easeOutCubic");
-        self.$(".done_message").animate({opacity: 1}, self.animation_speed*3, "easeOutCubic");
+        self.$(".done_message").animate({opacity: 1, left: 0}, self.aestetic_animation_speed*2, "easeOutCubic");
+        self.$(".done_message").animate({opacity: 1}, self.aestetic_animation_speed*3, "easeOutCubic");
         
         // Make it interactive
         self.$(".achievement").popover({'placement': 'top', 'container': self.el, 'trigger': 'hover'});
@@ -345,6 +346,7 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         this.partner_id = undefined;
         this.max_move_lines_displayed = this.getParent().max_move_lines_displayed;
         this.animation_speed = this.getParent().animation_speed;
+        this.aestetic_animation_speed = this.getParent().aestetic_animation_speed;
         this.model_bank_statement_line = new instance.web.Model("account.bank.statement.line");
         this.map_account_id_code = this.getParent().map_account_id_code;
         this.presets = {}; // dict of presets for quickly adding new lines
@@ -377,7 +379,9 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         
         // no animation while loading
         var animation_speed = self.animation_speed;
+        var aestetic_animation_speed = self.aestetic_animation_speed;
         self.animation_speed = 0;
+        self.aestetic_animation_speed = 0;
         
         self.is_consistent = false;
         // Load statement line
@@ -408,7 +412,8 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
                     self.$el.addClass("no_partner");
                     self.set("mode", self.context.mode);
                     self.animation_speed = animation_speed;
-                    self.$el.animate({opacity: 1}, self.animation_speed);
+                    self.aestetic_animation_speed = aestetic_animation_speed;
+                    self.$el.animate({opacity: 1}, self.aestetic_animation_speed);
                     self.is_consistent = true;
                     return;
                 } else {
@@ -430,7 +435,8 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
                         
                         // Make an entrance
                         self.animation_speed = animation_speed;
-                        if (self.context.animate) return self.$el.animate({opacity: 1}, self.animation_speed);
+                        self.aestetic_animation_speed = aestetic_animation_speed;
+                        if (self.context.animate) return self.$el.animate({opacity: 1}, self.aestetic_animation_speed);
                     });;
                 });
             });
@@ -446,7 +452,6 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         self.$el.animate({opacity: 0}, self.animation_speed, function() {
             self.$el.empty();
             self.context.mode = mode;
-            // Note that using the silent flag is rarely, perhaps even never, a good idea. Passing through a specific flag in the options for your event callback to look at, and choose to ignore, will usually work out better.
             self.set("balance", undefined, {silent: true});
             self.set("mode", undefined, {silent: true});
             self.set("pager_index", 0, {silent: true});
@@ -657,12 +662,22 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
     },
     
     islineCreatedBeingEditedValid: function() {
+        var self = this;
         var line = this.get("line_created_being_edited");
         return line.amount // must be defined and not 0
             && line.account_id // must be defined (and will never be 0)
             && line.label; // must be defined and not empty
     },
     
+    /* returns, the created lines, plus the one being edited if valid */
+    getCreatedLines: function() {
+        var self = this;
+        var created_lines = self.get("lines_created").slice();
+        if (self.islineCreatedBeingEditedValid())
+            return created_lines.concat(self.get("line_created_being_edited"));
+        else
+            return created_lines;
+    },
     
     /** Matching */
     
@@ -829,9 +844,7 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         var self = this;
         self.$(".tbody_created_lines").empty();
 
-        var created_lines = self.get("lines_created").slice();
-        if (self.islineCreatedBeingEditedValid()) created_lines.push(self.get("line_created_being_edited"));
-        _(created_lines).each(function(line){
+        _(self.getCreatedLines()).each(function(line){
             var $line = $(QWeb.render("bank_statement_reconciliation_created_line", {line: line}));
             $line.find(".line_remove_button").click(function(){ self.removeLine($(this).closest(".created_line")); });
             self.$(".tbody_created_lines").append($line);
@@ -907,7 +920,7 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
             self.$(".button_ok").text("Keep open");
             var debit = (balance > 0 ? balance.toFixed(2) : "");
             var credit = (balance < 0 ? (-balance).toFixed(2) : "");
-            var $line = $(QWeb.render("bank_statement_reconciliation_line_open_balance", {debit: debit, credit: credit}));
+            var $line = $(QWeb.render("bank_statement_reconciliation_line_open_balance", {debit: debit, credit: credit, account_code: self.map_account_id_code[self.st_line.open_balance_account_id]}));
             self.$(".tbody_open_balance").append($line);
         }
     },
@@ -1014,11 +1027,9 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         _.each(self.get("mv_lines_selected"), function(o) {
             balance = balance - o.debit + o.credit;
         });
-        _.each(self.get("lines_created"), function(o) {
+        _.each(self.getCreatedLines(), function(o) {
             balance += o.amount;
         });
-        if (self.islineCreatedBeingEditedValid())
-            balance +=self.get("line_created_being_edited").amount;
         self.set("balance", balance);
     },
     
@@ -1109,7 +1120,7 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         var self = this;
         var dict = {};
         
-        dict['account'] = line.account_id;
+        dict['account_id'] = line.account_id;
         dict['name'] = line.label;
         if (line.amount > 0) dict['credit'] = line.amount;
         if (line.amount < 0) dict['debit'] = -1*line.amount;
@@ -1125,8 +1136,7 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         var balance = self.get("balance");
         var dict = {};
         
-        console.log(balance);
-        
+        dict['account_id'] = self.st_line.open_balance_account_id;
         dict['name'] = _t("Open balance");
         if (balance > 0) dict['debit'] = balance;
         if (balance < 0) dict['credit'] = -1*balance;
@@ -1142,7 +1152,7 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         // Prepare data
         var mv_line_dicts = [];
         _.each(self.get("mv_lines_selected"), function(o) { mv_line_dicts.push(self.prepareSelectedMoveLineForPersisting(o)); });
-        _.each(self.get("lines_created"), function(o) { mv_line_dicts.push(self.prepareCreatedMoveLineForPersisting(o)); });
+        _.each(self.getCreatedLines(), function(o) { mv_line_dicts.push(self.prepareCreatedMoveLineForPersisting(o)); });
         if (self.get("balance") !== 0) mv_line_dicts.push(self.prepareOpenBalanceForPersisting());
         
         // Sliding animation
