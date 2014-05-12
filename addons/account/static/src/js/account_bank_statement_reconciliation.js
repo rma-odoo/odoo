@@ -33,12 +33,14 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
         // We'll need to get the code of an account selected in a many2one (whose value is the id)
         this.map_account_id_code = {};
         // The same move line cannot be selected for multiple resolutions
-        this.excluded_move_lines_ids = {}
+        this.excluded_move_lines_ids = {};
     },
     
     start: function() {
         this._super();
         var self = this;
+        
+        self.doReloadMenuReconciliation();
         
         // Inject variable styles
         var style = document.createElement("style");
@@ -128,7 +130,7 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
                 if (st_line_ids_by_partner[line.partner_id] === undefined)
                     st_line_ids_by_partner[line.partner_id] = [];
                 st_line_ids_by_partner[line.partner_id].push(line.id);
-            })
+            });
             
             // Display the reconciliations
             var child_promises = [];
@@ -155,8 +157,6 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
     // This is required because the same move line cannot be selected for multiple reconciliation
     excludeMoveLines: function(source_child, partner_id, line_ids) {
         var self = this;
-        
-        debugger;
         
         var excluded_ids = this.excluded_move_lines_ids[partner_id];
         var excluded_move_lines_changed = false;
@@ -219,7 +219,7 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
             if (child.st_line_id < st_line_id && (predecessor === undefined || child.st_line_id > predecessor.st_line_id)) {
                 predecessor = child;
             }
-        })
+        });
         
         if (predecessor !== undefined) {
             return widget.insertAfter(predecessor.$el);
@@ -233,6 +233,7 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
         
         self.reconciled_lines++;
         self.updateProgressbar();
+        self.doReloadMenuReconciliation();
         
         // Display new line if there are left
         if (self.last_displayed_reconciliation_index < self.st_lines.length) {
@@ -318,6 +319,19 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
         prog_bar.css("width", (self.reconciled_lines/self.st_lines.length*100)+"%");
         self.$(".progress .progress-text .valuenow").text(self.reconciled_lines);
     },
+    
+    /* reloads the needaction badge */
+    doReloadMenuReconciliation: function () {
+        var menu = instance.webclient.menu;
+        if (!menu || !menu.current_menu) {
+            return $.when();
+        }
+        return menu.rpc("/web/menu/load_needaction", {'menu_ids': [menu.current_menu]}).done(function(r) {
+            menu.on_needaction_loaded(r);
+        }).then(function () {
+            menu.trigger("need_action_reloaded");
+        });
+    },
 });
 
 instance.web.account.bankStatementReconciliationLine = instance.web.Widget.extend({
@@ -334,7 +348,7 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         "keyup .filter": "filterHandler",
         "click .line_info_button": function(e){e.stopPropagation();}, // small usability hack
         "click .add_line": "addLineClickHandler",
-        "click .preset": "presetClickHandler"
+        "click .preset": "presetClickHandler",
     },
     
     init: function(parent, context) {
@@ -371,75 +385,142 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         this.set("line_created_being_edited", {'id': 0});
         this.on("change:lines_created", this, this.createdLinesChanged);
         this.on("change:line_created_being_edited", this, this.createdLinesChanged);
+        
+        this.create_form_fields = {
+            account: {
+                id: "account",
+                corresponding_property: "account_id", // a model field name
+                label: _t("Account"),
+                required: true,
+                tabindex: 10,
+                constructor: instance.web.form.FieldMany2One,
+                field_properties: {
+                    relation: "account.account",
+                    string: _t("Account"),
+                    type: "many2one",
+                },
+            },
+            label: {
+                id: "label",
+                corresponding_property: "label",
+                label: _t("Label"),
+                required: true,
+                tabindex: 11,
+                constructor: instance.web.form.FieldChar,
+                field_properties: {
+                    string: _t("Label"),
+                    type: "char",
+                },
+            },
+            tax: {
+                id: "tax",
+                corresponding_property: "tax_id",
+                label: _t("Tax"),
+                required: false,
+                tabindex: 12,
+                constructor: instance.web.form.FieldMany2One,
+                field_properties: {
+                    relation: "account.tax",
+                    string: _t("Tax"),
+                    type: "many2one",
+                },
+            },
+            amount: {
+                id: "amount",
+                corresponding_property: "amount",
+                label: _t("Amount"),
+                required: true,
+                tabindex: 13,
+                constructor: instance.web.form.FieldFloat,
+                field_properties: {
+                    string: _t("Amount"),
+                    type: "float",
+                },
+            },
+            analytic_account: {
+                id: "analytic_account",
+                corresponding_property: "analytic_account_id",
+                label: _t("Analytic Acc."),
+                required: false,
+                tabindex: 14,
+                constructor: instance.web.form.FieldMany2One,
+                field_properties: {
+                    relation: "account.analytic.account",
+                    string: _t("Analytic Acc."),
+                    type: "many2one",
+                },
+            },
+        };
     },
     
     start: function() {
         var self = this;
-        self._super();
+        return self._super().then(function() {
         
-        // no animation while loading
-        var animation_speed = self.animation_speed;
-        var aestetic_animation_speed = self.aestetic_animation_speed;
-        self.animation_speed = 0;
-        self.aestetic_animation_speed = 0;
-        
-        self.is_consistent = false;
-        // Load statement line
-        return self.model_bank_statement_line
-            .call("get_statement_line_for_reconciliation", [self.st_line_id])
-            .then(function (data) {
-                self.st_line = data;
-                self.partner_id = data.partner_id;
-                if (self.getParent().excluded_move_lines_ids[self.partner_id] === undefined)
-                    self.getParent().excluded_move_lines_ids[self.partner_id] = [];
-                
-                // Render template
-                self.prepareStatementLineForRendering(self.st_line);
-                self.$el.prepend(QWeb.render("bank_statement_reconciliation_line", {line: self.st_line, mode: self.context.mode}));
-                
-                // Stuff that require the template to be rendered
-                self.bindPopoverTo(self.$(".line_info_button"));
-                self.createFormWidgets();
-                self.initializePresets();
-                
-                // Special case hack : no identified partner
-                if (self.st_line.has_no_partner) {
-                    self.$el.css("opacity", "0");
-                    self.updateBalance();
-                    self.$(".change_partner_container").show(0);
-                    self.change_partner_field.$el.find("input").attr("placeholder", _t("Select Partner"));
-                    self.$(".match").slideUp(0);
-                    self.$el.addClass("no_partner");
-                    self.set("mode", self.context.mode);
-                    self.animation_speed = animation_speed;
-                    self.aestetic_animation_speed = aestetic_animation_speed;
-                    self.$el.animate({opacity: 1}, self.aestetic_animation_speed);
-                    self.is_consistent = true;
-                    return;
-                } else {
-                    self.$el.removeClass("no_partner");
-                }
-                
-                // load and display move lines
-                if (self.context.animate) self.$el.css("opacity", "0");
-                self.set("mode", "inactive"); // aesthetic consideration
-                return $.when(self.loadReconciliationProposition()).then(function(){
-                    return $.when(self.updateMatches()).then(function(){
-                        self.is_consistent = true;
-                        
+            // no animation while loading
+            var animation_speed = self.animation_speed;
+            var aestetic_animation_speed = self.aestetic_animation_speed;
+            self.animation_speed = 0;
+            self.aestetic_animation_speed = 0;
+            
+            self.is_consistent = false;
+            // Load statement line
+            return self.model_bank_statement_line
+                .call("get_statement_line_for_reconciliation", [self.st_line_id])
+                .then(function (data) {
+                    self.st_line = data;
+                    self.partner_id = data.partner_id;
+                    if (self.getParent().excluded_move_lines_ids[self.partner_id] === undefined)
+                        self.getParent().excluded_move_lines_ids[self.partner_id] = [];
+                    
+                    // Render template
+                    self.prepareStatementLineForRendering(self.st_line);
+                    self.$el.prepend(QWeb.render("bank_statement_reconciliation_line", {line: self.st_line, mode: self.context.mode}));
+                    
+                    // Stuff that require the template to be rendered
+                    self.bindPopoverTo(self.$(".line_info_button"));
+                    self.createFormWidgets();
+                    self.initializePresets();
+                    
+                    // Special case hack : no identified partner
+                    if (self.st_line.has_no_partner) {
+                        self.$el.css("opacity", "0");
+                        self.updateBalance();
+                        self.$(".change_partner_container").show(0);
+                        self.change_partner_field.$el.find("input").attr("placeholder", _t("Select Partner"));
+                        self.$(".match").slideUp(0);
+                        self.$el.addClass("no_partner");
                         self.set("mode", self.context.mode);
-                        // Make sure the display is OK
-                        self.modeChanged();
-                        self.balanceChanged();
-                        self.createdLinesChanged();
-                        
-                        // Make an entrance
                         self.animation_speed = animation_speed;
                         self.aestetic_animation_speed = aestetic_animation_speed;
-                        if (self.context.animate) return self.$el.animate({opacity: 1}, self.aestetic_animation_speed);
-                    });;
+                        self.$el.animate({opacity: 1}, self.aestetic_animation_speed);
+                        self.is_consistent = true;
+                        return;
+                    } else {
+                        self.$el.removeClass("no_partner");
+                    }
+                    
+                    // load and display move lines
+                    if (self.context.animate) self.$el.css("opacity", "0");
+                    self.set("mode", "inactive"); // aesthetic consideration
+                    return $.when(self.loadReconciliationProposition()).then(function(){
+                        return $.when(self.updateMatches()).then(function(){
+                            self.is_consistent = true;
+                            
+                            self.set("mode", self.context.mode);
+                            // Make sure the display is OK
+                            self.modeChanged();
+                            self.balanceChanged();
+                            self.createdLinesChanged();
+                            
+                            // Make an entrance
+                            self.animation_speed = animation_speed;
+                            self.aestetic_animation_speed = aestetic_animation_speed;
+                            if (self.context.animate) return self.$el.animate({opacity: 1}, self.aestetic_animation_speed);
+                        });;
+                    });
                 });
-            });
+        });
     },
     
     restart: function(mode) {
@@ -491,7 +572,7 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         
         field_manager.load_form(dataset);
         
-        // fields properties
+        // fields default properties
         var Default_field = function() {
             this.context = {};
             this.domain = [];
@@ -502,7 +583,6 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
             this.states = {};
             this.views = {};
         };
-        
         var Default_node = function(field_name) {
             this.tag = "field";
             this.children = [];
@@ -515,76 +595,49 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
             };
         };
         
-        field_manager.fields_view.fields = {
-            account : _.extend(new Default_field(), {
-                relation: "account.account",
-                string: _t("Account"),
-                type: "many2one",
-            }),
-            label : _.extend(new Default_field(), {
-                string: _t("Label"),
-                type: "char",
-            }),
-            tax : _.extend(new Default_field(), {
-                relation: "account.tax",
-                string: _t("Tax"),
-                type: "many2one",
-            }),
-            amount : _.extend(new Default_field(), {
-                string: _t("Amount"),
-                type: "float",
-            }),
-            analytic_account : _.extend(new Default_field(), {
-                relation: "account.analytic.account",
-                string: _t("Account"),
-                type: "many2one",
-            }),
-            
-            change_partner : _.extend(new Default_field(), {
-                relation: "res.partner",
-                string: _t("Partner"),
-                type: "many2one",
-                domain: [['is_company','=',true], '|', ['customer','=',true], ['supplier','=',true]],
-            }),
-        };
-        
-        // generate the create "form"
-        // create widgets
-        var tax_node = new Default_node("tax"); tax_node.attrs.modifiers = "";
-        var a_account_node = new Default_node("analytic_account"); a_account_node.attrs.modifiers = "";
-        
-        self.account_field   = new instance.web.form.FieldMany2One(field_manager, new Default_node("account"));
-        self.label_field     = new instance.web.form.FieldChar(field_manager, new Default_node("label"));
-        self.tax_field       = new instance.web.form.FieldMany2One(field_manager, tax_node);
-        self.amount_field    = new instance.web.form.FieldFloat(field_manager, new Default_node("amount"));
-        self.a_account_field = new instance.web.form.FieldMany2One(field_manager, a_account_node);
-        self.create_form = [self.account_field, self.label_field, self.tax_field, self.amount_field, self.a_account_field];
-        
-        // on update : change the last created line
-        self.account_field  .corresponding_property = "account_id";
-        self.label_field    .corresponding_property = "label";
-        self.tax_field      .corresponding_property = "tax_id";
-        self.amount_field   .corresponding_property = "amount";
-        self.a_account_field.corresponding_property = "analytic_account_id";
-        _.each(self.create_form, function(o) {
-            o.on("change:value", self, function(elt, val) { self.formCreateInputChanged(elt, val); });
+        // Append fields to the field_manager
+        field_manager.fields_view.fields = {};
+        for (key in self.create_form_fields) {
+            field_manager.fields_view.fields[self.create_form_fields[key].id]
+                = _.extend(new Default_field(), self.create_form_fields[key].field_properties);
+        }
+        field_manager.fields_view.fields["change_partner"] = _.extend(new Default_field(), {
+            relation: "res.partner",
+            string: _t("Partner"),
+            type: "many2one",
+            domain: [['is_company','=',true], '|', ['customer','=',true], ['supplier','=',true]],
         });
         
-        // append to DOM
-        self.account_field  .appendTo(self.$(".create_account_container"));
-        self.label_field    .appendTo(self.$(".create_label_container"));
-        self.tax_field      .appendTo(self.$(".create_tax_container"));
-        self.amount_field   .appendTo(self.$(".create_amount_container"));
-        self.a_account_field.appendTo(self.$(".create_analytic_account_container"));
-        
-        // now that widget's dom has been created (appendTo does that), bind events and adds tabindex
-        self.label_field    .$el.find("input").keyup(function(e){ self.label_field.commit_value(); });
-        self.amount_field   .$el.find("input").keyup(function(e){ self.amount_field.commit_value(); });
-        self.account_field  .$el.find("input").attr("tabindex", 10);
-        self.label_field    .$el.find("input").attr("tabindex", 11);
-        self.tax_field      .$el.find("input").attr("tabindex", 12);
-        self.amount_field   .$el.find("input").attr("tabindex", 13);
-        self.a_account_field.$el.find("input").attr("tabindex", 14);
+        // generate the create "form"
+        self.create_form = [];
+        for (key in self.create_form_fields) {
+            // create widgets
+            var field_data = self.create_form_fields[key];
+            if (! field_data.required) {
+                var node = new Default_node(field_data.id);
+                node.attrs.modifiers = "";
+            } else {
+                var node = new Default_node(field_data.id);
+            }
+            var field = new field_data.constructor(field_manager, node);
+            self[field_data.id+"_field"] = field;
+            self.create_form.push(field);
+            
+            // on update : change the last created line
+            field.corresponding_property = field_data.corresponding_property;
+            field.on("change:value", self, function(elt, val) { self.formCreateInputChanged(elt, val); });
+            
+            // append to DOM
+            $field_container = $(QWeb.render("form_create_field", {id: field_data.id, label: field_data.label}));
+            self.$(".oe_form").prepend($field_container);
+            field.appendTo($field_container.find("td"));
+            
+            // now that widget's dom has been created (appendTo does that), bind events and adds tabindex
+            if (field_data.field_properties.type != "many2one") {
+                field.$el.find("input").keyup(function(e){ self.label_field.commit_value(); });
+            }
+            field.$el.find("input").attr("tabindex", field_data.tabindex);
+        };
         
         // generate the change partner "form"
         var change_partner_node = new Default_node("change_partner"); change_partner_node.attrs.modifiers = "";
@@ -669,7 +722,7 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
             && line.label; // must be defined and not empty
     },
     
-    /* returns, the created lines, plus the one being edited if valid */
+    /* returns the created lines, plus the one being edited if valid */
     getCreatedLines: function() {
         var self = this;
         var created_lines = self.get("lines_created").slice();

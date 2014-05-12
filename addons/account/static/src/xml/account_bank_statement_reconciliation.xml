@@ -80,22 +80,21 @@
                     
                     <div class="action_pane create">
                         <div class="quick_add btn-group btn-group-sm"></div>
-                        <table class="oe_form"><tr>
-                            <td><table>
-                                <tr><td>Account</td><td class="create_account_container"></td></tr>
-                                <tr><td>Tax</td><td class="create_tax_container"></td></tr>
-                                <tr><td>Analytic Acc.</td><td class="create_analytic_account_container"></td></tr>
-                            </table></td>
-                            <td><table>
-                                <tr><td>Label</td><td class="create_label_container"></td></tr>
-                                <tr><td>Amount</td><td class="create_amount_container"></td></tr>
-                                <tr><td colspan="2" class="add_line_cell"><a href="javascript:void(0)" class="add_line">New</a></td></tr>
-                            </table></td>
-                        </tr></table>
+                        <div class="oe_form">
+                            <!-- here come some form_create_field -->
+                            <table class="create_field"><tr><td class="add_line_cell"><a href="javascript:void(0)" class="add_line">New</a></td></tr></table>
+                        </div>
                     </div>
                 </td>
             </tr>
         </table>
+    </t>
+    
+    <t t-name="form_create_field">
+        <table t-att-class='"create_field create_"+id'><tr>
+            <th><t t-esc="label"/></th>
+            <td class="create_account_container" t-att-class='"create_"+id+"_container"'></td>
+        </tr></table>
     </t>
     
     <t t-name="bank_statement_reconciliation_line_details">

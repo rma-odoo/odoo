@@ -563,7 +563,7 @@ class account_bank_statement_line(osv.osv):
         line = self.browse(cr, uid, id, context=context)
         currency = line.journal_id.currency.name or line.journal_id.company_id.currency_id.name
         
-        return {
+        dict = {
             'id': line.id,
             'ref': line.ref,
             'note': line.note or "",
@@ -577,8 +577,14 @@ class account_bank_statement_line(osv.osv):
             'partner_name': line.partner_id.name,
             'currency_name': currency,
             'has_no_partner': line.partner_id.id == False,
-            'open_balance_account_id': line.partner_id.property_account_receivable.id if line.amount > 0 else line.partner_id.property_account_payable.id,
         }
+        if line.partner_id.id != False:
+            if line.amount > 0:
+                dict['open_balance_account_id'] = line.partner_id.property_account_receivable.id
+            else:
+                dict['open_balance_account_id'] = line.partner_id.property_account_payable.id
+        
+        return dict
     
     def get_reconciliation_proposition(self, cr, uid, id, excluded_ids=[], context=None):
         """ Returns move lines that constitute the best guess to reconcile a statement line. """
@@ -664,14 +670,15 @@ class account_bank_statement_line(osv.osv):
                     'account_type': line.account_id.type,
                     'debit':  line.amount_residual if line.amount_residual < 0 else 0,
                     'credit': line.amount_residual if line.amount_residual > 0 else 0,
-                    'initial_debit':  line.amount_residual if line.amount_residual < 0 else 0,
-                    'initial_credit': line.amount_residual if line.amount_residual > 0 else 0,
                     'date_maturity': line.date_maturity,
                     'date': line.date,
                     'period_name': line.period_id.name,
                     'journal_name': line.journal_id.name,
                 }
                 ret.append(ret_line);
+            
+#            if additional_domain == []:
+#                import pudb;pudb.set_trace()
             return ret
     
     def change_partner(self, cr, uid, id, partner_id, context=None):
@@ -682,7 +689,7 @@ class account_bank_statement_line(osv.osv):
         
         
     def process_reconciliation(self, cr, uid, id, mv_line_dicts, context=None):
-        """ 
+        """ Creates a move line for each item of mv_line_dicts and for the statement line. Reconcile a new move line with its counterpart_move_line_id if specified. Finally, mark the statement line as reconciled by putting the newly created move id in the column journal_entry_id.
             
             :param int id: id of the bank statement line
             :param list of dicts mv_line_dicts: move lines to create. If counterpart_move_line_id is specified, reconcile with it 
@@ -700,11 +707,11 @@ class account_bank_statement_line(osv.osv):
         for mv_line_dict in mv_line_dicts:
             if mv_line_dict.get('counterpart_move_line_id'):
                 mv_line = aml_obj.browse(cr, uid, mv_line_dict.get('counterpart_move_line_id'), context=context)
-                if mv_line.reconcile_id or mv_line.reconcile_partial_id:
+                if mv_line.reconcile_id:
                     raise osv.except_osv(_('Error!'), _('A selected move line was already reconciled.'))
         
         # Create the move
-        move_name = st_line.statement_id.name + "/" + ('%03d' % st_line.sequence)
+        move_name = st_line.statement_id.name + "/" + ('%04d' % st_line.sequence)
         move_vals = bs_obj._prepare_move(cr, uid, st_line, move_name, context=context)
         move_id = am_obj.create(cr, uid, move_vals, context=context)
         
@@ -733,12 +740,11 @@ class account_bank_statement_line(osv.osv):
         # Create move lines
         move_line_pairs_to_reconcile = []
         for mv_line_dict in mv_line_dicts:
-            counterpart_move_line_id = None
+            counterpart_move_line_id = None # NB : this attribute is irrelevant for aml_obj.create() and needs to be removed from the dict 
             if mv_line_dict.get('counterpart_move_line_id'):
                 counterpart_move_line_id = mv_line_dict['counterpart_move_line_id']
                 del mv_line_dict['counterpart_move_line_id']
             
-            print mv_line_dict
             new_aml_id = aml_obj.create(cr, uid, mv_line_dict, context=context)
             if counterpart_move_line_id != None:
                 move_line_pairs_to_reconcile.append([new_aml_id, counterpart_move_line_id])
