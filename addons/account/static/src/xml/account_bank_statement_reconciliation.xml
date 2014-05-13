@@ -108,14 +108,24 @@
         </table>
     </t>
     
+    
     <t t-name="bank_statement_reconciliation_move_line">
         <tr class="mv_line" t-att-data-lineid="line.id" t-att-data-selected="selected">
             <td><span class="glyphicon glyphicon-add-remove"></span></td>
             <td><t t-esc="line.account_code"/></td>
             <td><t t-esc="line.q_due_date"/></td>
             <td><t t-esc="line.q_label"/></td>
-            <td><t t-esc="line.q_debit"/></td>
-            <td><t t-esc="line.q_credit"/></td>
+            
+            <td><t t-if="line.debit !== 0">
+                <t t-if="line.propose_partial_reconcile"><i class="do_partial_reconcile_button fa fa-exclamation-triangle" data-content="Partial reconciliation"></i></t>
+                <t t-if="line.partial_reconcile"><i class="undo_partial_reconcile_button fa fa-exclamation-triangle" data-content="Undo partial reconciliation"></i></t>
+                <t t-esc="line.debit.toFixed(2)"/>
+            </t></td>
+            <td><t t-if="line.credit !== 0">
+                <t t-if="line.propose_partial_reconcile"><i class="do_partial_reconcile_button fa fa-exclamation-triangle" data-content="Partial reconciliation"></i></t>
+                <t t-if="line.partial_reconcile"><i class="undo_partial_reconcile_button fa fa-exclamation-triangle" data-content="Undo partial reconciliation"></i></t>
+                <t t-esc="line.credit.toFixed(2)"/>
+            </t></td>
             <td><span class="line_info_button glyphicon glyphicon-info-sign" t-att-data-content="line.q_popover"></span></td>
         </tr>
     </t>
@@ -127,9 +137,10 @@
             <tr><td>Period</td><td><t t-esc="line.period_name"/></td></tr>
             <tr><td>Date</td><td><t t-esc="line.date"/></td></tr>
             <tr><td>Due Date</td><td><t t-esc="line.q_due_date"/></td></tr>
-            <tr><td>Amount</td><td><t t-esc="line.q_amount"/></td></tr>
+            <tr><td>Amount</td><td><t t-if="line.debit !== 0" t-esc="line.debit"/><t t-if="line.credit !== 0" t-esc="line.credit"/></td></tr>
         </table>
     </t>
+    
     
     <t t-name="bank_statement_reconciliation_created_line">
         <tr class="created_line" t-att-data-lineid="line.id">

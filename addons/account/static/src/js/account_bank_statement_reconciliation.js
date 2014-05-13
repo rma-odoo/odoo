@@ -48,11 +48,11 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
         document.head.appendChild(style);
         var css_selector = ".oe_bank_statement_reconciliation_line .toggle_match, .oe_bank_statement_reconciliation_line .toggle_create,  .oe_bank_statement_reconciliation_line .initial_line > td";
         if(style.sheet.insertRule) {
-            style.sheet.insertRule(css_selector + " { -webkit-transition-duration: "+self.aestetic_animation_speed+"ms; }");
-            style.sheet.insertRule(css_selector + " { -moz-transition-duration: "+self.aestetic_animation_speed+"ms; }");
-            style.sheet.insertRule(css_selector + " { -ms-transition-duration: "+self.aestetic_animation_speed+"ms; }");
-            style.sheet.insertRule(css_selector + " { -o-transition-duration: "+self.aestetic_animation_speed+"ms; }");
-            style.sheet.insertRule(css_selector + " { transition-duration: "+self.aestetic_animation_speed+"ms; }");
+            style.sheet.insertRule(css_selector + " { -webkit-transition-duration: "+self.aestetic_animation_speed+"ms; }", 0);
+            style.sheet.insertRule(css_selector + " { -moz-transition-duration: "+self.aestetic_animation_speed+"ms; }", 0);
+            style.sheet.insertRule(css_selector + " { -ms-transition-duration: "+self.aestetic_animation_speed+"ms; }", 0);
+            style.sheet.insertRule(css_selector + " { -o-transition-duration: "+self.aestetic_animation_speed+"ms; }", 0);
+            style.sheet.insertRule(css_selector + " { transition-duration: "+self.aestetic_animation_speed+"ms; }", 0);
         } else {
             style.sheet.addRule(css_selector, "-webkit-transition-duration: "+self.aestetic_animation_speed+"ms;");
             style.sheet.addRule(css_selector, "-moz-transition-duration: "+self.aestetic_animation_speed+"ms;");
@@ -349,6 +349,8 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         "click .line_info_button": function(e){e.stopPropagation();}, // small usability hack
         "click .add_line": "addLineClickHandler",
         "click .preset": "presetClickHandler",
+        "click .do_partial_reconcile_button": "doPartialReconcileButtonClickHandler",
+        "click .undo_partial_reconcile_button": "undoPartialReconcileButtonClickHandler",
     },
     
     init: function(parent, context) {
@@ -389,6 +391,7 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         this.create_form_fields = {
             account: {
                 id: "account",
+                index: 0,
                 corresponding_property: "account_id", // a model field name
                 label: _t("Account"),
                 required: true,
@@ -402,6 +405,7 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
             },
             label: {
                 id: "label",
+                index: 1,
                 corresponding_property: "label",
                 label: _t("Label"),
                 required: true,
@@ -414,6 +418,7 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
             },
             tax: {
                 id: "tax",
+                index: 2,
                 corresponding_property: "tax_id",
                 label: _t("Tax"),
                 required: false,
@@ -427,6 +432,7 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
             },
             amount: {
                 id: "amount",
+                index: 3,
                 corresponding_property: "amount",
                 label: _t("Amount"),
                 required: true,
@@ -439,6 +445,7 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
             },
             analytic_account: {
                 id: "analytic_account",
+                index: 4,
                 corresponding_property: "analytic_account_id",
                 label: _t("Analytic Acc."),
                 required: false,
@@ -468,13 +475,13 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
             return self.model_bank_statement_line
                 .call("get_statement_line_for_reconciliation", [self.st_line_id])
                 .then(function (data) {
+                    self.decorateStatementLine(data);
                     self.st_line = data;
                     self.partner_id = data.partner_id;
                     if (self.getParent().excluded_move_lines_ids[self.partner_id] === undefined)
                         self.getParent().excluded_move_lines_ids[self.partner_id] = [];
                     
                     // Render template
-                    self.prepareStatementLineForRendering(self.st_line);
                     self.$el.prepend(QWeb.render("bank_statement_reconciliation_line", {line: self.st_line, mode: self.context.mode}));
                     
                     // Stuff that require the template to be rendered
@@ -552,6 +559,9 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
     /* create form widgets, append them to the dom and bind their events handlers */
     createFormWidgets: function() {
         var self = this;
+        create_form_fields_arr = [];
+        for (var key in self.create_form_fields) create_form_fields_arr.push(self.create_form_fields[key]);
+        create_form_fields_arr.sort(function(a, b) {return a.index < b.index});
         
         // field_manager
         var dataset = new instance.web.DataSet(this, "account.account", self.context);
@@ -597,9 +607,9 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         
         // Append fields to the field_manager
         field_manager.fields_view.fields = {};
-        for (key in self.create_form_fields) {
-            field_manager.fields_view.fields[self.create_form_fields[key].id]
-                = _.extend(new Default_field(), self.create_form_fields[key].field_properties);
+        for (var i=0; i<create_form_fields_arr.length; i++) {
+            field_manager.fields_view.fields[create_form_fields_arr[i].id]
+                = _.extend(new Default_field(), create_form_fields_arr[i].field_properties);
         }
         field_manager.fields_view.fields["change_partner"] = _.extend(new Default_field(), {
             relation: "res.partner",
@@ -609,10 +619,11 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         });
         
         // generate the create "form"
+        
         self.create_form = [];
-        for (key in self.create_form_fields) {
+        for (var i=0; i<create_form_fields_arr.length; i++) {
             // create widgets
-            var field_data = self.create_form_fields[key];
+            var field_data = create_form_fields_arr[i];
             if (! field_data.required) {
                 var node = new Default_node(field_data.id);
                 node.attrs.modifiers = "";
@@ -629,8 +640,8 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
             
             // append to DOM
             $field_container = $(QWeb.render("form_create_field", {id: field_data.id, label: field_data.label}));
-            self.$(".oe_form").prepend($field_container);
             field.appendTo($field_container.find("td"));
+            self.$(".oe_form").prepend($field_container);
             
             // now that widget's dom has been created (appendTo does that), bind events and adds tabindex
             if (field_data.field_properties.type != "many2one") {
@@ -681,18 +692,18 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
     /** Utils */
     
     /* TODO : if t-call for attr, all in qweb */
-    prepareStatementLineForRendering: function(line){
+    decorateStatementLine: function(line){
         var self = this;
         line.q_popover = QWeb.render("bank_statement_reconciliation_line_details", {line: line});
     },
     
     // adds fields, prefixed with q_, to the move line for qweb rendering
-    prepareMoveLineForRendering: function(line){
+    decorateMoveLine: function(line){
         var self = this;
-        line.q_debit = (line.debit === 0 ? "" : line.debit.toFixed(2));
-        line.q_credit = (line.credit === 0 ? "" : line.credit.toFixed(2));
+        line.partial_reconcile = false;
+        line.propose_partial_reconcile = false;
         line.q_due_date = (line.date_maturity === false ? line.date : line.date_maturity);
-        line.q_amount = (line.q_debit !== "" ? "- "+line.q_debit : "") + (line.q_credit !== "" ? line.q_credit : "");
+        line.q_amount = (line.debit !== 0 ? "- "+line.q_debit : "") + (line.credit !== 0 ? line.q_credit : "");
         line.q_popover = QWeb.render("bank_statement_reconciliation_move_line_details", {line: line});
         line.q_label = line.name;
         
@@ -766,10 +777,15 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
     deselectMoveLine: function(mv_line) {
         var self = this;
         var line_id = mv_line.dataset.lineid;
+        var line = _.find(self.get("mv_lines_selected"), function(o) { return o.id == line_id; });
         
         // add the line to mv_lines_deselected and remove it from mv_lines_selected
-        self.mv_lines_deselected.unshift(_.find(self.get("mv_lines_selected"), function(o) { return o.id == line_id; }));
+        self.mv_lines_deselected.unshift(line);
         var mv_lines_selected = _.filter(self.get("mv_lines_selected"), function(o) { return o.id != line_id; });
+        
+        // remove partial reconciliation stuff if necessary
+        if (line.partial_reconcile === true) self.unpartialReconcileLine(line);
+        if (line.propose_partial_reconcile === true) line.propose_partial_reconcile = false;
         
         self.$el.removeClass("no_match");
         self.set("mode", "match");
@@ -841,6 +857,7 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         self.amount_field.set("value", -1*self.get("balance"));
     },
     
+    /* TODO : eventually adjust for unknow fields and presets ; that would probably never be used though */
     presetClickHandler: function(e) {
         var self = this;
         var preset = self.presets[e.currentTarget.dataset.name];
@@ -889,6 +906,8 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         _(self.get("mv_lines_selected")).each(function(line){
             var $line = $(QWeb.render("bank_statement_reconciliation_move_line", {line: line, selected: true}));
             self.bindPopoverTo($line.find(".line_info_button"));
+            if (line.propose_partial_reconcile) self.bindPopoverTo($line.find(".do_partial_reconcile_button"));
+            if (line.partial_reconcile) self.bindPopoverTo($line.find(".undo_partial_reconcile_button"));
             self.$(".tbody_matched_lines").append($line);
         });
     },
@@ -920,7 +939,6 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
             table.append($line);
         });
         _(self.get("mv_lines")).each(function(line){
-            self.prepareMoveLineForRendering(line);
             var $line = $(QWeb.render("bank_statement_reconciliation_move_line", {line: line, selected: false}));
             self.bindPopoverTo($line.find(".line_info_button"));
             table.append($line);
@@ -1035,9 +1053,10 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
     
     mvLinesSelectedChanged: function(elt, val) {
         var self = this;
-
+        
         var added_lines_ids = _.map(_.difference(val.newValue, val.oldValue), function(o){ return o.id });
         var removed_lines_ids = _.map(_.difference(val.oldValue, val.newValue), function(o){ return o.id });
+        
         self.getParent().excludeMoveLines(self, self.partner_id, added_lines_ids);
         self.getParent().unexcludeMoveLines(self, self.partner_id, removed_lines_ids);
         
@@ -1073,17 +1092,74 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
     
     /** Model */
     
+    doPartialReconcileButtonClickHandler: function(e) {
+        var self = this;
+        
+        var line_id = $(e.currentTarget).closest("tr").data("lineid");
+        var line = _.find(self.get("mv_lines_selected"), function(o) { return o.id == line_id; });
+        self.partialReconcileLine(line);
+        
+        $(e.currentTarget).popover('destroy');
+        self.updateAccountingViewMatchedLines();
+        self.updateBalance();
+        e.stopPropagation();
+    },
+    
+    partialReconcileLine: function(line) {
+        var self = this;
+        var balance = self.get("balance");
+        line.initial_amount = line.debit !== 0 ? line.debit : -1 * line.credit;
+        balance < 0 ? line.debit -= balance : line.credit -= balance;
+        line.propose_partial_reconcile = false;
+        line.partial_reconcile = true;
+    },
+    
+    undoPartialReconcileButtonClickHandler: function(e) {
+        var self = this;
+        
+        var line_id = $(e.currentTarget).closest("tr").data("lineid");
+        var line = _.find(self.get("mv_lines_selected"), function(o) { return o.id == line_id; });
+        self.unpartialReconcileLine(line);
+        
+        $(e.currentTarget).popover('destroy');
+        self.updateAccountingViewMatchedLines();
+        self.updateBalance();
+        e.stopPropagation();
+    },
+    
+    unpartialReconcileLine: function(line) {
+        var self = this;
+        line.initial_amount > 0 ? line.debit = line.initial_amount : line.credit = -1 * line.initial_amount;
+        line.propose_partial_reconcile = true;
+        line.partial_reconcile = false;
+    },
+    
     updateBalance: function() {
         var self = this;
+        var mv_lines_selected = self.get("mv_lines_selected")
         var balance = 0;
         balance -= self.st_line.amount;
-        _.each(self.get("mv_lines_selected"), function(o) {
+        _.each(mv_lines_selected, function(o) {
             balance = balance - o.debit + o.credit;
         });
         _.each(self.getCreatedLines(), function(o) {
             balance += o.amount;
         });
         self.set("balance", balance);
+        
+        // Propose partial reconciliation if necessary
+        if (mv_lines_selected.length === 1 && self.st_line.amount * balance > 0) {
+            mv_lines_selected[0].propose_partial_reconcile = true;
+            self.updateAccountingViewMatchedLines();
+        }
+        if (mv_lines_selected.length !== 1) {
+            // remove partial reconciliation stuff if necessary
+            _.each(mv_lines_selected, function(line) {
+                if (line.partial_reconcile === true) self.unpartialReconcileLine(line);
+                if (line.propose_partial_reconcile === true) line.propose_partial_reconcile = false;
+                self.updateAccountingViewMatchedLines();
+            });
+        }
     },
     
     loadReconciliationProposition: function() {
@@ -1091,7 +1167,7 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         return self.model_bank_statement_line
             .call("get_reconciliation_proposition", [self.st_line.id, self.getParent().excluded_move_lines_ids[self.partner_id]])
             .then(function (lines) {
-                _(lines).each(self.prepareMoveLineForRendering.bind(self));
+                _(lines).each(self.decorateMoveLine.bind(self));
                 self.set("mv_lines_selected", self.get("mv_lines_selected").concat(lines));
             });
     },
@@ -1114,6 +1190,8 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
             var deferred_move_lines = self.model_bank_statement_line
                 .call("get_move_lines_counterparts", [self.st_line.id, excluded_ids, self.filter, offset, limit])
                 .then(function (lines) {
+                    console.log(lines);
+                    _(lines).each(self.decorateMoveLine.bind(self));
                     move_lines = lines;
                 });
         }

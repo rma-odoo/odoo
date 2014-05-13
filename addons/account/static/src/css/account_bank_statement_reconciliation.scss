@@ -279,6 +279,16 @@ $initialLineBackground: #f0f0f0;
             tr:hover .glyphicon {
                 visibility: visible;
             }
+            
+            tr .do_partial_reconcile_button {
+                color: #f0ad4e;
+                padding-right: 5px;
+            }
+            
+            tr .undo_partial_reconcile_button {
+                color: #5bc0de;
+                padding-right: 5px;
+            }
         }
         
         /* Partie infos */
@@ -380,6 +390,11 @@ $initialLineBackground: #f0f0f0;
             
             .oe_form .create_field {
                 width: 49%;
+                
+                height: 26px;
+                .add_line {
+                    line-height: 26px;
+                }
                 
                 &:nth-child(2n+1) {
                     float: left;

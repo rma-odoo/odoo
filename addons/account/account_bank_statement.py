@@ -668,7 +668,7 @@ class account_bank_statement_line(osv.osv):
                     'account_code': line.account_id.code,
                     'account_name': line.account_id.name,
                     'account_type': line.account_id.type,
-                    'debit':  line.amount_residual if line.amount_residual < 0 else 0,
+                    'debit':  -1 * line.amount_residual if line.amount_residual < 0 else 0,
                     'credit': line.amount_residual if line.amount_residual > 0 else 0,
                     'date_maturity': line.date_maturity,
                     'date': line.date,
@@ -676,9 +676,6 @@ class account_bank_statement_line(osv.osv):
                     'journal_name': line.journal_id.name,
                 }
                 ret.append(ret_line);
-            
-#            if additional_domain == []:
-#                import pudb;pudb.set_trace()
             return ret
     
     def change_partner(self, cr, uid, id, partner_id, context=None):
