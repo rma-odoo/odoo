@@ -166,7 +166,7 @@
         color: #f0ad4e;
         padding-right: 5px; }
       .openerp .oe_bank_statement_reconciliation .oe_bank_statement_reconciliation_line .accounting_view tr .undo_partial_reconcile_button, .openerp .oe_bank_statement_reconciliation .oe_bank_statement_reconciliation_line .match table tr .undo_partial_reconcile_button {
-        color: #5bc0de;
+        color: #5cb85c;
         padding-right: 5px; }
     .openerp .oe_bank_statement_reconciliation .oe_bank_statement_reconciliation_line .accounting_view .initial_line > td {
       border-top: 1px solid #bbbbbb;
