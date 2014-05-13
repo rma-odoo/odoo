@@ -37,20 +37,10 @@ class account_coda_import(osv.osv_memory):
         'coda_data': fields.binary('CODA File', required=True),
         'coda_fname': fields.char('CODA Filename', size=128, required=True),
         'note': fields.text('Log'),
-        'temporary_account_id': fields.many2one('account.account', 'Temporary Account', domain="[('type','!=','view')]", help="It acts as a temporary account for general amount", required=True),
     }
-
-    def _get_default_tmp_account(self, cr, uid, context):
-        tmp_accounts = self.pool.get('account.account').search(cr, uid, [('code', '=', '490000')])
-        if tmp_accounts and len(tmp_accounts) > 0:
-            tmp_account_id = tmp_accounts[0]
-        else:
-            tmp_account_id = False
-        return tmp_account_id
 
     _defaults = {
         'coda_fname': lambda *a: '',
-        'temporary_account_id': _get_default_tmp_account,
     }
 
     def coda_parsing(self, cr, uid, ids, context=None, batch=False, codafile=None, codafilename=None):
@@ -64,7 +54,6 @@ class account_coda_import(osv.osv_memory):
             try:
                 codafile = data.coda_data
                 codafilename = data.coda_fname
-                temporaryaccount = data.temporary_account_id.id
             except:
                 raise osv.except_osv(_('Error'), _('Wizard in incorrect state. Please hit the Cancel button'))
                 return {}
@@ -363,8 +352,6 @@ class account_coda_import(osv.osv_memory):
                         if ids and len(ids) > 0:
                             partner = self.pool.get('res.partner.bank').browse(cr, uid, ids[0], context=context).partner_id
                             partner_id = partner.id
-                    if not partner and not invoice:
-                        line['account'] = temporaryaccount
                     if 'communication' in line and line['communication'] != '':
                         note.append(_('Communication') + ': ' + line['communication'])
                     data = {

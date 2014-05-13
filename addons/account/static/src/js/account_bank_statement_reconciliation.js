@@ -186,7 +186,7 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
                 } else if (contains_lines(child.mv_lines_deselected, line_ids)) {
                     child.mv_lines_deselected = _.filter(child.mv_lines_deselected, function(o){ return line_ids.indexOf(o.id) === -1; });
                     child.updateMatches();
-                } else if (contains_lines(child.get("mv_lines"), line_ids)) {
+                } else if (contains_lines(child.get("mv_lines"), line_ids) && child.get("mode") === "match") {
                     child.updateMatches();
                 }
             }
@@ -203,7 +203,7 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
         
         // Update children if needed
         _.each(self.getChildren(), function(child){
-            if (child.partner_id === partner_id&& child !== source_child)
+            if (child.partner_id === partner_id && child !== source_child && child.get("mode") === "match")
                 child.updateMatches();
         });
     },
@@ -509,14 +509,11 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
                     
                     // load and display move lines
                     if (self.context.animate) self.$el.css("opacity", "0");
-                    self.set("mode", "inactive"); // aesthetic consideration
                     return $.when(self.loadReconciliationProposition()).then(function(){
-                        return $.when(self.updateMatches()).then(function(){
+                        return $.when(self.set("mode", self.context.mode)).then(function(){
                             self.is_consistent = true;
                             
-                            self.set("mode", self.context.mode);
                             // Make sure the display is OK
-                            self.modeChanged();
                             self.balanceChanged();
                             self.createdLinesChanged();
                             
@@ -1024,13 +1021,15 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
             self.el.dataset.mode = "inactive";
             
         } else if (self.get("mode") === "match") {
-            if (self.$el.hasClass("no_match")) {
-                self.set("mode", "inactive");
-                return;
-            }
-            self.$(".match").slideDown(self.animation_speed);
-            self.$(".create").slideUp(self.animation_speed);
-            self.el.dataset.mode = "match";
+            return $.when(self.updateMatches()).then(function() {
+                if (self.$el.hasClass("no_match")) {
+                    self.set("mode", "inactive");
+                    return;
+                }
+                self.$(".match").slideDown(self.animation_speed);
+                self.$(".create").slideUp(self.animation_speed);
+                self.el.dataset.mode = "match";
+            });
             
         } else if (self.get("mode") === "create") {
             self.initializeCreateForm();
