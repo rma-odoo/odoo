@@ -80,7 +80,7 @@
                     
                     <div class="action_pane create">
                         <div class="quick_add btn-group btn-group-sm"></div>
-                        <div class="oe_form">
+                        <div class="oe_form create_form">
                             <!-- here come some form_create_field -->
                             <table class="create_field"><tr><td class="add_line_cell"><a href="javascript:void(0)" class="add_line">New</a></td></tr></table>
                         </div>
@@ -117,13 +117,13 @@
             <td><t t-esc="line.q_label"/></td>
             
             <td><t t-if="line.debit !== 0">
-                <t t-if="line.propose_partial_reconcile"><i class="do_partial_reconcile_button fa fa-exclamation-triangle" data-content="Partial reconciliation"></i></t>
-                <t t-if="line.partial_reconcile"><i class="undo_partial_reconcile_button fa fa-exclamation-triangle" data-content="Undo partial reconciliation"></i></t>
+                <t t-if="line.propose_partial_reconcile"><i class="do_partial_reconcile_button fa fa-exclamation-triangle" data-content="The balance is off. Click to do a partial reconciliation"></i></t>
+                <t t-if="line.partial_reconcile"><i class="undo_partial_reconcile_button fa fa-exclamation-triangle" data-content="Undo the partial reconciliation"></i></t>
                 <t t-esc="line.debit.toFixed(2)"/>
             </t></td>
             <td><t t-if="line.credit !== 0">
-                <t t-if="line.propose_partial_reconcile"><i class="do_partial_reconcile_button fa fa-exclamation-triangle" data-content="Partial reconciliation"></i></t>
-                <t t-if="line.partial_reconcile"><i class="undo_partial_reconcile_button fa fa-exclamation-triangle" data-content="Undo partial reconciliation"></i></t>
+                <t t-if="line.propose_partial_reconcile"><i class="do_partial_reconcile_button fa fa-exclamation-triangle" data-content="The balance is off. Click to do a partial reconciliation"></i></t>
+                <t t-if="line.partial_reconcile"><i class="undo_partial_reconcile_button fa fa-exclamation-triangle" data-content="Undo the partial reconciliation"></i></t>
                 <t t-esc="line.credit.toFixed(2)"/>
             </t></td>
             <td><span class="line_info_button glyphicon glyphicon-info-sign" t-att-data-content="line.q_popover"></span></td>

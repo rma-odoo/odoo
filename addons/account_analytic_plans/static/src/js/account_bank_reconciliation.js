@@ -8,12 +8,28 @@ instance.web.account.bankStatementReconciliationLine.include({
     
     init: function(parent, context) {
         this._super(parent, context);
-        this.create_form_fields.analytic_account.label = "TODO"
+        delete this.create_form_fields.analytic_account;
+        this.create_form_fields["analytic_plan"] = {
+            id: "analytic_plan",
+            index: 4,
+            corresponding_property: "analytics_id",
+            label: _t("Analytic Distribution"),
+            required: false,
+            tabindex: 14,
+            group: "base.group_no_one",
+            constructor: instance.web.form.FieldMany2One,
+            field_properties: {
+                relation: "account.analytic.plan.instance",
+                string: _t("Analytic Distribution"),
+                type: "many2one",
+            }
+        };
     },
     
     start: function() {
         return this._super().then(function() {
         });
     },
+    
 });
 }

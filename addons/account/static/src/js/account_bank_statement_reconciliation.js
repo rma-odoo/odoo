@@ -364,6 +364,7 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         this.animation_speed = this.getParent().animation_speed;
         this.aestetic_animation_speed = this.getParent().aestetic_animation_speed;
         this.model_bank_statement_line = new instance.web.Model("account.bank.statement.line");
+        this.model_res_users = new instance.web.Model("res.users");
         this.map_account_id_code = this.getParent().map_account_id_code;
         this.presets = {}; // dict of presets for quickly adding new lines
         this.is_valid = true;
@@ -616,11 +617,11 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         });
         
         // generate the create "form"
-        
         self.create_form = [];
         for (var i=0; i<create_form_fields_arr.length; i++) {
-            // create widgets
             var field_data = create_form_fields_arr[i];
+
+            // create widgets
             if (! field_data.required) {
                 var node = new Default_node(field_data.id);
                 node.attrs.modifiers = "";
@@ -638,13 +639,24 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
             // append to DOM
             $field_container = $(QWeb.render("form_create_field", {id: field_data.id, label: field_data.label}));
             field.appendTo($field_container.find("td"));
-            self.$(".oe_form").prepend($field_container);
-            
+            self.$(".create_form").prepend($field_container);
+
             // now that widget's dom has been created (appendTo does that), bind events and adds tabindex
             if (field_data.field_properties.type != "many2one") {
                 field.$el.find("input").keyup(function(e){ self.label_field.commit_value(); });
             }
             field.$el.find("input").attr("tabindex", field_data.tabindex);
+
+            // Hide the field if group not OK
+            if (field_data.group !== undefined) {
+                var target = $field_container;
+                target.hide();
+                deferred_group = self.model_res_users
+                    .call("has_group", [field_data.group])
+                    .then(function (has_group) {
+                        if (has_group) target.show();
+                    });
+            };
         };
         
         // generate the change partner "form"
@@ -1189,7 +1201,6 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
             var deferred_move_lines = self.model_bank_statement_line
                 .call("get_move_lines_counterparts", [self.st_line.id, excluded_ids, self.filter, offset, limit])
                 .then(function (lines) {
-                    console.log(lines);
                     _(lines).each(self.decorateMoveLine.bind(self));
                     move_lines = lines;
                 });
