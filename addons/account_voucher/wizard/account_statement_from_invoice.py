@@ -113,12 +113,9 @@ class account_statement_from_invoice_lines(osv.osv_memory):
             statement_line_obj.create(cr, uid, {
                 'name': line.name or '?',
                 'amount': amount,
-                'type': type,
                 'partner_id': line.partner_id.id,
-                'account_id': line.account_id.id,
                 'statement_id': statement_id,
                 'ref': line.ref,
-                'voucher_id': voucher_id,
                 'date': statement.date,
             }, context=context)
         return {'type': 'ir.actions.act_window_close'}

@@ -298,6 +298,26 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
         
         // Make it interactive
         self.$(".achievement").popover({'placement': 'top', 'container': self.el, 'trigger': 'hover'});
+
+        if (self.$(".button_close_statement").length !== 0) {
+            self.$(".button_close_statement").click(function(e) {
+                self.$(".button_close_statement").attr("disabled", "disabled");
+                self.model_bank_statement
+                    .call("button_confirm_bank", [[self.statement_id]])
+                    .then(function () {
+                        self.do_action({
+                            type: 'ir.actions.act_window',
+                            res_model: "account.bank.statement",
+                            res_id: 1,
+                            views: [[false, 'tree']],
+                            target: 'current',
+                            context: {},
+                        });
+                    }, function() {
+                        self.$(".button_close_statement").removeAttr("disabled");
+                    });
+            });
+        }
         /*
         dispatch_to_new_action: function() {
             self.do_action({

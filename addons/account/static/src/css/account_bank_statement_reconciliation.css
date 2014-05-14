@@ -70,6 +70,8 @@
           left: 0;
           width: 100%;
           text-align: center; }
+    .openerp .oe_bank_statement_reconciliation .done_message .action_buttons {
+      text-align: center; }
   .openerp .oe_bank_statement_reconciliation .glyphicon {
     font-size: 12px !important; }
     .openerp .oe_bank_statement_reconciliation .glyphicon.line_info_button {

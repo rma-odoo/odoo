@@ -37,6 +37,9 @@
                     <i class='fa fa-certificate achievement' t-att-data-title='achievement.title' t-att-data-content='achievement.desc'><i t-att-class="'fa '+achievement.icon"></i></i>
                 </t>
             </p>
+            <p class="action_buttons">
+                <button class="button_close_statement">Close the statement</button>
+            </p>
         </div>
     </t>
     

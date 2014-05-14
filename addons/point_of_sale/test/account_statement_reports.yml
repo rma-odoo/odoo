@@ -1,5 +1,5 @@
 -
-  In order to test Bank Statement feature of account I create a bank statement line and confirm it and check it's move created
+  In order to test the Bank Statement feature of account, I create a bank statement line and confirm it and check its move was created
 -
   I select the period and journal for the bank statement
 -

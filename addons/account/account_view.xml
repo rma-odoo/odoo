@@ -565,7 +565,7 @@
                         <button name="%(action_bank_reconcile_bank_statements)d" states="draft" string="Reconcile" type="action" class="oe_highlight"/>
                     </span>
                     <span attrs="{'invisible':[('all_lines_reconciled','=',False)]}">
-                        <button name="confirm_bank_statement" states="draft" string="Close" type="object" />
+                        <button name="button_confirm_bank" states="draft" string="Close" type="object" />
                     </span>
                     <button name="button_cancel" states="confirm" string="Cancel Statement" type="object"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,confirm"/>

@@ -56,7 +56,6 @@ class CashBoxIn(CashBox):
         return {
             'statement_id' : record.id,
             'journal_id' : record.journal_id.id,
-            'account_id' : record.journal_id.internal_account_id.id,
             'amount' : box.amount or 0.0,
             'ref' : '%s' % (box.ref or ''),
             'name' : box.name,

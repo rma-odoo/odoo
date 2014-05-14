@@ -410,7 +410,6 @@ class account_bank_statement(osv.osv):
     def check_status_condition(self, cr, uid, state, journal_type='bank'):
         return state in ('draft','open')
     
-    # TODO : anciennement appelé par le bouton "Confirm" du view_bank_statement_form
     def button_confirm_bank(self, cr, uid, ids, context=None):
         obj_seq = self.pool.get('ir.sequence')
         if context is None:
@@ -435,13 +434,12 @@ class account_bank_statement(osv.osv):
             for st_line in st.line_ids:
                 if not st_line.amount:
                     continue
-                self.pool.get('account.move').post(cr, uid, [st_line.journal_entry_id], context=context)
+                self.pool.get('account.move').post(cr, uid, [st_line.journal_entry_id.id], context=context)
 
             self.write(cr, uid, [st.id], {
-                    'name': st_number,
                     'balance_end_real': st.balance_end
             }, context=context)
-            self.message_post(cr, uid, [st.id], body=_('Statement %s confirmed, journal items were created.') % (st_number,), context=context)
+            self.message_post(cr, uid, [st.id], body=_('Statement %s confirmed, journal items were created.') % (st.name,), context=context)
         return self.write(cr, uid, ids, {'state':'confirm'}, context=context)
 
     def button_cancel(self, cr, uid, ids, context=None):
@@ -517,46 +515,6 @@ class account_bank_statement(osv.osv):
     
 class account_bank_statement_line(osv.osv):
     
-#    def onchange_partner_id(self, cr, uid, ids, partner_id, context=None):
-#        obj_partner = self.pool.get('res.partner')
-#        if context is None:
-#            context = {}
-#        if not partner_id:
-#            return {}
-#        part = obj_partner.browse(cr, uid, partner_id, context=context)
-#        if not part.supplier and not part.customer:
-#            type = 'general'
-#        elif part.supplier and part.customer:
-#            type = 'general'
-#        else:
-#            if part.supplier == True:
-#                type = 'supplier'
-#            if part.customer == True:
-#                type = 'customer'
-#        res_type = self.onchange_type(cr, uid, ids, partner_id=partner_id, type=type, context=context)
-#        if res_type['value'] and res_type['value'].get('account_id', False):
-#            return {'value': {'type': type, 'account_id': res_type['value']['account_id']}}
-#        return {'value': {'type': type}}
-#
-#    def onchange_type(self, cr, uid, line_id, partner_id, type, context=None):
-#        res = {'value': {}}
-#        obj_partner = self.pool.get('res.partner')
-#        if context is None:
-#            context = {}
-#        if not partner_id:
-#            return res
-#        account_id = False
-#        line = self.browse(cr, uid, line_id, context=context)
-#        if not line or (line and not line[0].account_id):
-#            part = obj_partner.browse(cr, uid, partner_id, context=context)
-#            if type == 'supplier':
-#                account_id = part.property_account_payable.id
-#            else:
-#                account_id = part.property_account_receivable.id
-#            res['value']['account_id'] = account_id
-#        return res
-
-    
     def get_statement_line_for_reconciliation(self, cr, uid, id, context=None):
         """ Returns the data required by the bank statement reconciliation use case """
         
@@ -591,7 +549,7 @@ class account_bank_statement_line(osv.osv):
         
         st_line = self.browse(cr, uid, id, context=context)
         company_currency = st_line.journal_id.company_id.currency_id.id
-        statement_currency = st_line.journal_id.currency.id or company_currency # st_line's journal currency is only set if it's not the same as company's currency
+        statement_currency = st_line.journal_id.currency.id or company_currency
         
         # either use the unsigned debit/credit fields or the signed amount_currency field
         sign = 1
