@@ -38,7 +38,7 @@
                 </t>
             </p>
             <p class="action_buttons">
-                <button class="button_close_statement">Close the statement</button>
+                <t t-if="has_statement_id"><button class="button_close_statement">Close the statement</button></t>
             </p>
         </div>
     </t>

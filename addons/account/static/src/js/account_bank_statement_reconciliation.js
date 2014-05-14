@@ -287,7 +287,8 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
             sec_per_item: sec_per_item,
             transactions_done: self.reconciled_lines,
             done_with_ctrl_enter: self.lines_reconciled_with_ctrl_enter,
-            achievements: achievements
+            achievements: achievements,
+            has_statement_id: self.statement_id !== undefined,
         }));
         
         // Animate it
@@ -318,18 +319,6 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
                     });
             });
         }
-        /*
-        dispatch_to_new_action: function() {
-            self.do_action({
-                type: 'ir.actions.act_window',
-                res_model: "product.product",
-                res_id: 1,
-                views: [[false, 'form']],
-                target: 'current',
-                context: {},
-            });
-        },
-        */
     },
     
     updateProgressbar: function() {

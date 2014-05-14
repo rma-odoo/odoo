@@ -41,6 +41,21 @@
     balance_end_real: 1000.0
 
 -
+  I prepare a "open balance" line
+-
+  open_balance = {
+    'account_id': line_id.partner_id.property_account_receivable.id,
+    'name': "OSEF",
+    'credit': 1000.0,
+  }
+
+-
+  I reconcile the bank statement.
+-
+  !python {model: account.bank.statement.line}: |
+    self.process_reconciliation(cr, uid, [ref("account_bank_statement_0")], [open_balance])
+
+-
   I confirm the bank statement using Confirm button
 -
   !python {model: account.bank.statement}: |
