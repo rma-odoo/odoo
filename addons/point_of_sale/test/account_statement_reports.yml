@@ -44,7 +44,7 @@
   I prepare a "open balance" line
 -
   open_balance = {
-    'account_id': line_id.partner_id.property_account_receivable.id,
+    'account_id': ref('base.res_partner_4').property_account_receivable.id,
     'name': "OSEF",
     'credit': 1000.0,
   }
