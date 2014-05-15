@@ -41,9 +41,10 @@
     balance_end_real: 1000.0
 
 -
-  I prepare a "open balance" line
+  I prepare a counterpart line
 -
-  open_balance = {
+  !python {model: account.bank.statement.line}: |
+  counterpart_line = {
     'account_id': ref('base.res_partner_4').property_account_receivable.id,
     'name': "OSEF",
     'credit': 1000.0,

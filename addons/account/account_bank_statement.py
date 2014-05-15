@@ -424,13 +424,13 @@ class account_bank_statement(osv.osv):
             self.balance_check(cr, uid, st.id, journal_type=j_type, context=context)
             if (not st.journal_id.default_credit_account_id) \
                     or (not st.journal_id.default_debit_account_id):
-                raise osv.except_osv(_('Configuration Error!'),
-                        _('Please verify that an account is defined in the journal.'))
-
+                raise osv.except_osv(_('Configuration Error!'), _('Please verify that an account is defined in the journal.'))
             for line in st.move_line_ids:
                 if line.state <> 'valid':
-                    raise osv.except_osv(_('Error!'),
-                            _('The account entries lines are not in valid state.'))
+                    raise osv.except_osv(_('Error!'), _('The account entries lines are not in valid state.'))
+                if not st_line.journal_entry_id.id:
+                    raise osv.except_osv(_('Error!'), _('All the account entries lines must be reconciled in order to close the statement.'))
+            
             for st_line in st.line_ids:
                 if not st_line.amount:
                     continue
