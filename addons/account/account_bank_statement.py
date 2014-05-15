@@ -626,13 +626,19 @@ class account_bank_statement_line(osv.osv):
                     'account_code': line.account_id.code,
                     'account_name': line.account_id.name,
                     'account_type': line.account_id.type,
-                    'debit':  -1 * line.amount_residual if line.amount_residual < 0 else 0,
-                    'credit': line.amount_residual if line.amount_residual > 0 else 0,
                     'date_maturity': line.date_maturity,
                     'date': line.date,
                     'period_name': line.period_id.name,
                     'journal_name': line.journal_id.name,
                 }
+                # TODO : ?!? what's with amount_residual sign ?
+                if line.amount_residual < 0:
+                    ret_line['debit'] = 0
+                    ret_line['credit'] = -line.amount_residual
+                else:
+                    ret_line['debit'] = line.amount_residual if line.credit != 0 else 0
+                    ret_line['credit'] = line.amount_residual if line.debit != 0 else 0
+
                 ret.append(ret_line);
             return ret
     

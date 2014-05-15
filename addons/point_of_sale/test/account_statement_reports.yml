@@ -45,7 +45,7 @@
 -
   !python {model: account.bank.statement.line}: |
     counterpart_line_dict = {
-        'account_id': self.pool.get('res.partner').browse(cr, uid, [ref('base.res_partner_4')]).property_account_receivable.id,
+        'account_id': self.pool.get('res.partner').browse(cr, uid, ref('base.res_partner_4')).property_account_receivable.id,
         'name': "OSEF",
         'credit': 1000.0
     }

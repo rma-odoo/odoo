@@ -1210,6 +1210,7 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
             var deferred_move_lines = self.model_bank_statement_line
                 .call("get_move_lines_counterparts", [self.st_line.id, excluded_ids, self.filter, offset, limit])
                 .then(function (lines) {
+                    console.log(lines);
                     _(lines).each(self.decorateMoveLine.bind(self));
                     move_lines = lines;
                 });
