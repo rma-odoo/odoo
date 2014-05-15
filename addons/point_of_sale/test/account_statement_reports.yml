@@ -49,7 +49,7 @@
         'name': "OSEF",
         'credit': 1000.0
     }
-    self.process_reconciliation(cr, uid, [ref("account_bank_statement_0")], [counterpart_line_dict])
+    self.process_reconciliation(cr, uid, ref("account_bank_statement_0"), [counterpart_line_dict])
 
 -
   I confirm the bank statement using Confirm button
