@@ -514,6 +514,21 @@ class account_bank_statement(osv.osv):
     
 class account_bank_statement_line(osv.osv):
     
+    def get_data_for_reconciliations(self, cr, uid, ids, context=None):
+        """ Used to instanciate a batch of reconciliations in a single request """
+        ret = []
+        mv_line_ids_selected = []
+        for st_line_id in ids:
+            reconciliation_data = {
+                'st_line': self.get_statement_line_for_reconciliation(cr, uid, st_line_id, context),
+                'reconciliation_proposition': self.get_reconciliation_proposition(cr, uid, st_line_id, mv_line_ids_selected, context)
+            }
+            for mv_line in reconciliation_data['reconciliation_proposition']:
+                mv_line_ids_selected.append(mv_line['id'])
+            ret.append(reconciliation_data);
+        return ret
+
+
     def get_statement_line_for_reconciliation(self, cr, uid, id, context=None):
         """ Returns the data required by the bank statement reconciliation use case """
         
