@@ -19,27 +19,21 @@
 -
   I create bank statement line
 -
-  !python {model: account.bank.statement.line}: |
-    vals = {
-        'amount': 1000.0,
-        'partner_id': ref('base.res_partner_4'),
-        'statement_id': ref('account_bank_statement_0'),
-        'name': 'EXT001'
-    }
-    line_id = self.create(cr, uid, vals)
-    assert line_id, "Account bank statement line has not been created"
+  !python {model: account.bank.statement.line, id: account_bank_statement_line_0}: |
+    amount: 1000.0,
+    partner_id: ref('base.res_partner_4'),
+    statement_id: ref('account_bank_statement_0'),
+    name: 'EXT001'
 -
   I compute bank statement using Compute button
 -
   !python {model: account.bank.statement}: |
     self.button_dummy(cr, uid, [ref("account_bank_statement_0")])
-
 -
   I modify the bank statement and set the Closing Balance.
 -
   !record {model: account.bank.statement, id: account_bank_statement_0}:
     balance_end_real: 1000.0
-
 -
   I reconcile the bank statement.
 -
@@ -49,8 +43,7 @@
         'name': "OSEF",
         'credit': 1000.0
     }
-    self.process_reconciliation(cr, uid, ref("account_bank_statement_0"), [counterpart_line_dict])
-
+    self.process_reconciliation(cr, uid, ref("account_bank_statement_line_0"), [counterpart_line_dict])
 -
   I confirm the bank statement using Confirm button
 -
