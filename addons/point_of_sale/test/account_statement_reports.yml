@@ -41,7 +41,7 @@
     balance_end_real: 1000.0
 
 -
-  I prepare a counterpart line dict
+  I reconcile the bank statement.
 -
   !python {model: account.bank.statement.line}: |
     counterpart_line_dict = {
@@ -49,11 +49,6 @@
         'name': "OSEF",
         'credit': 1000.0
     }
-
--
-  I reconcile the bank statement.
--
-  !python {model: account.bank.statement.line}: |
     self.process_reconciliation(cr, uid, [ref("account_bank_statement_0")], [counterpart_line_dict])
 
 -

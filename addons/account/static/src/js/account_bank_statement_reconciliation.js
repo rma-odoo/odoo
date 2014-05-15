@@ -306,6 +306,7 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
                 self.model_bank_statement
                     .call("button_confirm_bank", [[self.statement_id]])
                     .then(function () {
+                        // TODO : not exactly correct
                         self.do_action({
                             type: 'ir.actions.act_window',
                             res_model: "account.bank.statement",

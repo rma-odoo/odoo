@@ -427,13 +427,12 @@ class account_bank_statement(osv.osv):
                 raise osv.except_osv(_('Configuration Error!'), _('Please verify that an account is defined in the journal.'))
             for line in st.move_line_ids:
                 if line.state <> 'valid':
-                    raise osv.except_osv(_('Error!'), _('The account entries lines are not in valid state.'))
-                if not st_line.journal_entry_id.id:
-                    raise osv.except_osv(_('Error!'), _('All the account entries lines must be reconciled in order to close the statement.'))
-            
+                    raise osv.except_osv(_('Error!'), _('The account entries lines are not in valid state.'))            
             for st_line in st.line_ids:
                 if not st_line.amount:
                     continue
+                if not st_line.journal_entry_id.id:
+                    raise osv.except_osv(_('Error!'), _('All the account entries lines must be reconciled in order to close the statement.'))
                 self.pool.get('account.move').post(cr, uid, [st_line.journal_entry_id.id], context=context)
 
             self.write(cr, uid, [st.id], {
@@ -605,6 +604,7 @@ class account_bank_statement_line(osv.osv):
         domain = additional_domain + [
             ('partner_id', '=', st_line.partner_id.id),
             ('reconcile_id', '=', False),
+            ('statement_id', '=', False), # Or will include statement line used to partially reconcile a move
             ('state','=','valid'),
             '|',('account_id.type', '=', 'receivable'),
             ('account_id.type', '=', 'payable'), #Let the front-end warn the user if he tries to mix payable and receivable in the same reconciliation
@@ -712,6 +712,7 @@ class account_bank_statement_line(osv.osv):
         
         # Reconcile
         for pair in move_line_pairs_to_reconcile:
+            # TODO : seems slow ; bad for the front-end user-experience
             aml_obj.reconcile_partial(cr, uid, pair, context=context)
         
         # Mark the statement line as reconciled
