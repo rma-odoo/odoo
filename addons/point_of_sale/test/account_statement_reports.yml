@@ -19,7 +19,7 @@
 -
   I create bank statement line
 -
-  !record {model: account.bank.statement.line, id: account_bank_statement_line_0}: |
+  !record {model: account.bank.statement.line, id: account_bank_statement_line_0}:
     amount: 1000.0
     partner_id: ref('base.res_partner_4')
     statement_id: ref('account_bank_statement_0')

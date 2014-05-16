@@ -516,6 +516,7 @@ class account_bank_statement_line(osv.osv):
     
     def get_data_for_reconciliations(self, cr, uid, ids, context=None):
         """ Used to instanciate a batch of reconciliations in a single request """
+        
         ret = []
         mv_line_ids_selected = []
         for st_line_id in ids:
