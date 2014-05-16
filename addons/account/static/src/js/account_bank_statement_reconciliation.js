@@ -513,6 +513,8 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
                 self.$el.prepend(QWeb.render("bank_statement_reconciliation_line", {line: self.st_line, mode: self.context.mode}));
                 
                 // Stuff that require the template to be rendered
+                self.$(".match").slideUp(0);
+                self.$(".create").slideUp(0);
                 self.bindPopoverTo(self.$(".line_info_button"));
                 self.createFormWidgets();
                 self.initializePresets();
@@ -533,6 +535,7 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
                     return;
                 }
                 
+                // TODO : the .on handler's returned deferred is lost
                 return $.when(self.set("mode", self.context.mode)).then(function(){
                     self.is_consistent = true;
                     
@@ -1056,7 +1059,6 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
             self.el.dataset.mode = "inactive";
             
         } else if (self.get("mode") === "match") {
-            debugger;
             return $.when(self.updateMatches()).then(function() {
                 if (self.$el.hasClass("no_match")) {
                     self.set("mode", "inactive");
