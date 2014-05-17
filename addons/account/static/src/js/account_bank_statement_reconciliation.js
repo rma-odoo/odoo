@@ -133,7 +133,8 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
     
     keyboardShortcutsHandler: function(e) {
         var self = this;
-        if (e.which === 13 && (e.ctrlKey || e.metaKey)) { // TODO : e.metaKey not working ?
+        if (e.which === 13 && (e.ctrlKey || e.metaKey)) {
+            // TODO : make sure can't persist a child loaded since $.each begun
             $.each(self.getChildren(), function(i, o){
                 if (o.is_valid && o.persistAndDestroy()) {
                     self.lines_reconciled_with_ctrl_enter++;
@@ -1227,7 +1228,6 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
             var deferred_move_lines = self.model_bank_statement_line
                 .call("get_move_lines_counterparts", [self.st_line.id, excluded_ids, self.filter, offset, limit])
                 .then(function (lines) {
-                    console.log(lines);
                     _(lines).each(self.decorateMoveLine.bind(self));
                     move_lines = lines;
                 });
@@ -1348,6 +1348,59 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
                     self.$el.unwrap();
                 });
             });
+
+        /* For batch persisting
+// Hide the widget, prepare and return 
+prepareToPersist: function() {
+    var self = this;
+    if (! self.is_consistent) return false;
+
+    // Sliding animation
+    var height = self.$el.outerHeight();
+    var container = $("<div />");
+    container.css("height", height)
+             .css("marginTop", self.$el.css("marginTop"))
+             .css("marginBottom", self.$el.css("marginBottom"));
+    self.$el.wrap(container);
+    self.$el.parent().slideUp(self.animation_speed*height/150);
+
+    // Prepare data
+    var mv_line_dicts = [];
+    _.each(self.get("mv_lines_selected"), function(o) { mv_line_dicts.push(self.prepareSelectedMoveLineForPersisting(o)); });
+    _.each(self.getCreatedLines(), function(o) { mv_line_dicts.push(self.prepareCreatedMoveLineForPersisting(o)); });
+    if (self.get("balance") !== 0) mv_line_dicts.push(self.prepareOpenBalanceForPersisting());
+
+    return [self.st_line_id, mv_line_dicts];
+},
+
+// Persist data, notify parent view and terminate widget
+persistAndDestroy: function() {
+    var self = this;
+    
+    debugger;
+    var persist_data = self.prepareToPersist();
+    return self.model_bank_statement_line
+        .call("process_reconciliation", persist_data)
+        .then(function () { // Success
+            var parent = self.getParent();
+            return self.$el.parent().promise() // Wait for animation to end
+                .then(self.destroyy.bind(self))
+                .then(function() { parent.childValidated(self); });
+        }, function(){ // Fail
+            self.$el.parent().slideDown(self.animation_speed*height/150, function(){
+                self.$el.unwrap();
+            });
+        });
+},
+
+// TODO : self.destroy call self.__prototype__.destroy() ?
+destroyy: function() {
+    var self = this;
+    self.$el.parent().remove();
+    return self.destroy();
+},
+
+        */
     },
 });
 };
