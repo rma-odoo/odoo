@@ -4,8 +4,8 @@ var _t = instance.web._t,
     _lt = instance.web._lt;
 var QWeb = instance.web.qweb;
 
-instance.web.account.bankStatementReconciliationLine.include({
-    
+instance.web.account.bankStatementReconciliation.include({
+
     init: function(parent, context) {
         this._super(parent, context);
         delete this.create_form_fields.analytic_account;
@@ -16,7 +16,7 @@ instance.web.account.bankStatementReconciliationLine.include({
             label: _t("Analytic Distribution"),
             required: false,
             tabindex: 14,
-            group: "base.group_no_one",
+            group: "analytic.group_analytic_accounting",
             constructor: instance.web.form.FieldMany2One,
             field_properties: {
                 relation: "account.analytic.plan.instance",
@@ -25,11 +25,11 @@ instance.web.account.bankStatementReconciliationLine.include({
             }
         };
     },
-    
+
     start: function() {
         return this._super().then(function() {
         });
     },
-    
+
 });
-}
+};
