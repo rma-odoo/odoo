@@ -19,6 +19,7 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
         this.st_lines = [];
         this.last_displayed_reconciliation_index = undefined; // Flow control
         this.reconciled_lines = 0; // idem
+        this.already_reconciled_lines = 0; // Number of lines of the statement which were already reconciled
         this.model_bank_statement = new instance.web.Model("account.bank.statement");
         this.model_bank_statement_line = new instance.web.Model("account.bank.statement.line");
 
@@ -146,6 +147,12 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
                     self.title = title.name;
                 })
             );
+            deferred_promises.push(self.model_bank_statement
+                .call("number_of_lines_reconciled", [self.statement_id])
+                .then(function (num) {
+                    self.already_reconciled_lines = num;
+                })
+            );
         }
 
         deferred_promises.push(self.model_bank_statement_line
@@ -179,7 +186,8 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
             });
 
             // Render and display
-            self.$el.prepend(QWeb.render("bank_statement_reconciliation", {title: self.title, total_lines: self.st_lines.length}));
+            self.$el.prepend(QWeb.render("bank_statement_reconciliation", {title: self.title, total_lines: self.already_reconciled_lines+self.st_lines.length}));
+            self.updateProgressbar();
             var reconciliations_to_show = self.st_lines.slice(0, self.max_reconciliations_displayed);
             self.last_displayed_reconciliation_index = reconciliations_to_show.length;
             self.$(".reconciliation_lines_container").css("opacity", 0);
@@ -385,10 +393,12 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
 
     updateProgressbar: function() {
         var self = this;
+        var done = self.already_reconciled_lines + self.reconciled_lines;
+        var total = self.already_reconciled_lines + self.st_lines.length;
         var prog_bar = self.$(".progress .progress-bar");
-        prog_bar.attr("aria-valuenow", self.reconciled_lines);
-        prog_bar.css("width", (self.reconciled_lines/self.st_lines.length*100)+"%");
-        self.$(".progress .progress-text .valuenow").text(self.reconciled_lines);
+        prog_bar.attr("aria-valuenow", done);
+        prog_bar.css("width", (done/total*100)+"%");
+        self.$(".progress .progress-text .valuenow").text(done);
     },
 
     /* reloads the needaction badge */
@@ -1162,7 +1172,6 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
     },
 
     unpartialReconcileLine: function(line) {
-        var self = this;
         line.initial_amount > 0 ? line.debit = line.initial_amount : line.credit = -1 * line.initial_amount;
         line.propose_partial_reconcile = true;
         line.partial_reconcile = false;

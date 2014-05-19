@@ -494,18 +494,22 @@ class account_bank_statement(osv.osv):
         return super(account_bank_statement, self).copy(cr, uid, id, default, context=context)
 
     def button_journal_entries(self, cr, uid, ids, context=None):
-      ctx = (context or {}).copy()
-      ctx['journal_id'] = self.browse(cr, uid, ids[0], context=context).journal_id.id
-      return {
-        'name': _('Journal Items'),
-        'view_type':'form',
-        'view_mode':'tree',
-        'res_model':'account.move.line',
-        'view_id':False,
-        'type':'ir.actions.act_window',
-        'domain':[('statement_id','in',ids)],
-        'context':ctx,
-      }
+        ctx = (context or {}).copy()
+        ctx['journal_id'] = self.browse(cr, uid, ids[0], context=context).journal_id.id
+        return {
+            'name': _('Journal Items'),
+            'view_type':'form',
+            'view_mode':'tree',
+            'res_model':'account.move.line',
+            'view_id':False,
+            'type':'ir.actions.act_window',
+            'domain':[('statement_id','in',ids)],
+            'context':ctx,
+        }
+
+    def number_of_lines_reconciled(self, cr, uid, id, context=None):
+        bsl_obj = self.pool.get('account.bank.statement.line')
+        return bsl_obj.search_count(cr, uid, [('statement_id','=',id), ('journal_entry_id','!=',False)], context=context)
 
 class account_bank_statement_line(osv.osv):
 
@@ -623,10 +627,6 @@ class account_bank_statement_line(osv.osv):
             '|',('move_id.name', 'ilike', str),
             ('move_id.ref', 'ilike', str),
         ]
-
-        print "\n"
-        print domain
-        print "\n"
 
         if count:
             return mv_line_pool.search_count(cr, uid, domain, context=context)
@@ -756,7 +756,6 @@ class account_bank_statement_line(osv.osv):
         'sequence': fields.integer('Sequence', select=True, help="Gives the sequence order when displaying a list of bank statement lines."),
         'company_id': fields.related('statement_id', 'company_id', type='many2one', relation='res.company', string='Company', store=True, readonly=True),
         'journal_entry_id': fields.many2one('account.move', 'Reconciliation Journal Entry'),
-        'statement_id': fields.many2one('account.bank.statement', 'Statement', select=True, ondelete='cascade'),
     }
     _defaults = {
         'name': lambda self,cr,uid,context={}: self.pool.get('ir.sequence').get(cr, uid, 'account.bank.statement.line'),
