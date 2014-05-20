@@ -82,7 +82,11 @@
                     </div>
 
                     <div class="action_pane create">
-                        <div class="quick_add btn-group btn-group-sm"></div>
+                        <div class="quick_add btn-group btn-group-sm">
+                            <t t-foreach="presets" t-as="preset">
+                                <button type='button' class='btn btn-default preset' t-att-data-presetid="preset.id"><t t-esc="preset.name"/></button>
+                            </t>
+                        </div>
                         <div class="oe_form create_form">
                             <!-- here come some form_create_field -->
                             <table class="create_field"><tr><td class="add_line_cell"><a href="javascript:void(0)" class="add_line">New</a></td></tr></table>

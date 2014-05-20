@@ -8,7 +8,7 @@ instance.web.account.bankStatementReconciliation.include({
 
     init: function(parent, context) {
         this._super(parent, context);
-        delete this.create_form_fields.analytic_account;
+        delete this.create_form_fields.analytic_account_id;
         this.create_form_fields["analytic_plan"] = {
             id: "analytic_plan",
             index: 4,

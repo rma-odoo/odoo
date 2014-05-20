@@ -705,6 +705,48 @@
         
         <menuitem id="menu_bank_reconcile_bank_statements" name="Reconciliation" parent="menu_finance_bank_and_cash" action="action_bank_reconcile" sequence="20"/>
 
+        <!-- TEMP -->
+        <record id="view_account_bank_reconciliation_move_preset_form" model="ir.ui.view">
+            <field name="name">account.bank.reconciliation.move.preset.form</field>
+            <field name="model">account.bank.reconciliation.move.preset</field>
+            <field name="arch" type="xml">
+                <form string="Bank Reconciliation Move Presets" version="7.0">
+                    <group col="4">
+                        <field name="name"/>
+                        <field name="account_id"/>
+                        <field name="label"/>
+                        <field name="amount_type"/>
+                        <field name="amount"/>
+                        <field name="tax_id"/>
+                        <field name="analytic_account_id"/>
+                    </group>
+                </form>
+            </field>
+        </record>
+        <record id="view_account_bank_reconciliation_move_preset_tree" model="ir.ui.view">
+            <field name="name">account.bank.reconciliation.move.preset.tree</field>
+            <field name="model">account.bank.reconciliation.move.preset</field>
+            <field name="arch" type="xml">
+                <tree string="Bank Reconciliation Move Presets">
+                    <field name="name"/>
+                    <field name="account_id"/>
+                    <field name="label"/>
+                    <field name="amount_type"/>
+                    <field name="amount"/>
+                    <field name="tax_id"/>
+                    <field name="analytic_account_id"/>
+                </tree>
+            </field>
+        </record>
+        <record id="action_account_bank_reconciliation_move_preset_form" model="ir.actions.act_window">
+            <field name="name">Bank Reconciliation Move Presets</field>
+            <field name="res_model">account.bank.reconciliation.move.preset</field>
+            <field name="view_type">tree</field>
+            <field name="view_mode">form,tree</field>
+        </record>
+        <menuitem action="action_account_bank_reconciliation_move_preset_form" id="menu_action_account_bank_reconciliation_move_preset_form" parent="menu_finance_bank_and_cash" name="Bank Reconciliation Move Presets" sequence="22"/>
+        <!-- /TEMP -->
+
         <!-- Account Types -->
         <record id="view_account_type_search" model="ir.ui.view">
             <field name="name">account.account.type.search</field>

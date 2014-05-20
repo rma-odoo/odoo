@@ -762,5 +762,22 @@ class account_bank_statement_line(osv.osv):
         'date': lambda self,cr,uid,context={}: context.get('date', fields.date.context_today(self,cr,uid,context=context)),
     }
 
+class account_bank_reconciliation_move_preset(osv.osv):
+    _name = "account.bank.reconciliation.move.preset"
+    _description = "Preset for the lines that can be created in a bank statement reconciliation"
+    _columns = {
+        'name': fields.char('Name', required=True),
+        'account_id': fields.many2one('account.account', 'Account', ondelete='cascade'),
+        'label': fields.char('Label'),
+        'amount_type': fields.selection([('none', 'None'),('fixed', 'Fixed'),('percentage_of_total','Percentage of total amount'),('percentage_of_balance', 'Percentage of open balance')],
+                                   'Amount type', required=True),
+        'amount': fields.float('Amount', digits_compute=dp.get_precision('Account')),
+        'tax_id': fields.many2one('account.tax', 'Tax', ondelete='cascade'),
+        'analytic_account_id': fields.many2one('account.analytic.account', 'Analytic Account', ondelete='cascade'),
+    }
+    _defaults = {
+        'amount_type': 'None',
+        'amount': 0.0
+    }
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

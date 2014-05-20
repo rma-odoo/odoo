@@ -22,6 +22,7 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
         this.already_reconciled_lines = 0; // Number of lines of the statement which were already reconciled
         this.model_bank_statement = new instance.web.Model("account.bank.statement");
         this.model_bank_statement_line = new instance.web.Model("account.bank.statement.line");
+        this.model_bank_reconciliation_move_preset = new instance.web.Model("account.bank.reconciliation.move.preset");
 
         // Only for statistical purposes
         this.lines_reconciled_with_ctrl_enter = 0;
@@ -35,12 +36,14 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
         this.map_account_id_code = {};
         // The same move line cannot be selected for multiple resolutions
         this.excluded_move_lines_ids = {};
+        this.presets = {}
         // Description of the fields to initialize in the "create new line" form
+        // NB : for presets to work correctly, a field id must be the same string as a preset field
         this.create_form_fields = {
-            account: {
-                id: "account",
+            account_id: {
+                id: "account_id",
                 index: 0,
-                corresponding_property: "account_id", // a model field name
+                corresponding_property: "account_id", // a account.move field name
                 label: _t("Account"),
                 required: true,
                 tabindex: 10,
@@ -64,8 +67,8 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
                     type: "char",
                 },
             },
-            tax: {
-                id: "tax",
+            tax_id: {
+                id: "tax_id",
                 index: 2,
                 corresponding_property: "tax_id",
                 label: _t("Tax"),
@@ -91,8 +94,8 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
                     type: "float",
                 },
             },
-            analytic_account: {
-                id: "analytic_account",
+            analytic_account_id: {
+                id: "analytic_account_id",
                 index: 4,
                 corresponding_property: "analytic_account_id",
                 label: _t("Analytic Acc."),
@@ -154,6 +157,15 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
                 })
             );
         }
+
+        deferred_promises.push(self.model_bank_reconciliation_move_preset
+            .query(['id','name','account_id','label','amount_type','amount','tax_id','analytic_account_id'])
+            .all().then(function (data) {
+                _(data).each(function(preset){
+                    self.presets[preset.id] = preset;
+                });
+            })
+        );
 
         deferred_promises.push(self.model_bank_statement_line
             .query(['id'])
@@ -464,7 +476,7 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         this.model_bank_statement_line = new instance.web.Model("account.bank.statement.line");
         this.model_res_users = new instance.web.Model("res.users");
         this.map_account_id_code = this.getParent().map_account_id_code;
-        this.presets = {}; // dict of presets for quickly adding new lines
+        this.presets = this.getParent().presets;
         this.is_valid = true;
         this.is_consistent = true; // Used to prevent bad server requests
         this.total_move_lines_num = undefined; // Used for pagers and "show X more"
@@ -521,14 +533,17 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
             // Display the widget
             return $.when(deferred_fetch_data).then(function(){
                 // Render template
-                self.$el.prepend(QWeb.render("bank_statement_reconciliation_line", {line: self.st_line, mode: self.context.mode}));
+                var presets_array = [];
+                for (var id in self.presets)
+                    if (self.presets.hasOwnProperty(id))
+                        presets_array.push(self.presets[id]);
+                self.$el.prepend(QWeb.render("bank_statement_reconciliation_line", {line: self.st_line, mode: self.context.mode, presets: presets_array}));
 
                 // Stuff that require the template to be rendered
                 self.$(".match").slideUp(0);
                 self.$(".create").slideUp(0);
                 self.bindPopoverTo(self.$(".line_info_button"));
                 self.createFormWidgets();
-                self.initializePresets();
 
                 // Special case hack : no identified partner
                 if (self.st_line.has_no_partner) {
@@ -707,34 +722,6 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         field_manager.do_show();
     },
 
-    initializePresets: function() {
-        var self = this;
-        self.presets = {
-            'escompte': {
-                'name': "Escompte",
-                'account_id': 451,
-                'label': "Escompte",
-                'tax': 3,
-                'amount': 25,
-            },
-            'machin': {
-                'name': "Machin",
-                'account_id': 242,
-                'label': "Lore ipsum ",
-                'tax': 1,
-            },
-            'truc': {
-                'name': "Pertes et profits",
-                'account_id': 42,
-                'label': "Pertes et profits",
-            },
-        };
-        _.each(self.presets, function(preset, name) {
-            self.$(".quick_add").append("<button type='button' class='btn btn-default preset' data-name='"+name+"'>"+preset.name+"</button>");
-        });
-    },
-
-
     /** Utils */
 
     /* TODO : if t-call for attr, all in qweb */
@@ -864,11 +851,12 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
     initializeCreateForm: function() {
         var self = this;
 
-        _.each(self.create_form, function(o) {
-            o.set("value", ""); // TODO : better reinit
+        _.each(self.create_form, function(field) {
+            field.set("value", false);
         });
         self.amount_field.set("value", -1*self.get("balance"));
-        self.account_field.focus();
+        console.log(self.get("balance"));
+        self.account_id_field.focus();
     },
 
     addLineClickHandler: function() {
@@ -899,15 +887,26 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         self.amount_field.set("value", -1*self.get("balance"));
     },
 
-    /* TODO : eventually adjust for unknow fields and presets ; that would probably never be used though */
     presetClickHandler: function(e) {
         var self = this;
-        var preset = self.presets[e.currentTarget.dataset.name];
-        if (preset.account_id) self.account_field.set_value(preset.account_id);
-        if (preset.label) self.label_field.set_value(preset.label);
-        if (preset.amount) self.tax_field.set_value(preset.amount);
-        if (preset.tax) self.amount_field.set_value(preset.tax);
-        if (preset.a_account) self.a_account_field.set_value(preset.a_account);
+        self.initializeCreateForm();
+        var preset = self.presets[e.currentTarget.dataset.presetid];
+        for (var key in preset) {
+            if (! preset.hasOwnProperty(key) || key === "amount") continue;
+            if (self.hasOwnProperty(key+"_field"))
+                self[key+"_field"].set_value(preset[key]);
+        }
+        if (preset.amount && self.amount_field) {
+            if (preset.amount_type === "fixed")
+                self.amount_field.set_value(preset.amount);
+            else if (preset.amount_type === "percentage_of_total")
+                self.amount_field.set_value(self.st_line.amount*preset.amount/100);
+            else if (preset.amount_type === "percentage_of_balance") {
+                self.amount_field.set_value(0);
+                self.updateBalance();
+                self.amount_field.set_value(Math.abs(self.get("balance"))*preset.amount/100);
+            }
+        }
     },
 
 
