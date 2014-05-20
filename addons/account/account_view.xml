@@ -741,7 +741,7 @@
             <field name="name">Bank Reconciliation Move Presets</field>
             <field name="res_model">account.bank.reconciliation.move.preset</field>
             <field name="view_type">form</field>
-            <field name="view_mode">tree, form</field>
+            <field name="view_mode">tree,form</field>
         </record>
         <menuitem action="action_account_bank_reconciliation_move_preset_form" id="menu_action_account_bank_reconciliation_move_preset_form" parent="menu_finance_bank_and_cash" name="Bank Reconciliation Move Presets" groups="base.group_no_one" sequence="22"/>
 
