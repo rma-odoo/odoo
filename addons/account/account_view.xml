@@ -705,7 +705,6 @@
         
         <menuitem id="menu_bank_reconcile_bank_statements" name="Reconciliation" parent="menu_finance_bank_and_cash" action="action_bank_reconcile" sequence="20"/>
 
-        <!-- TEMP -->
         <record id="view_account_bank_reconciliation_move_preset_form" model="ir.ui.view">
             <field name="name">account.bank.reconciliation.move.preset.form</field>
             <field name="model">account.bank.reconciliation.move.preset</field>
@@ -741,11 +740,10 @@
         <record id="action_account_bank_reconciliation_move_preset_form" model="ir.actions.act_window">
             <field name="name">Bank Reconciliation Move Presets</field>
             <field name="res_model">account.bank.reconciliation.move.preset</field>
-            <field name="view_type">tree</field>
-            <field name="view_mode">form,tree</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">tree, form</field>
         </record>
-        <menuitem action="action_account_bank_reconciliation_move_preset_form" id="menu_action_account_bank_reconciliation_move_preset_form" parent="menu_finance_bank_and_cash" name="Bank Reconciliation Move Presets" sequence="22"/>
-        <!-- /TEMP -->
+        <menuitem action="action_account_bank_reconciliation_move_preset_form" id="menu_action_account_bank_reconciliation_move_preset_form" parent="menu_finance_bank_and_cash" name="Bank Reconciliation Move Presets" groups="base.group_no_one" sequence="22"/>
 
         <!-- Account Types -->
         <record id="view_account_type_search" model="ir.ui.view">

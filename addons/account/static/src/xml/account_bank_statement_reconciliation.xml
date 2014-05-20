@@ -152,7 +152,7 @@
 
     <t t-name="bank_statement_reconciliation_created_line">
         <tr class="created_line" t-att-data-lineid="line.id">
-            <td><span class="line_remove_button glyphicon glyphicon-remove"></span></td>
+            <td><t t-if="! line.no_remove_action"><span class="line_remove_button glyphicon glyphicon-remove"></span></t></td>
             <td><t t-esc="line.account_num"/></td>
             <td></td>
             <td><t t-esc="line.label"/></td>

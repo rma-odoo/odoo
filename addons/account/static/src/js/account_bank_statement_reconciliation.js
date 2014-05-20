@@ -22,7 +22,6 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
         this.already_reconciled_lines = 0; // Number of lines of the statement which were already reconciled
         this.model_bank_statement = new instance.web.Model("account.bank.statement");
         this.model_bank_statement_line = new instance.web.Model("account.bank.statement.line");
-        this.model_bank_reconciliation_move_preset = new instance.web.Model("account.bank.reconciliation.move.preset");
 
         // Only for statistical purposes
         this.lines_reconciled_with_ctrl_enter = 0;
@@ -32,11 +31,12 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
         this.max_move_lines_displayed = 5;
         this.animation_speed = 100; // "Blocking" animations
         this.aestetic_animation_speed = 300; // eye candy
+        this.map_tax_id_amount = {};
+        this.presets = {};
         // We'll need to get the code of an account selected in a many2one (whose value is the id)
         this.map_account_id_code = {};
         // The same move line cannot be selected for multiple resolutions
         this.excluded_move_lines_ids = {};
-        this.presets = {}
         // Description of the fields to initialize in the "create new line" form
         // NB : for presets to work correctly, a field id must be the same string as a preset field
         this.create_form_fields = {
@@ -158,7 +158,7 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
             );
         }
 
-        deferred_promises.push(self.model_bank_reconciliation_move_preset
+        deferred_promises.push(new instance.web.Model("account.bank.reconciliation.move.preset")
             .query(['id','name','account_id','label','amount_type','amount','tax_id','analytic_account_id'])
             .all().then(function (data) {
                 _(data).each(function(preset){
@@ -190,6 +190,13 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
                 .query(['id', 'code'])
                 .all().then(function (data) {
                     _.each(data, function(o) { self.map_account_id_code[o.id] = o.code });
+                });
+
+            // Create a dict tax id -> amount
+            new instance.web.Model("account.tax")
+                .query(['id', 'amount'])
+                .all().then(function (data) {
+                    _.each(data, function(o) { self.map_tax_id_amount[o.id] = o.amount });
                 });
 
             // Bind keyboard events TODO : méthode standard ?
@@ -225,7 +232,6 @@ instance.web.account.bankStatementReconciliation = instance.web.Widget.extend({
     keyboardShortcutsHandler: function(e) {
         var self = this;
         if (e.which === 13 && (e.ctrlKey || e.metaKey)) {
-            // TODO : make sure can't persist a child loaded since $.each begun
             $.each(self.getChildren(), function(i, o){
                 if (o.is_valid && o.persistAndDestroy()) {
                     self.lines_reconciled_with_ctrl_enter++;
@@ -440,7 +446,7 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         "click .pager_control_right:not(.disabled)": "pagerControlRightHandler",
         "keyup .filter": "filterHandler",
         "click .line_info_button": function(e){e.stopPropagation();}, // small usability hack
-        "click .add_line": "addLineClickHandler",
+        "click .add_line": "addLineBeingEdited",
         "click .preset": "presetClickHandler",
         "click .do_partial_reconcile_button": "doPartialReconcileButtonClickHandler",
         "click .undo_partial_reconcile_button": "undoPartialReconcileButtonClickHandler",
@@ -475,7 +481,9 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         this.aestetic_animation_speed = this.getParent().aestetic_animation_speed;
         this.model_bank_statement_line = new instance.web.Model("account.bank.statement.line");
         this.model_res_users = new instance.web.Model("res.users");
+        this.model_tax = new instance.web.Model("account.tax");
         this.map_account_id_code = this.getParent().map_account_id_code;
+        this.map_tax_id_amount = this.getParent().map_tax_id_amount;
         this.presets = this.getParent().presets;
         this.is_valid = true;
         this.is_consistent = true; // Used to prevent bad server requests
@@ -494,7 +502,7 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         this.mv_lines_deselected = []; // deselected lines are displayed on top of the match table
         this.on("change:mv_lines_selected", this, this.mvLinesSelectedChanged);
         this.set("lines_created", []);
-        this.set("line_created_being_edited", {'id': 0});
+        this.set("line_created_being_edited", [{'id': 0}]);
         this.on("change:lines_created", this, this.createdLinesChanged);
         this.on("change:line_created_being_edited", this, this.createdLinesChanged);
     },
@@ -598,7 +606,7 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
             self.set("mv_lines_selected", [], {silent: true});
             self.mv_lines_deselected = [];
             self.set("lines_created", [], {silent: true});
-            self.set("line_created_being_edited", {'id': 0}, {silent: true});
+            self.set("line_created_being_edited", [{'id': 0}], {silent: true});
             // Rebirth
             $.when(self.start()).then(function() {
                 self.$el.css("height", "auto");
@@ -757,13 +765,13 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
     },
 
     islineCreatedBeingEditedValid: function() {
-        var line = this.get("line_created_being_edited");
+        var line = this.get("line_created_being_edited")[0];
         return line.amount // must be defined and not 0
             && line.account_id // must be defined (and will never be 0)
             && line.label; // must be defined and not empty
     },
 
-    /* returns the created lines, plus the one being edited if valid */
+    /* returns the created lines, plus the ones being edited if valid */
     getCreatedLines: function() {
         var self = this;
         var created_lines = self.get("lines_created").slice();
@@ -855,22 +863,17 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
             field.set("value", false);
         });
         self.amount_field.set("value", -1*self.get("balance"));
-        console.log(self.get("balance"));
         self.account_id_field.focus();
-    },
-
-    addLineClickHandler: function() {
-        this.addLineBeingEdited();
     },
 
     addLineBeingEdited: function() {
         var self = this;
         if (! self.islineCreatedBeingEditedValid()) return;
-
-        self.get("lines_created").push(self.get("line_created_being_edited"));
+        
+        self.set("lines_created", self.get("lines_created").concat(self.get("line_created_being_edited")));
         // Add empty created line
-        var new_id = self.get("line_created_being_edited").id + 1;
-        self.set("line_created_being_edited", {'id': new_id});
+        var new_id = self.get("line_created_being_edited")[0].id + 1;
+        self.set("line_created_being_edited", [{'id': new_id}]);
 
         self.initializeCreateForm();
     },
@@ -880,7 +883,7 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         var line_id = $line.data("lineid");
 
         // if deleting the created line that is being edited, validate it before
-        if (line_id === self.get("line_created_being_edited").id) {
+        if (line_id === self.get("line_created_being_edited")[0].id) {
             self.addLineBeingEdited();
         }
         self.set("lines_created", _.filter(self.get("lines_created"), function(o) { return o.id != line_id }));
@@ -1113,14 +1116,66 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
     formCreateInputChanged: function(elt, val) {
         var self = this;
         var line_created_being_edited = self.get("line_created_being_edited");
-        line_created_being_edited[elt.corresponding_property] = val.newValue;
+        line_created_being_edited[0][elt.corresponding_property] = val.newValue;
 
         // Specific cases
-        if (elt === self.account_field)
-            line_created_being_edited.account_num = self.map_account_id_code[elt.get("value")];
+        if (elt === self.account_id_field)
+            line_created_being_edited[0].account_num = self.map_account_id_code[elt.get("value")];
 
-        self.set("line_created_being_edited", line_created_being_edited);
-        self.createdLinesChanged(); // TODO For some reason, previous line doesn't trigger change handler
+        // Update tax line
+        var deferred_tax = new $.Deferred();
+        if (elt === self.tax_id_field || elt === self.amount_field) {
+            var amount = self.amount_field.get("value");
+            var tax = self.map_tax_id_amount[self.tax_id_field.get("value")];
+            if (amount && tax) {
+                console.log(self.tax_id_field.get("value"));
+                deferred_tax = $.when(self.model_tax
+                    .call("compute_for_bank_reconciliation", [self.tax_id_field.get("value"), amount]))
+                    .then(function(data){
+                        var tax = data.taxes[0];
+                        var tax_account = self.map_account_id_code[(amount > 0 ? tax.account_collected_id : tax.account_paid_id)];
+                        line_created_being_edited[0].amount = amount - tax.amount;
+                        line_created_being_edited[1] = {id: line_created_being_edited[0].id, account_num: tax_account, label: tax.name, amount: tax.amount, no_remove_action: true};
+                    }
+                );
+            } else {
+                line_created_being_edited[0].amount = amount;
+                delete line_created_being_edited[1];
+                deferred_tax.resolve();
+            }
+        } else { deferred_tax.resolve(); }
+
+        $.when(deferred_tax).then(function(){
+            self.set("line_created_being_edited", line_created_being_edited);
+            self.createdLinesChanged(); // TODO For some reason, previous line doesn't trigger change handler
+        });
+
+
+        // VERSION SANS RPC
+        // var self = this;
+        // var line_created_being_edited = self.get("line_created_being_edited");
+        // line_created_being_edited[0][elt.corresponding_property] = val.newValue;
+
+        // // Specific cases
+        // if (elt === self.account_id_field)
+        //     line_created_being_edited[0].account_num = self.map_account_id_code[elt.get("value")];
+
+        // // Update tax line
+        // if (elt === self.tax_id_field || elt === self.amount_field) {
+        //     var amount = self.amount_field.get("value");
+        //     var tax = self.map_tax_id_amount[self.tax_id_field.get("value")];
+        //     if (amount && tax) {
+        //         var tax_amount = amount * tax; // TODO : arrondi
+        //         var remaining_amount = amount - tax_amount;
+        //         line_created_being_edited[0].amount = remaining_amount;
+        //         line_created_being_edited[1] = {id: line_created_being_edited[0].id, label: "lol", amount: tax_amount, no_remove_action: true};
+        //     } else {
+        //         delete line_created_being_edited[1];
+        //     }
+        // }
+
+        // self.set("line_created_being_edited", line_created_being_edited);
+        // self.createdLinesChanged(); // TODO For some reason, previous line doesn't trigger change handler
     },
 
     createdLinesChanged: function() {
@@ -1128,8 +1183,8 @@ instance.web.account.bankStatementReconciliationLine = instance.web.Widget.exten
         self.updateAccountingViewCreatedLines();
         self.updateBalance();
 
-        if (self.islineCreatedBeingEditedValid()) $(".add_line").show();
-        else $(".add_line").hide();
+        if (self.islineCreatedBeingEditedValid()) self.$(".add_line").show();
+        else self.$(".add_line").hide();
     },
 
 
