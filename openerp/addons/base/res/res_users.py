@@ -22,7 +22,6 @@
 import itertools
 import logging
 from functools import partial
-
 from lxml import etree
 from lxml.builder import E
 
@@ -188,9 +187,12 @@ class res_users(osv.osv):
     }
 
     def on_change_login(self, cr, uid, ids, login, context=None):
+        value = {}
+        value['image'] = self.pool.get('res.partner').on_change_email(cr, uid, ids, login, context=context)['value'].get('image')
+
         if login and tools.single_email_re.match(login):
-            return {'value': {'email': login}}
-        return {}
+            value['email'] = login
+        return {'value': value}
 
     def onchange_state(self, cr, uid, ids, state_id, context=None):
         partner_ids = [user.partner_id.id for user in self.browse(cr, uid, ids, context=context)]

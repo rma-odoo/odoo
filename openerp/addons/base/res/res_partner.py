@@ -19,11 +19,15 @@
 #
 ##############################################################################
 
+import base64
 import datetime
+import hashlib
+import logging
 from lxml import etree
 import math
 import pytz
 import urlparse
+import urllib2
 
 import openerp
 from openerp import tools, api
@@ -57,6 +61,7 @@ ADDRESS_FORMAT_LAYOUTS = {
     """
 }
 
+_logger = logging.getLogger(__name__)
 
 class format_address(object):
     @api.model
@@ -354,6 +359,20 @@ class res_partner(osv.Model, format_address):
         default = dict(default or {})
         default['name'] = _('%s (copy)') % self.name
         return super(res_partner, self).copy(default)
+
+    def on_change_email(self, cr, uid, ids, email, context=None):
+        value = {}
+        value['image'] = False
+        if email:
+            hash = hashlib.md5(email.lower()).hexdigest()
+            url = "http://www.gravatar.com/avatar/" + hash
+            try:
+               image_content = urllib2.urlopen(url + "?d=identicon&s=128").read() 
+               gravatar_image = base64.b64encode(image_content)
+               value['image'] = gravatar_image
+            except Exception, e:
+                _logger.warning("Error in Gravatar discovery: %s "% str(e))
+        return {'value': value}
 
     @api.multi
     def onchange_type(self, is_company):
