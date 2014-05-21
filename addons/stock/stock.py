@@ -2235,8 +2235,8 @@ class stock_move(osv.osv):
                 quants = quant_obj.quants_get_prefered_domain(cr, uid, ops.location_id, move.product_id, record.qty, domain=dom, prefered_domain_list=prefered_domain_list,
                                                           restrict_lot_id=move.restrict_lot_id.id, restrict_partner_id=move.restrict_partner_id.id, context=context)
                 if ops.result_package_id.id:
-                    #if a result package is given, all quants go there
-                    quant_dest_package_id = ops.result_package_id.id
+                    #if a result package is given, all quants go there except if they already are in a package
+                    quant_dest_package_id = ops.package_id.id or ops.result_package_id.id
                 elif ops.product_id and ops.package_id:
                     #if a package and a product is given, we will remove quants from the pack.
                     quant_dest_package_id = False
