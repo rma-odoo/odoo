@@ -39,7 +39,7 @@ def data():
         # but this will work fine (especially since we don't use the ZIP file
         # approach).
         r["babel/localedata"] = glob.glob(os.path.join(os.path.dirname(babel.__file__), "localedata", '*'))
-        others = ['global.dat', 'numbers.py', 'support.py']
+        others = ['global.dat', 'numbers.py', 'support.py', 'plural.py']
         r["babel"] = map(lambda f: os.path.join(os.path.dirname(babel.__file__), f), others)
         others = ['frontend.py', 'mofile.py']
         r["babel/messages"] = map(lambda f: os.path.join(os.path.dirname(babel.__file__), "messages", f), others)
@@ -69,13 +69,51 @@ def py2exe_options():
     if os.name == 'nt':
         import py2exe
         return {
-            "console" : [ { "script": "openerp-server", "icon_resources": [(1, join("install","openerp-icon.ico"))], }],
+            "console" : [ { "script": "openerp-server", "icon_resources": [(1, join("install","openerp-icon.ico"))], },
+                          { "script": "openerp-gevent" },
+                          { "script": "oe" },
+            ],
             'options' : {
                 "py2exe": {
                     "skip_archive": 1,
                     "optimize": 0, # keep the assert running, because the integrated tests rely on them.
                     "dist_dir": 'dist',
-                    "packages": ["HTMLParser", "PIL", "asynchat", "asyncore", "commands", "dateutil", "decimal", "docutils", "email", "encodings", "imaplib", "jinja2", "lxml", "lxml._elementpath", "lxml.builder", "lxml.etree", "lxml.objectify", "mako", "openerp", "poplib", "pychart", "pydot", "pyparsing", "pytz", "reportlab", "select", "simplejson", "smtplib", "uuid", "vatnumber", "vobject", "xml", "xml.dom", "yaml", ],
+                    "packages": [
+                        "HTMLParser",
+                        "PIL",
+                        "asynchat", "asyncore",
+                        "commands",
+                        "dateutil",
+                        "decimal",
+                        "docutils",
+                        "email",
+                        "encodings",
+                        "imaplib",
+                        "jinja2",
+                        "lxml", "lxml._elementpath", "lxml.builder", "lxml.etree", "lxml.objectify",
+                        "mako",
+                        "markupsafe",   # dependence of jinja2 and mako
+                        "mock",
+                        "openerp",
+                        "poplib",
+                        "psutil",
+                        "pychart",
+                        "pydot",
+                        "pyparsing",
+                        "pytz",
+                        "reportlab",
+                        "requests",
+                        "select",
+                        "simplejson",
+                        "smtplib",
+                        "uuid",
+                        "vatnumber",
+                        "vobject",
+                        "win32service", "win32serviceutil",
+                        "xlwt",
+                        "xml", "xml.dom",
+                        "yaml",
+                    ],
                     "excludes" : ["Tkconstants","Tkinter","tcl"],
                 }
             }
@@ -108,14 +146,14 @@ setuptools.setup(
       author_email     = author_email,
       classifiers      = filter(None, classifiers.split("\n")),
       license          = license,
-      scripts          = ['openerp-server'],
+      scripts          = ['openerp-server', 'openerp-gevent', 'oe'],
       data_files       = data(),
       packages         = setuptools.find_packages(),
       dependency_links = ['http://download.gna.org/pychart/'],
       #include_package_data = True,
       install_requires = [
           'pychart', # not on pypi, use: pip install http://download.gna.org/pychart/PyChart-1.39.tar.gz
-          'babel',
+          'babel >= 1.0',
           'docutils',
           'feedparser',
           'gdata',
@@ -136,10 +174,11 @@ setuptools.setup(
           'python-openid',
           'pytz',
           'pyusb >= 1.0.0b1',
-          'pywebdav',
+          'pywebdav < 0.9.8',
           'pyyaml',
           'qrcode',
           'reportlab', # windows binary pypi.python.org/pypi/reportlab
+          'requests',
           'simplejson',
           'unittest2',
           'vatnumber',
@@ -150,7 +189,7 @@ setuptools.setup(
       extras_require = {
           'SSL' : ['pyopenssl'],
       },
-      tests_require = ['unittest2'],
+      tests_require = ['unittest2', 'mock'],
       **py2exe_options()
 )
 
