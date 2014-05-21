@@ -140,7 +140,7 @@ class website_event(http.Controller):
             'country_id': ("all", _("All Countries"))
         })
 
-        step = 5
+        step = 10  # Number of events per page
         event_count = event_obj.search(
             request.cr, request.uid, dom_without("none"), count=True,
             context=request.context)
@@ -170,7 +170,7 @@ class website_event(http.Controller):
 
         return request.website.render("website_event.index", values)
 
-    @http.route(['/event/<model("event.event"):event>/page/<page:path>'], type='http', auth="public", website=True)
+    @http.route(['/event/<model("event.event"):event>/page/<path:page>'], type='http', auth="public", website=True)
     def event_page(self, event, page, **post):
         values = {
             'event': event,
