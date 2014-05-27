@@ -145,7 +145,7 @@ class membership_line(osv.osv):
         'date_from': fields.date('From', readonly=True),
         'date_to': fields.date('To', readonly=True),
         'date_cancel': fields.date('Cancel date'),
-        'date': fields.date('Join Date', help="Date on which member has joined the membership"),
+        'date': fields.date('Start Date', help="Date on which member has joined the membership"),
         'member_price': fields.float('Membership Fee', digits_compute= dp.get_precision('Product Price'), required=True, help='Amount for the membership'),
         'account_invoice_line': fields.many2one('account.invoice.line', 'Account Invoice line', readonly=True),
         'account_invoice_id': fields.related('account_invoice_line', 'invoice_id', type='many2one', relation='account.invoice', string='Invoice', readonly=True),
@@ -168,9 +168,6 @@ class membership_line(osv.osv):
     _constraints = [
         (_check_membership_date, 'Error, this membership product is out of date', [])
     ]
-
-
-
 class Partner(osv.osv):
     '''Partner'''
     _inherit = 'res.partner'
@@ -350,7 +347,7 @@ class Partner(osv.osv):
                         'account.invoice': (_get_invoice_partner, ['state'], 10),
                         'membership.membership_line': (_get_partner_id, ['state'], 10),
                         'res.partner': (lambda self, cr, uid, ids, c={}: ids, ['free_member'], 10)
-                    }, help="Date until which membership remains active."),
+                     }, help="Date until which membership remains active."),
         'membership_cancel': fields.function(
                     _membership_date,
                     string = 'Cancel Membership Date', type='date', multi='membership_cancel',
@@ -461,12 +458,36 @@ class Product(osv.osv):
                 view_id = dict_model['membership_products_tree']
         return super(Product,self).fields_view_get(cr, user, view_id, view_type, context, toolbar, submenu)
 
+    def name_get(self, cr, uid, ids, context=None):
+        reads = self.read(cr, uid, ids, ['name','duration'], context=context)
+        res = []
+        for record in reads:
+            name = record['name']
+            duration=record['duration']
+            year_count = duration / 12
+            if year_count <= 0:
+                duration_count= str(duration) + ' months'
+            else:
+                month_count=duration - (year_count * 12)
+                if month_count == 0:
+                    duration_count = str(year_count) + ' year'
+                else :
+                    duration_count = str(year_count) + ' year'+' '+str(month_count)+' months'
+            res.append((record['id'], name +' '+str(duration_count)))
+        return res
+
     '''Product'''
     _inherit = 'product.product'
+    def _name_get_fnc(self, cr, uid, ids, prop, unknow_none, context=None):
+        res = self.name_get(cr, uid, ids, context=context)
+        return dict(res)
     _columns = {
+        'image': fields.binary("Image",help="This field holds the image used as image for the membership"),
         'membership': fields.boolean('Membership', help='Check if the product is eligible for membership.'),
         'membership_date_from': fields.date('Membership Start Date', help='Date from which membership becomes active.'),
         'membership_date_to': fields.date('Membership End Date', help='Date until which membership remains active.'),
+        'duration': fields.integer('Duration', size=2, help='Duration until which membership remains active.'),
+        'duration_name': fields.function(_name_get_fnc, type="char", string='Name',store=False),
     }
 
     _sql_constraints = [('membership_date_greater','check(membership_date_to >= membership_date_from)','Error ! Ending Date cannot be set before Beginning Date.')]
@@ -474,7 +495,11 @@ class Product(osv.osv):
         'membership': False,
     }
 
-
+class product_product(osv.osv):
+    _inherit = "product.product"
+    _columns = {
+        'membership_ok': fields.boolean('Membership', help="Specify if the membership can be selected in an Product."),
+    }
 
 class Invoice(osv.osv):
     '''Invoice'''
