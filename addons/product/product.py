@@ -578,10 +578,6 @@ class product_product(osv.osv):
     _inherits = {'product.template': 'product_tmpl_id'}
     _inherit = ['mail.thread']
     _order = 'default_code,name_template'
-    # def create(self, cr, uid, vals, context=None):
-    #     print "dsfgdsfgdsfgsdfgdsgfdgf"
-    #     vals['name'] = ""
-    #     return vals
     def view_header_get(self, cr, uid, view_id, view_type, context=None):
         if context is None:
             context = {}

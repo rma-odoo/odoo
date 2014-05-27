@@ -92,7 +92,6 @@
                                 <field name="sale_ok"/>
                                 <label for="sale_ok"/>
                             </div>
-
                         </div>
                         <div class="oe_right oe_button_box" name="buttons">
                         </div>
