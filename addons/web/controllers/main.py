@@ -1586,7 +1586,6 @@ class Reports(http.Controller):
     @serialize_exception
     def index(self, action, token):
         action = simplejson.loads(action)
-
         report_srv = request.session.proxy("report")
         context = dict(request.context)
         context.update(action["context"])
@@ -1629,12 +1628,14 @@ class Reports(http.Controller):
             else:
                 file_name = action['report_name']
         file_name = '%s.%s' % (file_name, report_struct['format'])
-
+        headers=[
+             ('Content-Disposition', content_disposition(file_name)),
+             ('Content-Type', report_mimetype),
+             ('Content-Length', len(report))]
+        if action.get('pdf_viewer'):
+            del headers[0]
         return request.make_response(report,
-             headers=[
-                 ('Content-Disposition', content_disposition(file_name)),
-                 ('Content-Type', report_mimetype),
-                 ('Content-Length', len(report))],
+             headers=headers,
              cookies={'fileToken': token})
 
 class Apps(http.Controller):
