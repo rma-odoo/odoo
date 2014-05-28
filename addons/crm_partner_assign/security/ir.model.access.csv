@@ -7,3 +7,4 @@ access_res_partner_grade_public,res.partner.grade,model_res_partner_grade,base.g
 access_res_partner_grade_manager,res.partner.grade.manager,model_res_partner_grade,base.group_sale_manager,1,1,1,1
 "access_partner_activation_manager","res.partner.activation.manager","model_res_partner_activation","base.group_partner_manager",1,1,1,1
 partner_access_crm_lead,crm.lead,model_crm_lead,base.group_portal,1,1,0,0
+access_res_partner_grade_invoicing_payment,res.partner.grade,model_res_partner_grade,account.group_account_invoice,1,0,0,0
