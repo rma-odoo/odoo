@@ -712,6 +712,25 @@ instance.web.FormView = instance.web.View.extend(instance.web.form.FieldManagerM
             $(e.target).attr("disabled", false);
         });
     },
+    popup_alertbox: function(values) {
+        var self = this;
+        if(this.session.user_context.translation_flag || this.session.user_context.lang == 'en_US')return;
+        self.on("change:actual_mode", self, function(){
+            if(self.get("actual_mode")=="edit"){
+                self.$el.find('#alertbox').remove();
+            }
+        });
+        this.$el.find('#alertbox').remove();
+        
+        _.each(_.keys(values), function(field_name){
+           var trans_field = _.find(self.translatable_fields, function(field){ return field_name == field.name; });
+            if(trans_field){
+                var temp = $(QWeb.render('alertbox', {'widget':trans_field}));
+                self.$el.find('.oe_form_sheet').prepend(temp);
+                $(temp).find('a:first').click(trans_field.on_translate);
+            }
+        });
+    },
     on_button_cancel: function(event) {
         if (this.can_be_discarded()) {
             if (this.get('actual_mode') === 'create') {
@@ -846,6 +865,7 @@ instance.web.FormView = instance.web.View.extend(instance.web.form.FieldManagerM
                 } else {
                     // Write save
                     save_deferral = self.dataset.write(self.datarecord.id, values, {readonly_fields: readonly_values}).then(function(r) {
+                        self.popup_alertbox(values);
                         return self.record_saved(r);
                     }, null);
                 }
