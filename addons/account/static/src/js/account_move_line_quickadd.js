@@ -1,4 +1,5 @@
 openerp.account.quickadd = function (instance) {
+    openerp.account.graph_kanban(instance);
     var _t = instance.web._t,
         _lt = instance.web._lt;
     var QWeb = instance.web.qweb;

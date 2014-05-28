@@ -25,6 +25,7 @@ from lxml import etree
 from openerp import models, fields, api, _
 from openerp.exceptions import except_orm, Warning, RedirectWarning
 import openerp.addons.decimal_precision as dp
+from datetime import datetime, date, timedelta
 
 # mapping invoice type to journal type
 TYPE2JOURNAL = {
@@ -86,6 +87,8 @@ class account_invoice(models.Model):
     @api.returns('account.analytic.journal')
     def _get_journal_analytic(self, inv_type):
         """ Return the analytic journal corresponding to the given invoice type. """
+        if context.get('default_journal_id'):
+            return context.get('default_journal_id')
         journal_type = TYPE2JOURNAL.get(inv_type, 'sale')
         journal = self.env['account.analytic.journal'].search([('type', '=', journal_type)], limit=1)
         if not journal:
@@ -567,9 +570,11 @@ class account_invoice(models.Model):
 
         if company_id and type:
             journal_type = TYPE2JOURNAL[type]
-            journals = self.env['account.journal'].search([('type', '=', journal_type), ('company_id', '=', company_id)])
+            journals = self.env['account.journal'].search([('type', '=', journal_type)])
             if journals:
                 values['journal_id'] = journals[0].id
+                if context.get('default_journal_id') in journals:
+                    values['journal_id'] = context.get('default_journal_id')
             journal_defaults = self.env['ir.values'].get_defaults_dict('account.invoice', 'type=%s' % type)
             if 'journal_id' in journal_defaults:
                 values['journal_id'] = journal_defaults['journal_id']
