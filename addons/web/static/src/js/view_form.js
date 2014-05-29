@@ -3335,6 +3335,8 @@ instance.web.form.CompletionFieldMixin = {
     init: function() {
         this.limit = 7;
         this.orderer = new instance.web.DropMisordered();
+        this.can_create = this.node.attrs.can_create ? instance.web.py_eval(this.node.attrs.can_create) : true;
+        this.can_write = this.node.attrs.can_write ? instance.web.py_eval(this.node.attrs.can_write) : true;  
     },
     /**
      * Call this method to search using a string.
@@ -3377,8 +3379,8 @@ instance.web.form.CompletionFieldMixin = {
             // quick create
             var raw_result = _(data.result).map(function(x) {return x[1];});
             if (search_val.length > 0 && !_.include(raw_result, search_val) &&
-                ! (self.options && (self.options.no_create || self.options.no_quick_create))) {
-                values.push({
+                ! (self.options && self.options.no_quick_create)) {
+                self.can_create && values.push({
                     label: _.str.sprintf(_t('Create "<strong>%s</strong>"'),
                         $('<span />').text(search_val).html()),
                     action: function() {
@@ -3388,7 +3390,7 @@ instance.web.form.CompletionFieldMixin = {
                 });
             }
             // create...
-            if (!(self.options && self.options.no_create)){
+            if (!(self.options && self.options.no_create) && self.can_create){
                 values.push({
                     label: _t("Create and Edit..."),
                     action: function() {
@@ -3591,7 +3593,8 @@ instance.web.form.FieldMany2One = instance.web.form.AbstractField.extend(instanc
                     self.build_context(),
                     {
                         title: _t("Open: ") + self.string,
-                        view_id: view_id
+                        view_id: view_id,
+                        readonly: !self.can_write 
                     }
                 );
                 pop.on('write_completed', self, function(){
@@ -3668,7 +3671,7 @@ instance.web.form.FieldMany2One = instance.web.form.AbstractField.extend(instanc
                 self.uned_def.reject();
                 self.ed_def = $.Deferred();
                 self.ed_def.done(function() {
-                    self.show_error_displayer();
+                    self.can_create && self.show_error_displayer();
                     ignore_blur = false;
                     self.trigger('focused');
                 });
