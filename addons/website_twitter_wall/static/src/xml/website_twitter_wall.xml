@@ -26,55 +26,41 @@
             </div>
         </div>
      </t>
+     
      <t t-name="twitter_load_tweets">
-        <div class="row">
-            <div class="col-md-3 col-md-offset-4">
-                    <img class="center-block" src="/website_twitter_wall/static/src/img/loading.gif"></img>
-                    <span><h3>Loding Some Tweets.....</h3></span>
-                    <span><h4>Accept Some Tweet for Display Wall...</h4></span>
-            </div>
-        </div>
      </t>
-     <t t-name="twitter_moderate_tweets" name="tweet">
-          <tr>
-            <td>
-                <img t-attf-src="#{tweet.user_image_url}" alt="Media Thumbnail"  width="42" height="42"/>
-            </td>
-            <td>
-                <t t-esc="tweet.name" />
-            </td>
-            <td>
-                <t t-esc="tweet.description" />
-            </td>
-            <td>
-                <t t-if="tweet.urls" t-foreach="tweet.urls" t-as="url">
-                    <a t-attf-href="#{url}" target="_blank">
-                        <button type="submit" class="btn btn-default btn-sm"><i class="glyphicon glyphicon-globe" /></button>
-                    </a>
-                </t>
-            </td>
-            <td>
-                <t t-if="tweet.media">
-                    <img t-attf-src="#{tweet.media}" width="45" height="45" alt="Tweet Link" class="media_thumb" />
-                    <img t-attf-src="#{tweet.media}" alt="Original Media Thumbnail" class="media_inlarge"/>
-                </t>
-            </td>
-            <td>
-                <button type="submit" class="btn btn-default btn-sm rowremove" value="published" t-att-tweet_id = "tweet.id"><i class="glyphicon glyphicon-ok" /></button>
-                <button type="submit" class="btn btn-default btn-sm rowremove" value="unpublished" t-att-tweet_id = "tweet.id"><i class="glyphicon glyphicon-remove" /></button>
-            </td>
-            <td>
-                <form method="POST"
-                  action="/twitter_wall/upload_image"
-                  enctype="multipart/form-data"
-                  class="form-inline" id="back_img">
-                    <div class="form-group pull-left">
-                        <input type="file" name="upload" id="upload" accept="image/*" style="position: absolute; opacity: 0; width: 1px; height: 1px;"/>
-                        <input type="hidden" name="func"/>
-                        <button type="button" class="btn btn-default btn-sm upload_img"><i class="glyphicon glyphicon-upload" id="upload_img"/></button>                                            
-                    </div>
-                </form>
-            </td>
-        </tr>
+     
+     <t t-name="twitter_moderate_tweets">
+       <tr data-type="tweet" t-att-data-id="tweet.id" t-att-class="color_class">
+        <td>
+            <img t-attf-src="#{tweet.user_image_url}" alt="Media Thumbnail"  width="42" height="42"/>
+        </td>
+        <td>
+            <t t-esc="tweet.name" />
+        </td>
+        <td>
+            <t t-esc="tweet.description" />
+        </td>
+        <td>
+            <t t-if="tweet.urls" t-foreach="tweet.urls" t-as="url">
+                <a t-attf-href="#{url}" target="_blank">
+                    <button type="submit" class="btn btn-default btn-sm"><i class="glyphicon glyphicon-globe" /></button>
+                </a>
+            </t>
+        </td>
+        <td>
+            <t t-if="tweet.media">
+                <img t-attf-src="#{tweet.media}" width="45" height="45" alt="Tweet Link" class="media_thumb" />
+                <img t-attf-src="#{tweet.media}" alt="Original Media Thumbnail" class="media_inlarge"/>
+            </t>
+        </td>
+        <td>
+            <button type="submit" class="btn btn-default btn-sm rowremove" value="published"><i class="glyphicon glyphicon-ok" /></button>
+            <button type="submit" class="btn btn-default btn-sm rowremove" value="unpublished"><i class="glyphicon glyphicon-remove" /></button>
+        </td>
+        <td>
+            <img class="upload_img media_thumb pointer" t-att-src="'/website/image?model=website.twitter.wall.tweet&amp;field=back_image&amp;id='+tweet.id" width="42" height="42"/>
+        </td>
+       </tr>
      </t>
 </template>

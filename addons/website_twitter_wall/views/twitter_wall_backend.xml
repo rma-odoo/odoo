@@ -1,6 +1,11 @@
 <?xml version="1.0"?>
 <openerp>
     <data>
+        <template id="assets_backend" name="twitter wall assets" inherit_id="web.assets_backend">
+            <xpath expr="." position="inside">
+                <link rel="stylesheet" href="/website_twitter_wall/static/src/css/website_twitter_wall.css"/>
+            </xpath>
+        </template>
         <menuitem id="tweet_wall" name="Tweet Wall"/>
          <record model="ir.ui.view" id="twitter_wall_tweet_tree">
           <field name="name">Website Twitter Wall Tweet</field>
@@ -15,40 +20,38 @@
                  <button string="Reject" name="reject_tweet" type="object" attrs="{'invisible':[('state','=','unpublished')]}"/>
               </tree>
           </field>
-          </record>
+        </record>
           
-          <record model="ir.actions.act_window" id="action_twitter_wall_tweet">
+        <record model="ir.actions.act_window" id="action_twitter_wall_tweet">
           <field name="name">Tweet Wall Tweet</field>
           <field name="res_model">website.twitter.wall.tweet</field>
           <field name="view_type">form</field>
           <field name="view_mode">tree,form</field>
-          </record>
+        </record>
         <record model="ir.ui.view" id="twitter_wall_form">
             <field name="name">Website Twitter Wall</field>
             <field name="model">website.twitter.wall</field>
             <field name="arch" type="xml">
                 <form string="arch" version="7.0">
+                    <header>
+                        <field name="state" invisible="1"/>
+                        <button name="start_incoming_tweets" string="Start Streaming" type="object" class="oe_highlight" attrs="{'invisible': [('state','!=', 'not_streaming')]}" />
+                        <button name="stop_incoming_tweets" string="Stop Streaming" type="object" class="oe_highlight" attrs="{'invisible': [('state','!=', 'streaming')]}" />
+                    </header>
                     <sheet string="Tweet Wall">
-                        <div>
-                            <div class="oe_right oe_button_box">
-                                <field name="state" invisible="1"/>
-                                <field name="website_published" class="pull-right" widget = "website_button"/>
-                                <button name="%(action_twitter_wall_tweet)d" type="action" string="Tweets" context="{'search_default_wall_id':id,'search_default_state':'pending'}" class="pull-right"/>
-                                <button name="start_incoming_tweets"  class="pull-right" string="Start Streaming" type="object" attrs="{'invisible': [('state','!=', 'not_streaming')]}"/>
-                                <button name="stop_incoming_tweets"  class="pull-right" string="Stop Streaming" type="object" attrs="{'invisible': [('state','!=', 'streaming')]}"/>
-                            </div>
+                        <div class="oe_right oe_button_box" name="buttons">
+                            <field name="website_url" invisible="1"/>
+                            <field name="website_published" class="pull-right" widget="website_button"/>
                         </div>
-                        <div>
-                            <label for="name" class="oe_edit"/>
-                            <h1>
-                                <field name="name" required="1" />
-                            </h1>
-                            
-                            <field name="tags" widget="many2many_tags"/>
-                            <field name="note" placeholder="Description..."/>
-
+                        <div class="oe_title">
+                            <label for="name" />
+                            <h1><field name="name" placeholder="Wall name..." required="1"/></h1>
+                        </div>
+                        <group>
+                            <field name="tags" string="Hash tags" widget="many2many_tags"/>
+                            <field name="note" placeholder="Wall Description..."/>
                             <field name="website_id" invisible="1"/>
-                        </div>
+                        </group>
                     </sheet>
                 </form>
             </field>
@@ -77,11 +80,72 @@
                 </tree>
             </field>
         </record>
+        
+        <!--  Kanban View -->
+        <record model="ir.ui.view" id="twitter_wall_kanban">
+            <field name="name">Website Twitter Wall</field>
+            <field name="model">website.twitter.wall</field>
+            <field name="arch" type="xml">
+                <kanban version="7.0" class="oe_background_grey">
+                    <field name="id"/>
+                    <field name="user_id"/>
+                    <field name="name"/>
+                    <field name="tags"/>
+                    <field name="tweet_ids"/>
+                    <field name="state" />
+                    <field name="website_published"/>
+                    <field name="color"/>
+                    <field name="pending" />
+                    <field name="published" />
+                    <field name="unpublished" />
+                    <templates>
+                        <t t-name="kanban-box">
+                            <div t-attf-class="oe_kanban_color_#{kanban_getcolor(record.color.raw_value)} oe_kanban_card oe_kanban_wall oe_kanban_global_click">
+                                <div class="oe_dropdown_toggle oe_dropdown_kanban" groups="base.group_user">
+                                    <span class="oe_e">í</span>
+                                    <ul class="oe_dropdown_menu">
+                                        <t t-if="widget.view.is_action_enabled('edit')"><li><a type="edit">Edit..</a></li></t>
+                                        <t t-if="widget.view.is_action_enabled('delete')"><li><a type="delete">Delete..</a></li></t>
+                                        <br/>
+                                        <li><ul class="oe_kanban_colorpicker" data-field="color"/></li>
+                                    </ul>
+                                </div>
+                                <div class="oe_kanban_content">
+                                    <h4><field name="name"/></h4>
+                                    <div class="oe_kanban_alias">
+                                        <field name="tags"/>
+                                    </div>
+                                    <div class="oe_kanban_wall_list">
+                                        <field name="pending" /> Pending, <field name="published" /> Accepted, <field name="unpublished" /> Rejected
+                                    </div>
+                                    <div class="oe_kanban_footer_left">
+                                        <div>
+                                            Tweets : <a name="open_wall_moderate" type="object"><field name="tweet_ids" /></a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </templates>
+                </kanban>
+            </field>
+        </record>
+
         <record model="ir.actions.act_window" id="action_twitter_wall">
             <field name="name">Tweet Wall</field>
             <field name="res_model">website.twitter.wall</field>
             <field name="view_type">form</field>
-            <field name="view_mode">tree,form</field>
+            <field name="view_mode">kanban,form</field>
+            <field name="help" type="html">
+                <p class="oe_view_nocontent_create">
+                  Click to start a new wall.
+                </p>
+                <p>
+                  Wall are used to create new tweet wall for getting tweet from Hash tag.
+                  Frequently hashing tag get the tweets and showing on wall. 
+                  OpenERP's project management allows you to manage the 
+                </p>
+            </field>
         </record>
         <menuitem id="menu_twitter_wall" name="Tweet Wall" parent="tweet_wall"/>
         <menuitem action="action_twitter_wall" id="menu_twitter_wall_sub" parent="menu_twitter_wall"/>

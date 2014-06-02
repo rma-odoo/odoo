@@ -62,21 +62,51 @@ class TwitterTweetTag(osv.osv):
         'name': fields.char('Twitter HashTag', size=30),
     }
 
-# Todo: check for the right side view, can we allow custom view (sponcer, top contributor, etc...)
-# Todo: add attrs so that once wall gets published, all fields should be readonly
 class TwitterWall(osv.osv):
     _name = "website.twitter.wall"
+    
+    def _get_pending(self, cr, uid, ids, field, args, context = None):
+        tweet_obj = self.pool['website.twitter.wall.tweet']
+        return { 
+            pending: tweet_obj.search_count(cr, uid, [('wall_id','=', pending),('state', '=', 'pending')], context=context)
+            for pending in ids
+        }
+    def _get_published(self, cr, uid, ids, field, args, context = None):
+        tweet_obj = self.pool['website.twitter.wall.tweet']
+        return { 
+            published: tweet_obj.search_count(cr, uid, [('wall_id','=', published),('state', '=', 'published')], context=context)
+            for published in ids
+        }
+    def _get_unpublished(self, cr, uid, ids, field, args, context = None):
+        tweet_obj = self.pool['website.twitter.wall.tweet']
+        return { 
+            unpublished: tweet_obj.search_count(cr, uid, [('wall_id','=', unpublished),('state', '=', 'unpublished')], context=context)
+            for unpublished in ids
+        }
+
+    def _website_url(self, cr, uid, ids, field_name, arg, context=None):
+        res = dict.fromkeys(ids, '')
+        for wall_id in self.browse(cr, uid, ids, context=context):
+            res[wall_id.id] = "/tweet_moderate/%s" % (wall_id.id,)
+        return res
+    
     _columns = {
         'name': fields.char('Wall Name'),
         'note': fields.text('Description'),
         'tags': fields.many2many('website.twitter.tweet.tag', 'rel_wall_tag', 'wall_id', 'tag_id', 'Twitter Tags'),
         'tweet_ids': fields.one2many('website.twitter.wall.tweet', 'wall_id', 'Tweets'),
         'website_id': fields.many2one('website', 'Website'),
-
+        'color': fields.integer('Color Index'),
         'active': fields.boolean('Avtive'),
         'state': fields.selection([('not_streaming', 'Draft'), ('streaming', 'In Progress')], string="State"),
 #         'view_id': fields.many2one('ir.ui.view', 'Wall Type', domain=[()]),
         'website_published': fields.boolean('Visible in Website'),
+        'back_image': fields.binary('Background Image'),
+        'user_id': fields.many2one('res.users', 'Created User'),
+        'pending': fields.function(_get_pending, type='integer', string='Pending Tweets'),
+        'published': fields.function(_get_published, type='integer', string='Published Tweets'),
+        'unpublished': fields.function(_get_unpublished, type='integer', string='Unpublished Tweets'),
+        'website_url': fields.function(_website_url, string="Website url", type="char")
     }
 
     
@@ -84,13 +114,14 @@ class TwitterWall(osv.osv):
         'website_id': 1,# Todo: chnage 1 with first website ref
         'active': True,
         'state': 'not_streaming',
-        'website_published': True
+        'website_published': True,
+        'user_id': lambda obj, cr, uid, ctx=None: uid,
     }
 
     def start_incoming_tweets(self, cr, uid, ids, context=None):
-        self.write(cr, uid, ids, {'state': 'streaming'}, context=context)
         for wall in self.browse(cr, uid, ids, context=context):
             WallManager(cr.dbname, uid, wall).start()
+        self.write(cr, uid, ids, {'state': 'streaming'}, context=context)
         return True
 
     def stop_incoming_tweets(self, cr, uid, ids, context=None):
@@ -99,6 +130,7 @@ class TwitterWall(osv.osv):
 
     def _set_tweets(self, cr, uid, ids, vals, context=None):
         tweet = self.pool.get('website.twitter.wall.tweet')
+        
         tweet_media = self.pool.get('website.twitter.tweet.media')
         tweet_val = tweet._process_tweet(cr, uid, ids, vals, context)
         tweet_id = tweet.create(cr, uid, tweet_val, context)
@@ -107,11 +139,16 @@ class TwitterWall(osv.osv):
             for tweet_data in tweet_med:
                 tweet_media.create(cr, uid, tweet_data, context)
 
+    def open_wall_moderate(self, cr, uid, id, context=None):
+        final_url="/tweet_moderate/"+str(id[0])
+        return {'type': 'ir.actions.act_url', 'url':final_url, 'target': 'self',}
 
-    def get_tweets_to_display(self, cr, uid, ids, context=None):
-        pass
-        # Todo: return a list of tweets depends on the wall to display on the wall
-        # Todo: better to check the view type and retun based on that
+    def unlink(self, cr, uid, ids, context=None):
+        twitter_obj = self.pool.get('website.twitter.wall.tweet')
+        for id in ids:
+            tweet_ids = twitter_obj.search(cr, uid, [('wall_id', '=', id)])
+            twitter_obj.unlink(cr, uid, tweet_ids, context=context)
+        return super(TwitterWall, self).unlink(cr, uid, ids, context=context)
 
 class WebsiteTwitterTweetMedia(osv.osv):
     _name = "website.twitter.tweet.media"

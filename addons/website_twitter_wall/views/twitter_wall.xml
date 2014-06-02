@@ -4,100 +4,70 @@
         <!-- Page -->
         <template id="twitter_walls">
             <t t-call="website.layout">
+                <t t-set="head">
+                    <link rel="stylesheet" href="/website_twitter_wall/static/src/css/website_twitter_wall.css"  type="text/css"/>
+                    <script type="text/javascript" src="/website_twitter_wall/static/src/js/website_twitter_wall.js"></script>
+                </t>
                 <div class="container" style="width: 100%;">
                     <div class="row">
-                        <div class='col-md-12'>
-                            <nav class="navbar navbar-default" role="navigation">
-                                <div class="container-fluid">
-                                    <div class="navbar-header">
-                                        <b>
-                                            <a class="navbar-brand" href="/twitter_walls">Twitter Wall</a>
-                                        </b>
-                                    </div>
-                                    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-                                        <form class="navbar-form navbar-right" role="search">
-                                            <div class="form-group">
-                                                <input type="text" class="form-control" placeholder="Search"/>
-                                            </div>
-                                        </form>
-                                        <form class="navbar-form navbar-right form-inline">
-                                            <div class="btn-group">
-                                                <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
-                                                    Filter <span class="caret"></span>
-                                                </button>
-                                                <ul class="dropdown-menu" role="menu">
-                                                    <li><a t-att-href="'?' + keep_query(filters='pending')"><i t-if="filters == 'pending'" class="fa fa-check"/> Pending</a></li>
-                                                    <li><a t-att-href="'?' + keep_query(filters='published')"><i t-if="filters == 'published'" class="fa fa-check"/> Approve</a></li>
-                                                    <li><a t-att-href="'?' + keep_query(filters='unpublished')"><i t-if="filters == 'unpublished'" class="fa fa-check"/> Rejected</a>
-                                                    </li>
-                                                </ul>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                            </nav>
+                        <div class="col-md-10 col-md-offset-1">
                             <div class="text-center text-muted" t-if="not walls">
                                 <h1>No Twitter Wall found</h1>
                             </div>
-                            <table class="table table-condensed table-striped" t-if="walls">
-                                <tr>
-                                    <th class="col-sm-2">Wall</th>
-                                    <th class="col-sm-2">Hashtag</th>
-                                    <th class="col-sm-1">Moderate</th>
-                                    <th class="col-sm-1">Status</th>
-                                    <th class="col-sm-1">Streaming</th>
-                                    <th class="col-sm-5">Wall Description</th>
-                                </tr>
-                                <tr t-foreach="walls" t-as="wall">
-                                    <td>
-                                        <h4 class="media-heading">
-                                            <a itemprop="url" t-att-class="wall.website_published" t-attf-href="/twitter_wall_tweet/#{ slug(wall) }">
-                                                <span t-esc="wall.name"></span>
-                                            </a>
-                                        </h4>
-                                    </td>
-                                    <td>
-                                        <div t-attf-class="word-break: break-all;" t-if="wall.tags">
-                                            <span t-foreach="wall.tags" t-as="tag" class="label label-default">
-                                            # <t t-esc="tag.name" />
-                                            </span>
+                            <div class="container-fluid">
+                                <div class="row" t-if="walls">
+                                    <t t-foreach="walls" t-as="wall">
+                                        <t t-set="class1" t-value="'published_True' if wall.website_published else 'published_False' "/>
+                                        <div t-attf-class="wall_box #{class1}">
+                                            <h2><center>
+                                                <a itemprop="url" t-att-class="wall.website_published" t-attf-href="/twitter_wall/#{ slug(wall) }">
+                                                    <span t-esc="wall.name"></span>
+                                                </a></center>
+                                            </h2>
+                                            <t t-esc="wall.note" />
+                                            <div t-if="wall.tags" class="clearfloat">
+                                                <span t-foreach="wall.tags" t-as="tag" class="tagcloud">
+                                                # <t t-esc="tag.name" />
+                                                </span>
+                                            </div>
+                                            <div class="clearfloat"><br /></div>
+                                            <div class="wall_tweet_count clearfloat">
+                                                <ul class="nav nav-pills">
+                                                  <li class="state_count">Pending <span class="badge badgespace"><t t-esc="status[wall.id][0]"/></span></li>
+                                                  <li class="state_count">Aproved <span class="badge badgespace"><t t-esc="status[wall.id][1]"/></span></li>
+                                                  <li class="state_count">Rejected<span class="badge badgespace"><t t-esc="status[wall.id][2]"/></span></li>
+                                                </ul>
+                                            </div>
                                         </div>
-                                    </td>
-                                    <td>
-                                        <t t-if="wall.website_published == 1">
-                                            <a t-attf-href="/tweet_moderate/#{ slug(wall) }">
-                                                <button type="submit" class="btn btn-default btn-xs">Moderate</button>
-                                            </a>
-                                        </t>
-                                    </td>
-                                    <td>
-                                        <small t-if="not wall.website_published" class="label label-danger">Not Published</small>
-                                        <small t-if="wall.website_published" class="label label-success">Published</small>
-                                    </td>
-                                    <td>
-                                        <div class="text-muted" t-if="wall.state == 'not_streaming'">Draft</div>
-                                        <div class="text-muted" t-if="not wall.state == 'not_streaming'">Streaming</div>
-                                    </td>
-                                    <td>
-                                        <t t-esc="wall.note" />
-                                    </td>
-                                </tr>
-                            </table>
+                                    </t>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </t>
         </template>
-        <template id="twitter_wall_tweet" name="Twitter Wall Tweet">
+        <template id="twitter_wall" name="Twitter Wall Tweet">
             <t t-call="website.layout">
                 <t t-set="head">
+                    <script type="text/javascript">
+                        openerp.qweb.add_template('/website_twitter_wall/static/src/xml/website_twitter_wall.xml');
+                    </script>
                     <link rel="stylesheet" href="/website_twitter_wall/static/src/css/website_twitter_wall.css"  type="text/css"/>
                     <script type="text/javascript" src="/website_twitter_wall/static/src/js/website_twitter_wall.js"></script>
                 </t>
-                <div class="twitter_wall_container" t-att-wall_id = "wall_id" name="tweets_for_client">
+                <div class="twitter_wall_container" t-att-wall_id = "wall_id" name="tweets_for_client" t-attf-style="background-image: url('data:image/jpg;base64, #{back_image}')">
                     <div class="col-md-offset-11 pull-right">
-                        <a href="#" id="hide_layout"><span class="glyphicon glyphicon-upload"></span></a>
-                        <a href="#" id="max_window"><span class="glyphicon glyphicon-fullscreen" ></span></a>
+                        <form method="POST"
+                          action=""
+                          enctype="multipart/form-data"
+                          class="form-inline" id="back_img">
+                            <div class="form-group pull-left">
+                                <input type="file" name="upload" data-type="wall" t-att-data-id="wall_id" class="upload_bg_image" accept="image/*" style="position: absolute; opacity: 0; width: 1px; height: 1px;"/>
+                                <a href="#"><span class="glyphicon glyphicon-upload upload_img"></span></a>
+                                <a href="#" id="max_window"><span class="glyphicon glyphicon-fullscreen" ></span></a>
+                            </div>
+                        </form>
                     </div>
                     <div class="col-md-12" id="tweet_wall_div">
                         
@@ -110,7 +80,7 @@
         </template>
         <!-- Website menu -->
         <record id="website_menu" model="website.menu">
-            <field name="name">Tweet</field>
+            <field name="name">Twitter Walls</field>
             <field name="url">/twitter_walls</field>
             <field name="parent_id" ref="website.main_menu"/>
             <field name="sequence" type="int">25</field>
@@ -119,34 +89,56 @@
         <template id="tweet_modetate">
             <t t-call="website.layout">
                 <t t-set="head">
+                    <script type="text/javascript">
+                        openerp.qweb.add_template('/website_twitter_wall/static/src/xml/website_twitter_wall.xml');
+                    </script>
                     <link rel="stylesheet" href="/website_twitter_wall/static/src/css/website_twitter_wall.css" type="text/css"/>
                     <script type="text/javascript" src="/website_twitter_wall/static/src/js/website_twitter_wall.js"></script>
                 </t>
                 <div class="container twitter_moderate_container" t-att-wall_id = "wall.id" name="tweets_for_admin">
                     <div class="row">
-                        <div class="col-md-12">
+                        <div class="col-md-10 col-md-offset-1">
                             <nav class="navbar navbar-default" role="navigation">
                                 <div class="container-fluid">
-                                    <div class="navbar-header">
-                                        <span class="navbar-brand"><t t-esc="wall.name" /></span>
+                                    <div class="col-md-9">
+                                      <h1><t t-esc="wall.name" /></h1>
+                                      <p><t t-esc="wall.note" /></p>
                                     </div>
-                                    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-                                        <form class="navbar-form navbar-right" role="search">
-                                            <div class="form-group">
-                                                <input type="text" class="form-control" placeholder="Search"/>
+                                    <div class="col-md-3 streaming_btn">
+                                        <div>
+                                            <div class="btn-group" t-if="wall.website_published == 1">
+                                                <t t-if="wall.state == 'not_streaming'">
+                                                    <button type="submit" class="btn btn-success start_streaming" t-att-wall_id = "wall.id" value="startstreaming">Start Streaming</button>
+                                                </t>
+                                                <t t-if="not wall.state == 'not_streaming'">
+                                                    <button type="submit" class="btn btn-danger stop_streaming" t-att-wall_id = "wall.id" value="stopstreaming">Stop Streaming</button>
+                                                </t>
                                             </div>
-                                        </form>
+                                        </div>
                                     </div>
                                 </div>
                             </nav>
-                            <ul class="nav nav-tabs" id="status">
-                                <li t-foreach="states" t-as="state">
-                                    <a><span t-att-value="state[0]"><t t-esc="state[1]"/></span></a>
-                                </li>
-                            </ul>
-                            <br />
+                            <div>
+                                <div class="stream-item alert alert-success sr-only pointer"><span><strong></strong></span></div>
+                            </div>
+                                <ul class="nav nav-tabs" id="status">
+                                    <t t-foreach="states" t-as="state">
+                                    <li t-att-id="state[0]">
+                                        <a><span t-att-value="state[0]"><t t-esc="state[1]"/></span></a>
+                                    </li>
+                                    </t>
+                                </ul>
+                                <br />
+                            <form method="POST"
+                              action="/twitter_wall/upload_image"
+                              enctype="multipart/form-data"
+                              class="form-inline" id="back_img">
+                                <div class="form-group pull-left">
+                                    <input type="file" name="upload" data-type="tweet" class="upload_bg_image" accept="image/*" style="position: absolute; opacity: 0; width: 1px; height: 1px;"/>
+                                </div>
+                            </form>
                             <t t-foreach="states" t-as="state">
-                                <table class="table table-condensed table-striped table-responsive" id="tweet_table" t-att-name="state[0]">
+                                <table class="table table-condensed table-responsive" id="tweet_table" t-att-name="state[0]">
                                     <tr>
                                         <th></th>
                                         <th class="col-sm-2">Author</th>
@@ -156,10 +148,9 @@
                                         <th>Moderation</th>
                                         <th>Image</th>
                                     </tr>
-                                    <div id="tweet_moderate_div">
-                                    </div>
                                 </table>
                             </t>
+                            <div class="load_more_tweet alert alert-info pointer"><strong class="glyphicon glyphicon-chevron-down"></strong></div>
                         </div>
                     </div>
                 </div>
