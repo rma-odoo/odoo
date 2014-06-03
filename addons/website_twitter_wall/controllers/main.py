@@ -17,7 +17,8 @@ class website_twitter_wall(http.Controller):
                 vals = {
                         'wall_id' : wall.id, 
                         'back_image' : wall.back_image, 
-                        'hashtag' : walls.tags
+                        'hashtag' : walls.tags,
+                        'uid':request.session.uid or False
                 }
             return request.website.render("website_twitter_wall.twitter_wall", vals)
 
@@ -82,6 +83,7 @@ class website_twitter_wall(http.Controller):
     @http.route('/tweet_moderate/<model("website.twitter.wall"):wall>',type='http', auth='public', website=True)
     def twitter_moderate(self, wall=None, filters='pending', state=None, tweet_id=None, **kw):
         (registry, cr, context) = (request.registry, request.cr, request.context)
+        if not request.session.uid: return
         state = request.registry.get('website.twitter.wall.tweet').fields_get(cr, SUPERUSER_ID, ['state'], context=None)
         values = {
             'wall': wall,

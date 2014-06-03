@@ -1,5 +1,4 @@
-.twitter_wall_container {
-    /*background: url('/website_twitter_wall/static/src/img/bg.jpg') no-repeat center center fixed;*/
+.full_screen {
     background: no-repeat center center fixed;
     -webkit-background-size: cover;
     -moz-background-size: cover;
@@ -11,11 +10,14 @@
     top : auto;
     position:absolute;
 }
-.twitter_wall_container_top{
-    top:0px;
+.form-group {
+    opacity: 0;
+    -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
 }
-
-
+.form-group:hover {
+    opacity: 1;
+    -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=100)";
+}
 .oe_user_name{
     margin : 5px;
 }

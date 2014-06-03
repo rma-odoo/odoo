@@ -21,27 +21,6 @@
                 </div>
             </div>
         </div>
-        <!-- <div class="row-fluid oe_tweets">
-            <div class="col-md-12">
-                <div class="col-md-1 oe_padding">
-                    <img class="img-rounded oe_profile_image" t-att-src="res.user_image_url"></img>
-                </div>
-                <div class="col-md-11 oe_padding">
-                    <div class="oe_user_name">
-                        <h4><t t-raw="res.name"/>
-                        <small class="text-muted">@<t t-raw="res.screen_name"/></small>
-                        <span class="oe_formated_date pull-right text-muted"><t t-raw="res.created_at_formated_date"></t></span>
-                        </h4>
-                    </div>
-                    <h3 class="oe_tweet_text"><t t-raw="res.tweet"></t></h3>
-                    <div t-if="res.tweet_media_ids">
-                        <t t-foreach="res.tweet_media_ids" t-as="res_media">
-                            <img class="img-rounded" t-attf-src="#{res_media.media_url}:medium"></img>
-                        </t>
-                    </div>
-                </div>
-            </div>
-        </div> -->
      </t>
      
      <t t-name="twitter_load_tweets">
