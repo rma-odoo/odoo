@@ -68,10 +68,10 @@
                                 <a href="#" id="max_window"><span class="glyphicon glyphicon-fullscreen" ></span></a>
                             </div>
                         </form>
-                      </div>
+                   </div>
                     <div class="row">
-                      <div class="col-md-9" id="tweet_wall_div">
-                      </div>
+                      <div class="col-md-8 col-md-offset-1" id="tweet_wall_div">
+                        </div>
 
                       <div class="col-md-3 pull-right">
                         <h3>Tweet us : <label class="label label-danger">#opendays</label></h3>
