@@ -68,11 +68,14 @@
                                 <a href="#" id="max_window"><span class="glyphicon glyphicon-fullscreen" ></span></a>
                             </div>
                         </form>
-                    </div>
-                    <div class="container" id="tweet_wall_div">
-                    </div>
-                    <div class="container" style="position:fixed; background:#FFFFFF; bottom:0;">
-                        <h3><label>Tweet Us : <t t-foreach="hashtag" t-as="res"><label class="label label-danger" style="margin-right:2px;">#<t t-raw="res.name"></t></label></t></label></h3>
+                      </div>
+                    <div class="row">
+                      <div class="col-md-9" id="tweet_wall_div">
+                      </div>
+
+                      <div class="col-md-3 pull-right">
+                        <h3>Tweet us : <label class="label label-danger">#opendays</label></h3>
+                      </div>
                     </div>
                 </div>
             </t>
@@ -84,7 +87,6 @@
             <field name="parent_id" ref="website.main_menu"/>
             <field name="sequence" type="int">25</field>
         </record>
-        
         <template id="tweet_modetate">
             <t t-call="website.layout">
                 <t t-set="head">
