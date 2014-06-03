@@ -139,14 +139,14 @@
                                       </li>
                                     </t>
                                 </ul>
-                            <!--form method="POST"
+                            <form method="POST"
                               action="/twitter_wall/upload_image"
                               enctype="multipart/form-data"
                               class="form-inline" id="back_img">
                                 <div class="form-group pull-left">
                                     <input type="file" name="upload" data-type="tweet" class="upload_bg_image" accept="image/*" style="position: absolute; opacity: 0; width: 1px; height: 1px;"/>
                                 </div>
-                            </form-->
+                            </form>
                             <t t-foreach="states" t-as="state">
                                 <table class="table table-condensed table-responsive" id="tweet_table" t-att-name="state[0]">
                                     <tr>
