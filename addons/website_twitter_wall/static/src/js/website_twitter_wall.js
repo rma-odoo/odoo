@@ -5,7 +5,8 @@ $(document).ready(function() {
         $('#back_img').ajaxSubmit({
             data: {
                 type: type,
-                id: id 
+                id: id,
+                wall_id:$("div[name='tweets_for_admin']").attr("wall_id")
             },
             success: function(data){
                 if(type == 'wall'){

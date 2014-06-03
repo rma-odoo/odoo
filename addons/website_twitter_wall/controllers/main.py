@@ -110,11 +110,12 @@ class website_twitter_wall(http.Controller):
         return state
     
     @http.route(['/twitter_wall/upload_image'], type='http', auth="public", website=True)
-    def upload_image(self, type=None, id=None, upload=None, **kw):
+    def upload_image(self, type=None, id=None, wall_id=None, upload=None, **kw):
         image_data = base64.b64encode(upload.read())
-        if type == 'wall':
-            image_upload_obj = request.registry.get('website.twitter.wall')
-        else:
+        if type == 'tweet':
             image_upload_obj = request.registry.get('website.twitter.wall.tweet')
+            image_upload_obj.write(request.cr, SUPERUSER_ID, int(id), { 'back_image': image_data }, request.context)
+            id = wall_id
+        image_upload_obj = request.registry.get('website.twitter.wall')
         image_upload_obj.write(request.cr, SUPERUSER_ID, int(id), { 'back_image': image_data }, request.context)
         return image_data
