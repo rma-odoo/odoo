@@ -53,10 +53,10 @@
                     <script type="text/javascript">
                         openerp.qweb.add_template('/website_twitter_wall/static/src/xml/website_twitter_wall.xml');
                     </script>
-                    <link rel="stylesheet" href="/website_twitter_wall/static/src/css/website_twitter_wall.css"  type="text/css"/>
+                    <link rel="stylesheet" href="/website_twitter_wall/static/src/css/website_twitter_wall.css" type="text/css"/>
                     <script type="text/javascript" src="/website_twitter_wall/static/src/js/website_twitter_wall.js"></script>
                 </t>
-                <div class="full_screen"name="tweets_for_client" t-attf-style="background-image: url('data:image/jpg;base64, #{back_image}')">
+                <div class="full_screen" name="tweets_for_client" t-attf-style="background-image: url('data:image/jpg;base64, #{back_image}')">
                     <div class="container" t-att-wall_id="wall_id">
                         <div class="col-md-offset-11 pull-right">
                             <form method="POST"
