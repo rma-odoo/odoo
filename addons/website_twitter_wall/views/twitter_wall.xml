@@ -56,7 +56,7 @@
                     <link rel="stylesheet" href="/website_twitter_wall/static/src/css/website_twitter_wall.css"  type="text/css"/>
                     <script type="text/javascript" src="/website_twitter_wall/static/src/js/website_twitter_wall.js"></script>
                 </t>
-                <div class="container twitter_wall_container" t-att-wall_id="wall_id" name="tweets_for_client" t-attf-style="background-image: url('data:image/jpg;base64, #{back_image}')">
+                <div class="container" t-att-wall_id="wall_id" name="tweets_for_client" t-attf-style="background-image: url('data:image/jpg;base64, #{back_image}')">
                     <div class="col-md-offset-11 pull-right">
                         <form method="POST"
                           action="/twitter_wall/upload_image"
@@ -75,6 +75,7 @@
 
                       <div class="col-md-3 pull-right">
                         <h3>Tweet us : <label class="label label-danger">#opendays</label></h3>
+                        Twitter wall powred by Odoo.
                       </div>
                     </div>
                 </div>
