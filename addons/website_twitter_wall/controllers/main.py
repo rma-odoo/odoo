@@ -7,14 +7,11 @@ from openerp import SUPERUSER_ID
 from datetime import datetime
 
 class website_twitter_wall(http.Controller):
-    @http.route(['/twitter_walls',
-                 '/twitter_wall/<model("website.twitter.wall"):wall>',
-                 '/twitter_wall/upload_image'], type='http', auth="public", website=True)
-    def twitter_wall(self, wall=None, type=None, id=None, upload=None, **kw):
+    @http.route(['/twitter_walls','/twitter_wall/<model("website.twitter.wall"):wall>'], type='http', auth="public", website=True)
+    def twitter_wall(self, wall=None, **kw):
         wall_obj = request.registry.get('website.twitter.wall')
         wall_ids = wall_obj.search(request.cr, SUPERUSER_ID, [], context=request.context)
         wall_list = wall_obj.browse(request.cr, SUPERUSER_ID, wall_ids, context=request.context)
-        
         if wall:
             for walls in wall_obj.browse(request.cr, SUPERUSER_ID, [wall.id], context=request.context):
                 vals = {
@@ -23,15 +20,6 @@ class website_twitter_wall(http.Controller):
                         'hashtag' : walls.tags
                 }
             return request.website.render("website_twitter_wall.twitter_wall", vals)
-
-        if upload:
-            image_data = base64.b64encode(upload.read())
-            if type == 'wall':
-                image_upload_obj = request.registry.get('website.twitter.wall')
-            else:
-                image_upload_obj = request.registry.get('website.twitter.wall.tweet')
-            image_upload_obj.write(request.cr, SUPERUSER_ID, int(id), { 'back_image': image_data }, request.context)
-            return image_data
 
         tweet_state = {}
         for wall in wall_list:
@@ -118,3 +106,13 @@ class website_twitter_wall(http.Controller):
         if state == 'startstreaming': wall_obj.start_incoming_tweets(cr, SUPERUSER_ID, [wall_id], context=context)
         if state == 'stopstreaming': wall_obj.stop_incoming_tweets(cr, SUPERUSER_ID, [wall_id], context=context)
         return state
+    
+    @http.route(['/twitter_wall/upload_image'], type='http', auth="public", website=True)
+    def upload_image(self, type=None, id=None, upload=None, **kw):
+        image_data = base64.b64encode(upload.read())
+        if type == 'wall':
+            image_upload_obj = request.registry.get('website.twitter.wall')
+        else:
+            image_upload_obj = request.registry.get('website.twitter.wall.tweet')
+        image_upload_obj.write(request.cr, SUPERUSER_ID, int(id), { 'back_image': image_data }, request.context)
+        return image_data
