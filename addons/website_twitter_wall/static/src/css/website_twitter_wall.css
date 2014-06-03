@@ -14,6 +14,8 @@
 .twitter_wall_container_top{
     top:0px;
 }
+
+
 .oe_user_name{
     margin : 5px;
 }
@@ -22,10 +24,11 @@
     text-align : right;
 }
 .oe_tweets {
-    background-color:rgba(240, 248, 255, 0.5);
+    background-color:rgba(240, 248, 255, 0.8);
     margin-bottom: 5px;
     padding: 10px;
     border-radius: 15px;
+    
 }
 .oe_profile_image {
     width: 70px;
@@ -205,4 +208,8 @@ div span.tagcloud{
     text-align:center;
     vertical-align: middle;
     margin: 40px 0px 0px 0px;
+}
+.tweet_url_hash_highlight{
+    color: #4099FF;
+    font-style: italic;
 }

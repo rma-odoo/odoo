@@ -69,11 +69,11 @@
                             </div>
                         </form>
                     </div>
-                    <div class="col-md-12" id="tweet_wall_div">
+                    <div class="col-md-12 container" id="tweet_wall_div">
                         
                     </div>
                     <div class="col-md-12" style="position:fixed; background:#FFFFFF; bottom:0;">
-                        <h4><label  style="padding-left:20px;"> Tweet Us : <t t-foreach="hashtag" t-as="res"><label class="label label-danger" style="margin-right:2px;">#<t t-raw="res.name"></t></label></t></label></h4>
+                        <h3><label  style="padding-left:20px;"> Tweet Us : <t t-foreach="hashtag" t-as="res"><label class="label label-danger" style="margin-right:2px;">#<t t-raw="res.name"></t></label></t></label></h3>
                     </div>
                 </div>
             </t>

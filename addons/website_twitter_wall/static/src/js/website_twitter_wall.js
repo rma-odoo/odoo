@@ -259,7 +259,17 @@ openerp.website.tweet_wall = openerp.Class.extend({
         if (this.show_tweet.length){
             var tweet = self.show_tweet.shift();
             self.shown_tweet.push(tweet);
-            console.log("fgfgdfg",tweet['back_image'])
+            str = tweet['tweet'];
+            var url_pattern = /(\b(https?):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gi;
+            str = str.replace(url_pattern, '<span class="tweet_url_hash_highlight">$1</span>');
+            
+            var hash_pattern = /(\B#\w*[a-zA-Z]+\w*)/gi;
+            str = str.replace(hash_pattern, '<span class="tweet_url_hash_highlight">$1</span>');
+            
+            var uname_pattern = /(\B@\w*[a-zA-Z]+\w*)/gi;
+            str = str.replace(uname_pattern, '<span class="tweet_url_hash_highlight">$1</span>');
+            tweet['tweet'] = str;
+
             if(tweet['back_image'])$(".twitter_wall_container").animate({opacity: 0.5}, '1500', function() {
                                                                         $(this).css({'background-image': 'url("data:image/jpg;base64,' + tweet['back_image'] + '")'})
                                                                         .animate({opacity: 1}, '2500');
@@ -267,6 +277,7 @@ openerp.website.tweet_wall = openerp.Class.extend({
             this.animate_tweet(openerp.qweb.render("twitter_tweets", {'res' : tweet}));
         }
     },
+
     
     animate_tweet:function(tweet_html){
         //For more animations
