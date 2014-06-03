@@ -25,7 +25,10 @@ from openerp.osv import fields
 from openerp.addons.website_twitter_wall.controllers.TwitterStream import WallManager
 import simplejson as json
 import datetime
+
+
 class twitter_wall_settings(osv.osv_memory):
+
     _inherit = "website.config.settings"
     _columns = {
         'twitter_api_key': fields.related(
@@ -56,15 +59,17 @@ class TwitterClient(osv.osv):
         'twitter_access_token_secret': fields.char('Twitter Access Token secret', help="Twitter Access Token Secret"),
     }
 
+
 class TwitterTweetTag(osv.osv):
     _name = "website.twitter.tweet.tag"
     _columns = {
         'name': fields.char('Twitter HashTag', size=30),
     }
 
+
 class TwitterWall(osv.osv):
     _name = "website.twitter.wall"
-    
+
     def _get_pending(self, cr, uid, ids, field, args, context = None):
         tweet_obj = self.pool['website.twitter.wall.tweet']
         return { 
@@ -89,7 +94,7 @@ class TwitterWall(osv.osv):
         for wall_id in self.browse(cr, uid, ids, context=context):
             res[wall_id.id] = "/tweet_moderate/%s" % (wall_id.id,)
         return res
-    
+
     _columns = {
         'name': fields.char('Wall Name'),
         'note': fields.text('Description'),
@@ -109,7 +114,7 @@ class TwitterWall(osv.osv):
         'website_url': fields.function(_website_url, string="Website url", type="char")
     }
 
-    
+
     _defaults = {
         'website_id': 1,# Todo: chnage 1 with first website ref
         'active': True,
@@ -117,6 +122,7 @@ class TwitterWall(osv.osv):
         'website_published': True,
         'user_id': lambda obj, cr, uid, ctx=None: uid,
     }
+
 
     def start_incoming_tweets(self, cr, uid, ids, context=None):
         for wall in self.browse(cr, uid, ids, context=context):
@@ -130,7 +136,6 @@ class TwitterWall(osv.osv):
 
     def _set_tweets(self, cr, uid, ids, vals, context=None):
         tweet = self.pool.get('website.twitter.wall.tweet')
-        
         tweet_media = self.pool.get('website.twitter.tweet.media')
         tweet_val = tweet._process_tweet(cr, uid, ids, vals, context)
         tweet_id = tweet.create(cr, uid, tweet_val, context)
@@ -150,7 +155,9 @@ class TwitterWall(osv.osv):
             twitter_obj.unlink(cr, uid, tweet_ids, context=context)
         return super(TwitterWall, self).unlink(cr, uid, ids, context=context)
 
+
 class WebsiteTwitterTweetMedia(osv.osv):
+
     _name = "website.twitter.tweet.media"
     _columns = {
         'media_id': fields.char('ID',size=256),
@@ -165,6 +172,7 @@ class WebsiteTwitterTweetMedia(osv.osv):
         'media_width': fields.integer('Width'),
         'wall_tweet_id': fields.many2one('website.twitter.wall.tweet')
     }
+
     def _process_media_tweet(self, cr, uid, tweet, tweet_id, context=None):
         media_tweet = tweet.get('entities').get('media')
         vals = []
@@ -177,11 +185,13 @@ class WebsiteTwitterTweetMedia(osv.osv):
                 'url': media.get('url'),
                 'display_url': media.get('display_url'),
                 'expanded_url': media.get('expanded_url'),
-                'media_height': media.get('sizes').get('medium').get('h'),
-                'media_width': media.get('sizes').get('medium').get('w'),
-                }
+                'media_height': media.get('sizes').get('small').get('h'),
+                'media_width': media.get('sizes').get('small').get('w')
+            }
             vals.append(values)
         return vals
+
+
 class WebsiteTwitterTweet(osv.osv):
 
     _name = "website.twitter.wall.tweet"
@@ -209,7 +219,7 @@ class WebsiteTwitterTweet(osv.osv):
     }
 
     def accept_tweet(self, cr, uid, ids, context=None):
-        self.write(cr, uid, ids, {'state': 'published','published_date' : datetime.datetime.now()}, context=context)
+        self.write(cr, uid, ids, {'state': 'published','published_date': datetime.datetime.now()}, context=context)
         return
 
     def reject_tweet(self, cr, uid, ids, context=None):

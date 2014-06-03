@@ -112,6 +112,9 @@
                           <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                             <ul class="nav navbar-nav navbar-right">
                               <li>
+                                  <p class="navbar-text">Tags to search for #odoo #opendays</p>
+                              </li>
+                              <li>
                                       <div class="btn-group" t-if="wall.website_published == 1">
                                           <t t-if="wall.state == 'not_streaming'">
                                             <button type="submit" class="btn btn-success navbar-btn start_streaming" t-att-wall_id = "wall.id" value="startstreaming">Start Streaming</button>
