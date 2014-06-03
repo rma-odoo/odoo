@@ -10,10 +10,10 @@ $(document).ready(function() {
             },
             success: function(data){
                 if(type == 'wall'){
-                    $("div[name='tweets_for_client']")
+                    $("div.full_screen")
                         .animate({opacity: 0.2}, '1500', 
                         function() {
-                                $("div[name='tweets_for_client']").css({'background-image': 'url("data:image/jpg;base64,' + data + '")'})
+                                $("div.full_screen").css({'background-image': 'url("data:image/jpg;base64,' + data + '")'})
                                 .animate({opacity: 1}, '2500');
                         });
                 }else{
@@ -271,7 +271,7 @@ openerp.website.tweet_wall = openerp.Class.extend({
             str = str.replace(uname_pattern, '<span class="tweet_url_hash_highlight">$1</span>');
             tweet['tweet'] = str;
 
-            if(tweet['back_image'])$("div[name='tweets_for_client']").animate({opacity: 0.5}, '1500', function() {
+            if(tweet['back_image'])$("div.full_screen").animate({opacity: 0.5}, '1500', function() {
                                                                         $(this).css({'background-image': 'url("data:image/jpg;base64,' + tweet['back_image'] + '")'})
                                                                         .animate({opacity: 1}, '2500');
                                                                 });

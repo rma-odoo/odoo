@@ -56,27 +56,29 @@
                     <link rel="stylesheet" href="/website_twitter_wall/static/src/css/website_twitter_wall.css"  type="text/css"/>
                     <script type="text/javascript" src="/website_twitter_wall/static/src/js/website_twitter_wall.js"></script>
                 </t>
-                <div class="container full_screen" t-att-wall_id="wall_id" name="tweets_for_client" t-attf-style="background-image: url('data:image/jpg;base64, #{back_image}')">
-                    <div class="col-md-offset-11 pull-right">
-                        <form method="POST"
-                          action="/twitter_wall/upload_image"
-                          enctype="multipart/form-data"
-                          class="form-inline" id="back_img">
-                            <div class="form-group pull-left">
-                                <input t-if="uid" type="file" name="upload" data-type="wall" t-att-data-id="wall_id" class="upload_bg_image" accept="image/*" style="position: absolute; opacity: 0; width: 1px; height: 1px;"/>
-                                <a t-if="uid" href="#"><span class="glyphicon glyphicon-upload upload_img"></span></a>
-                                <a href="#" id="max_window"><span class="glyphicon glyphicon-fullscreen" ></span></a>
+                <div class="full_screen" t-attf-style="background-image: url('data:image/jpg;base64, #{back_image}')">
+                    <div class="container" t-att-wall_id="wall_id" name="tweets_for_client">
+                        <div class="col-md-offset-11 pull-right">
+                            <form method="POST"
+                              action="/twitter_wall/upload_image"
+                              enctype="multipart/form-data"
+                              class="form-inline" id="back_img">
+                                <div class="form-group pull-left">
+                                    <input t-if="uid" type="file" name="upload" data-type="wall" t-att-data-id="wall_id" class="upload_bg_image" accept="image/*" style="position: absolute; opacity: 0; width: 1px; height: 1px;"/>
+                                    <a t-if="uid" href="#"><span class="glyphicon glyphicon-upload upload_img"></span></a>
+                                    <a href="#" id="max_window"><span class="glyphicon glyphicon-fullscreen" ></span></a>
+                                </div>
+                            </form>
+                       </div>
+                        <div class="row">
+                          <div class="col-md-9" id="tweet_wall_div">
                             </div>
-                        </form>
-                   </div>
-                    <div class="row">
-                      <div class="col-md-8 col-md-offset-1" id="tweet_wall_div">
+    
+                          <div class="col-md-3 pull-right">
+                            <h3>Tweet us : <label class="label label-danger">#opendays</label></h3>
+                            Twitter wall powered by Odoo.
+                          </div>
                         </div>
-
-                      <div class="col-md-3 pull-right">
-                        <h3>Tweet us : <label class="label label-danger">#opendays</label></h3>
-                        Twitter wall powered by Odoo.
-                      </div>
                     </div>
                 </div>
             </t>
