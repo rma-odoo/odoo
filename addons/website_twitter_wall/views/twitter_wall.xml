@@ -56,7 +56,7 @@
                     <link rel="stylesheet" href="/website_twitter_wall/static/src/css/website_twitter_wall.css"  type="text/css"/>
                     <script type="text/javascript" src="/website_twitter_wall/static/src/js/website_twitter_wall.js"></script>
                 </t>
-                <div class="twitter_wall_container" t-att-wall_id = "wall_id" name="tweets_for_client" t-attf-style="background-image: url('data:image/jpg;base64, #{back_image}')">
+                <div class="container" t-att-wall_id="wall_id" name="tweets_for_client" t-attf-style="background-image: url('data:image/jpg;base64, #{back_image}')">
                     <div class="col-md-offset-11 pull-right">
                         <form method="POST"
                           action=""
@@ -69,11 +69,10 @@
                             </div>
                         </form>
                     </div>
-                    <div class="col-md-12 container" id="tweet_wall_div">
-                        
+                    <div class="container" id="tweet_wall_div">
                     </div>
-                    <div class="col-md-12" style="position:fixed; background:#FFFFFF; bottom:0;">
-                        <h3><label  style="padding-left:20px;"> Tweet Us : <t t-foreach="hashtag" t-as="res"><label class="label label-danger" style="margin-right:2px;">#<t t-raw="res.name"></t></label></t></label></h3>
+                    <div class="container" style="position:fixed; background:#FFFFFF; bottom:0;">
+                        <h3><label>Tweet Us : <t t-foreach="hashtag" t-as="res"><label class="label label-danger" style="margin-right:2px;">#<t t-raw="res.name"></t></label></t></label></h3>
                     </div>
                 </div>
             </t>
