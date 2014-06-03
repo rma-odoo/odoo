@@ -56,8 +56,8 @@
                     <link rel="stylesheet" href="/website_twitter_wall/static/src/css/website_twitter_wall.css"  type="text/css"/>
                     <script type="text/javascript" src="/website_twitter_wall/static/src/js/website_twitter_wall.js"></script>
                 </t>
-                <div class="full_screen" t-attf-style="background-image: url('data:image/jpg;base64, #{back_image}')">
-                    <div class="container" t-att-wall_id="wall_id" name="tweets_for_client">
+                <div class="full_screen"name="tweets_for_client" t-attf-style="background-image: url('data:image/jpg;base64, #{back_image}')">
+                    <div class="container" t-att-wall_id="wall_id">
                         <div class="col-md-offset-11 pull-right">
                             <form method="POST"
                               action="/twitter_wall/upload_image"
