@@ -72,9 +72,9 @@
                             </form>
                        </div>
                         <div class="row">
-                          <div class="col-md-9" id="tweet_wall_div">
+                          <div class="col-sm-10" id="tweet_wall_div">
                             </div>
-                          <div class="col-md-3 pull-right">
+                          <div class="col-sm-2 pull-right">
                             <h3>Tweet us : <label class="label label-danger">#opendays</label></h3>
                             Twitter wall powered by Odoo.
                           </div>
