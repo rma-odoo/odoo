@@ -167,7 +167,6 @@ class membership_line(osv.osv):
     _constraints = [
         (_check_membership_date, 'Error, this membership product is out of date', [])
     ]
-
 class Partner(osv.osv):
     '''Partner'''
     _inherit = 'res.partner'
@@ -397,7 +396,6 @@ class Partner(osv.osv):
         amount = datas.get('amount', 0.0)
         startdate = datas.get('startdate')
         enddate= datas.get('enddate')
-
         invoice_list = []
         if type(ids) in (int, long,):
             ids = [ids]
@@ -509,7 +507,6 @@ class Product(osv.osv):
         'duration': fields.integer('Duration', size=2, help='Duration until which membership remains active.'),
         'duration_name': fields.function(_name_get_fnc, type="char", string='Name',store=False),
         'count_member': fields.function(_count_all, type='integer', string='member'),
-
     }
 
     _defaults = {
