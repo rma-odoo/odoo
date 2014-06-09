@@ -79,7 +79,7 @@
 							<div class="col-sm-2 pull-right">
 								<h3>
 									Tweet us :
-									<label class="label label-danger">#opendays</label>
+									<label class="label label-danger"># opendays</label>
 								</h3>
 								Twitter wall powered by Odoo.
 							</div>

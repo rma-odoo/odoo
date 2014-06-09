@@ -120,7 +120,7 @@ img.media_thumb:hover+img.media_inlarge {
 	cursor: inherit;
 	display: block;
 }
-
+    
 table#tweet_table tbody th {
     border-top: 0px;
 }
