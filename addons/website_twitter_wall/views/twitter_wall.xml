@@ -11,61 +11,30 @@
 					<script type="text/javascript"
 						src="/website_twitter_wall/static/src/js/website_twitter_wall.js"></script>
 				</t>
-				<div class="container" style="width: 100%;">
+
+				<div class="container">
+					<div class="text-center text-muted" t-if="not walls">
+						<h1>No Twitter Wall found</h1>
+					</div>
+
 					<div class="row">
-						<div class="col-md-10 col-md-offset-1">
-							<div class="text-center text-muted" t-if="not walls">
-								<h1>No Twitter Wall found</h1>
-							</div>
-							<div class="container-fluid">
-								<div class="row" t-if="walls">
-									<t t-foreach="walls" t-as="wall">
-										<t t-set="class1"
-											t-value="'published_True' if wall.website_published else 'published_False' " />
-										<div t-attf-class="wall_box #{class1}">
-											<h2>
-												<center>
-													<a itemprop="url" t-att-class="wall.website_published"
-														t-attf-href="/twitter_wall/#{ slug(wall) }">
-														<span t-esc="wall.name"></span>
-													</a>
-												</center>
-											</h2>
-											<t t-esc="wall.note" />
-											<div t-if="wall.tags" class="clearfloat">
-												<span t-foreach="wall.tags" t-as="tag" class="tagcloud">
-													#
-													<t t-esc="tag.name" />
-												</span>
-											</div>
-											<div class="clearfloat">
-												<br />
-											</div>
-											<div class="wall_tweet_count clearfloat">
-												<ul class="nav nav-pills">
-													<li class="state_count">
-														Pending
-														<span class="badge badgespace">
-															<t t-esc="status[wall.id][0]" />
-														</span>
-													</li>
-													<li class="state_count">
-														Aproved
-														<span class="badge badgespace">
-															<t t-esc="status[wall.id][1]" />
-														</span>
-													</li>
-													<li class="state_count">
-														Rejected
-														<span class="badge badgespace">
-															<t t-esc="status[wall.id][2]" />
-														</span>
-													</li>
-												</ul>
-											</div>
-										</div>
-									</t>
-								</div>
+						<div class="container-fluid">
+							<div class="row" t-if="walls">
+								<t t-foreach="walls" t-as="wall">
+									<t t-set="class1"
+										t-value="'published_True' if wall.website_published else 'published_False' " />
+									<div t-attf-class="wall_box #{class1}">
+										<h2>
+											<center>
+												<a itemprop="url" t-att-class="wall.website_published"
+													t-attf-href="/twitter_wall/#{ slug(wall) }">
+													<span t-esc="wall.name"></span>
+												</a>
+											</center>
+										</h2>
+										<t t-esc="wall.note" />
+									</div>
+								</t>
 							</div>
 						</div>
 					</div>
@@ -152,17 +121,22 @@
 								</div>
 
 								<div class="collapse navbar-collapse" id="wall-navbar-collapse-1">
-								    <div t-if="wall.tags">
-									    <ul class="nav navbar-nav" t-foreach="wall.tags" t-as="tag">
-	                                        <li><a href="#"># <t t-esc="tag.name" /></a></li>
-									    </ul>
-								    </div>
-								    
+									<div t-if="wall.tags">
+										<ul class="nav navbar-nav" t-foreach="wall.tags" t-as="tag">
+											<li>
+												<a href="#">
+													#
+													<t t-esc="tag.name" />
+												</a>
+											</li>
+										</ul>
+									</div>
+
 									<form class="navbar-form navbar-left">
-										<input type="text" class="form-control" placeholder="Quick filter"/>
-										<button type="submit" class="btn btn-default">Search</button>										
+										<input type="text" class="form-control" placeholder="Quick filter" />
+										<button type="submit" class="btn btn-default">Search</button>
 									</form>
-									
+
 									<ul class="nav navbar-nav navbar-right">
 										<li>
 											<div class="btn-group">
@@ -202,7 +176,7 @@
 								</li>
 							</t>
 						</ul>
-						
+
 						<form method="POST" action="/twitter_wall/upload_image"
 							enctype="multipart/form-data" class="form-inline" id="back_img">
 							<div class="form-group pull-left">
@@ -211,7 +185,7 @@
 									style="position: absolute; opacity: 0; width: 1px; height: 1px;" />
 							</div>
 						</form>
-						
+
 						<t t-foreach="states" t-as="state">
 							<table class="table table-condensed table-responsive" id="tweet_table"
 								t-att-name="state[0]">
@@ -226,7 +200,7 @@
 								</tr>
 							</table>
 						</t>
-						
+
 						<div class="load_more_tweet alert alert-info pointer">
 							<strong class="glyphicon glyphicon-chevron-down"></strong>
 						</div>

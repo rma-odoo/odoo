@@ -23,11 +23,11 @@ class website_twitter_wall(http.Controller):
             return request.website.render("website_twitter_wall.twitter_wall", vals)
 
         tweet_state = {}
-        for wall in wall_list:
-            pending = wall_obj._get_pending(request.cr, SUPERUSER_ID, [wall.id], '', '',context=request.context)
-            published = wall_obj._get_published(request.cr, SUPERUSER_ID, [wall.id], '', '',context=request.context)
-            unpublished = wall_obj._get_unpublished(request.cr, SUPERUSER_ID, [wall.id], '', '',context=request.context)
-            tweet_state[wall.id] = [pending[wall.id], published[wall.id], unpublished[wall.id]]
+#         for wall in wall_list:
+#             pending = wall_obj._get_pending(request.cr, SUPERUSER_ID, [wall.id], '', '',context=request.context)
+#             published = wall_obj._get_published(request.cr, SUPERUSER_ID, [wall.id], '', '',context=request.context)
+#             unpublished = wall_obj._get_unpublished(request.cr, SUPERUSER_ID, [wall.id], '', '',context=request.context)
+#             tweet_state[wall.id] = [pending[wall.id], published[wall.id], unpublished[wall.id]]
         values = {
             'walls': wall_list,
             'status': tweet_state

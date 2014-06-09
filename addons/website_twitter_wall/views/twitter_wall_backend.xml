@@ -11,18 +11,6 @@
 
 		<menuitem id="tweet_wall" name="Twitter Wall" />
 
-		<!-- <record model="ir.ui.view" id="twitter_wall_tweet_tree"> <field name="name">Website 
-			Twitter Wall Tweet</field> <field name="model">website.twitter.wall.tweet</field> 
-			<field name="arch" type="xml"> <tree string="arch" version="7.0"> <field 
-			name="name" /> <field name="tweet" /> <field name="tweet_url" /> <field name="state" 
-			invisible="1" /> <button string="Accept" name="accept_tweet" type="object" 
-			attrs="{'invisible':['|',('state','=','published'),('state','=','unpublished')]}" 
-			/> <button string="Reject" name="reject_tweet" type="object" attrs="{'invisible':[('state','=','unpublished')]}" 
-			/> </tree> </field> </record> <record model="ir.actions.act_window" id="action_twitter_wall_tweet"> 
-			<field name="name">Tweet Wall Tweet</field> <field name="res_model">website.twitter.wall.tweet</field> 
-			<field name="view_type">form</field> <field name="view_mode">tree,form</field> 
-			</record> -->
-
 		<record model="ir.ui.view" id="twitter_wall_form">
 			<field name="name">Website Twitter Wall</field>
 			<field name="model">website.twitter.wall</field>
@@ -65,18 +53,6 @@
 				</form>
 			</field>
 		</record>
-
-		<!-- <record id="website_twitter_wall_filter" model="ir.ui.view"> <field 
-			name="name">Website Twitter Wall Tweet.select</field> <field name="model">website.twitter.wall.tweet</field> 
-			<field name="arch" type="xml"> <search string="Search Wall"> <field string="Wall" 
-			name="wall_id" filter_domain="[('wall_id','=',self)]" /> <field name="state" 
-			string="State" filter_domain="[('state','=', 'pending')]" /> </search> </field> 
-			</record> <record model="ir.ui.view" id="twitter_wall_tree"> <field name="name">Website 
-			Twitter Wall</field> <field name="model">website.twitter.wall</field> <field 
-			name="arch" type="xml"> <tree string="arch" version="7.0" colors="green:website_published;red:website_published"> 
-			<field name="name" /> <field name="note" /> <field name="tags" /> <field 
-			name="tweet_ids" /> <field name="website_id" /> <field name="website_published" 
-			/> </tree> </field> </record> -->
 
 		<!-- Kanban View -->
 		<record model="ir.ui.view" id="twitter_wall_kanban">
