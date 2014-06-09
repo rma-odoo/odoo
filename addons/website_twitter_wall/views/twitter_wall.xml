@@ -176,7 +176,7 @@
 								</li>
 							</t>
 						</ul>
-
+						
 						<form method="POST" action="/twitter_wall/upload_image"
 							enctype="multipart/form-data" class="form-inline" id="back_img">
 							<div class="form-group pull-left">
