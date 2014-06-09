@@ -1481,7 +1481,6 @@ class account_invoice_line(osv.osv):
             context.update({'lang': part.lang})
         result = {}
         res = self.pool.get('product.product').browse(cr, uid, product, context=context)
-
         result['name'] = res.partner_ref
         if type in ('out_invoice','out_refund'):
             a = res.property_account_income.id

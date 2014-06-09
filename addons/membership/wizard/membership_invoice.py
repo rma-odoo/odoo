@@ -37,21 +37,28 @@ class membership_invoice(osv.osv_memory):
         'member_price': fields.float('Member Price', digits_compute= dp.get_precision('Product Price')),
         'date_start': fields.date("Start Date", required=True),
         'date_end': fields.date("End Date"),
-        'dur': fields.integer(),
+        'dur': fields.integer('Duration ', size=3, help='Duration until which membership remains active.'),
     }
-    _defaults={'date_start': date.today().strftime('%Y-%m-%d'),
-    'member' : _get_member
+    _defaults={
+        'date_start': date.today().strftime('%Y-%m-%d'),
+        'member' : _get_member
     }
-    def onchange_product(self, cr, uid, ids, product_id,date_start):
+    def onchange_product(self, cr, uid, ids, product_id, date_start):
         """This function returns value of  product's member price based on product id.
         """
         get_dur=self.pool.get('product.product').search_read(cr,uid,[('id','=',product_id)], ['duration'],context=None)
         if get_dur:
             cut_date=datetime.datetime.strptime(date_start,"%Y-%m-%d").date()
             day_count=datetime.timedelta(int(get_dur[0]['duration'])*365/12)
+            end_date=(cut_date + day_count).isoformat()
         if not product_id:
             return {'value': {'member_price': False}}
-        return {'value': {'member_price': self.pool.get('product.product').price_get(cr, uid, [product_id])[product_id],'dur':get_dur[0]['duration'],'date_end':(cut_date + day_count).isoformat()}}
+        return {'value': {
+            'date_end': end_date,
+            'member_price': self.pool.get('product.product').price_get(cr, uid, [product_id])[product_id],
+            'dur': get_dur[0]['duration']
+            }
+        }
 
     def membership_invoice(self, cr, uid, ids, context=None):
         mod_obj = self.pool.get('ir.model.data')
@@ -64,10 +71,11 @@ class membership_invoice(osv.osv_memory):
             data = data[0]
             datas = {
                 'membership_product_id': data.product_id.id,
-                'amount': data.member_price
+                'amount': data.member_price,
+                'startdate': data.date_start,
+                'enddate': data.date_end
             }
         invoice_list = partner_obj.create_membership_invoice(cr, uid, context.get('active_ids', []), datas=datas, context=context)
-
         try:
             search_view_id = mod_obj.get_object_reference(cr, uid, 'account', 'view_account_invoice_filter')[1]
         except ValueError:
@@ -84,7 +92,7 @@ class membership_invoice(osv.osv_memory):
             'view_mode': 'form,tree',
             'res_model': 'account.invoice',
             'type': 'ir.actions.act_window',
-            'views': [(form_view_id, 'form'), (False, 'tree') ],
+            'views': [(form_view_id, 'form'), (False, 'tree')],
             'search_view_id': search_view_id,
         }
 

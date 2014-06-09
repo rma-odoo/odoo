@@ -11,8 +11,9 @@
                         <field name="member" context="{'search_default_member': 1}"/>
                         <field name="member_price"/>
                         <field name="product_id" domain="[('membership','=',True)]" widget="selection" on_change="onchange_product(product_id,date_start)"/>
-                        <field name="date_start" on_change="onchange_product(product_id,date_start)"/>
-                     
+                        <field name="date_start" on_change="onchange_product(product_id, date_start)"/>
+                        <field name="date_end" invisible="1" />
+                        <field name="dur" invisible="1"/>
                     </group>
                     <footer>
                         <button string="Invoice Membership" name="membership_invoice" type="object" class="oe_highlight"  />

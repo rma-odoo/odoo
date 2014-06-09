@@ -658,11 +658,17 @@ class product_product(osv.osv):
                 data['variants'] = p.variants
             if not data['code']:
                 data['code'] = p.code
-            if not data['name']:
-                data['name'] = p.name
+            if data['name']:
+                if p.membership:
+                    template_ids =  p.product_tmpl_id.id
+                    data_rec = self.pool.get('product.template').search_read(cr,uid,[('id','=',template_ids)], [],context=None)
+                    for record in data_rec:
+                        data['name'] = record['description']
+                else:
+                    data['name'] = p.name
             res[p.id] = (data['code'] and ('['+data['code']+'] ') or '') + \
                     (data['name'] or '') + (data['variants'] and (' - '+data['variants']) or '')
-        return res
+            return res
 
     def _is_only_child(self, cr, uid, ids, name, arg, context=None):
         res = dict.fromkeys(ids, True)

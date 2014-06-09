@@ -20,7 +20,7 @@
 ##############################################################################
 
 import time
-
+from datetime import date
 from openerp.osv import fields, osv
 import openerp.addons.decimal_precision as dp
 from openerp.tools.translate import _
@@ -136,16 +136,15 @@ class membership_line(osv.osv):
             res[line.id] = state
         return res
 
-
     _description = __doc__
     _name = 'membership.membership_line'
     _columns = {
         'partner': fields.many2one('res.partner', 'Partner', ondelete='cascade', select=1),
         'membership_id': fields.many2one('product.product', string="Membership", required=True),
-        'date_from': fields.date('From', readonly=True),
-        'date_to': fields.date('To', readonly=True),
+        'date_from': fields.date('Start Date', readonly=True),
+        'date_to': fields.date('End Date', readonly=True),
         'date_cancel': fields.date('Cancel date'),
-        'date': fields.date('Start Date', help="Date on which member has joined the membership"),
+        'date': fields.date('Join Date', help="Date on which member has joined the membership"),
         'member_price': fields.float('Membership Fee', digits_compute= dp.get_precision('Product Price'), required=True, help='Amount for the membership'),
         'account_invoice_line': fields.many2one('account.invoice.line', 'Account Invoice line', readonly=True),
         'account_invoice_id': fields.related('account_invoice_line', 'invoice_id', type='many2one', relation='account.invoice', string='Invoice', readonly=True),
@@ -168,6 +167,7 @@ class membership_line(osv.osv):
     _constraints = [
         (_check_membership_date, 'Error, this membership product is out of date', [])
     ]
+
 class Partner(osv.osv):
     '''Partner'''
     _inherit = 'res.partner'
@@ -395,6 +395,9 @@ class Partner(osv.osv):
         invoice_tax_obj = self.pool.get('account.invoice.tax')
         product_id = product_id or datas.get('membership_product_id', False)
         amount = datas.get('amount', 0.0)
+        startdate = datas.get('startdate')
+        enddate= datas.get('enddate')
+
         invoice_list = []
         if type(ids) in (int, long,):
             ids = [ids]
@@ -427,6 +430,9 @@ class Partner(osv.osv):
                 'fiscal_position': fpos_id or False
                 }, context=context)
             line_value['invoice_id'] = invoice_id
+            if not context:
+                context={}
+            context.update({'start':startdate, 'end':enddate})
             invoice_line_id = invoice_line_obj.create(cr, uid, line_value, context=context)
             invoice_obj.write(cr, uid, invoice_id, {'invoice_line': [(6, 0, [invoice_line_id])]}, context=context)
             invoice_list.append(invoice_id)
@@ -481,6 +487,20 @@ class Product(osv.osv):
     def _name_get_fnc(self, cr, uid, ids, prop, unknow_none, context=None):
         res = self.name_get(cr, uid, ids, context=context)
         return dict(res)
+
+    def _count_all(self, cr, uid, ids, field_name, arg, context=None):
+        get_member = self.pool['membership.membership_line']
+        res={}
+        for record in self.browse(cr,uid,ids,context=context):
+            count = get_member.search_count(cr, uid, [('membership_id', '=', record.id)], context=context)        
+            res[record.id] = count
+        return res
+
+    def return_action_to_open(self, cr, uid, ids, context=None):
+        res = self.pool.get('ir.actions.act_window').for_xml_id(cr, uid ,'membership','action_membership_product_count_view', context=context)
+        res['domain'] = [('membership_id', 'in',ids)]
+        return res
+
     _columns = {
         'image': fields.binary("Image",help="This field holds the image used as image for the membership"),
         'membership': fields.boolean('Membership', help='Check if the product is eligible for membership.'),
@@ -488,9 +508,10 @@ class Product(osv.osv):
         'membership_date_to': fields.date('Membership End Date', help='Date until which membership remains active.'),
         'duration': fields.integer('Duration', size=2, help='Duration until which membership remains active.'),
         'duration_name': fields.function(_name_get_fnc, type="char", string='Name',store=False),
+        'count_member': fields.function(_count_all, type='integer', string='member'),
+
     }
 
-    _sql_constraints = [('membership_date_greater','check(membership_date_to >= membership_date_from)','Error ! Ending Date cannot be set before Beginning Date.')]
     _defaults = {
         'membership': False,
     }
@@ -516,7 +537,6 @@ class Invoice(osv.osv):
             member_line_obj.write(cr, uid, mlines, {'date_cancel': today})
         return super(Invoice, self).action_cancel(cr, uid, ids, context=context)
 
-
 class account_invoice_line(osv.osv):
     _inherit='account.invoice.line'
 
@@ -530,17 +550,13 @@ class account_invoice_line(osv.osv):
                 ml_ids = member_line_obj.search(cr, uid, [('account_invoice_line', '=', line.id)], context=context)
                 if line.product_id and line.product_id.membership and not ml_ids:
                     # Product line has changed to a membership product
-                    date_from = line.product_id.membership_date_from
-                    date_to = line.product_id.membership_date_to
-                    if line.invoice_id.date_invoice > date_from and line.invoice_id.date_invoice < date_to:
-                        date_from = line.invoice_id.date_invoice
                     member_line_obj.create(cr, uid, {
                                     'partner': line.invoice_id.partner_id.id,
                                     'membership_id': line.product_id.id,
                                     'member_price': line.price_unit,
                                     'date': time.strftime('%Y-%m-%d'),
-                                    'date_from': date_from,
-                                    'date_to': date_to,
+                                    'date_from': context['start'],
+                                    'date_to': context['end'],
                                     'account_invoice_line': line.id,
                                     }, context=context)
                 if line.product_id and not line.product_id.membership and ml_ids:
@@ -567,17 +583,13 @@ class account_invoice_line(osv.osv):
             ml_ids = member_line_obj.search(cr, uid, [('account_invoice_line', '=', line.id)], context=context)
             if line.product_id and line.product_id.membership and not ml_ids:
                 # Product line is a membership product
-                date_from = line.product_id.membership_date_from
-                date_to = line.product_id.membership_date_to
-                if line.invoice_id.date_invoice > date_from and line.invoice_id.date_invoice < date_to:
-                    date_from = line.invoice_id.date_invoice
                 member_line_obj.create(cr, uid, {
                             'partner': line.invoice_id.partner_id and line.invoice_id.partner_id.id or False,
                             'membership_id': line.product_id.id,
                             'member_price': line.price_unit,
                             'date': time.strftime('%Y-%m-%d'),
-                            'date_from': date_from,
-                            'date_to': date_to,
+                            'date_from': context['start'],
+                            'date_to': context['end'],
                             'account_invoice_line': line.id,
                         }, context=context)
         return result
