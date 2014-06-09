@@ -70,25 +70,6 @@ class TwitterTweetTag(osv.osv):
 class TwitterWall(osv.osv):
     _name = "website.twitter.wall"
 
-    def _get_pending(self, cr, uid, ids, field, args, context = None):
-        tweet_obj = self.pool['website.twitter.wall.tweet']
-        return { 
-            pending: tweet_obj.search_count(cr, uid, [('wall_id','=', pending),('state', '=', 'pending')], context=context)
-            for pending in ids
-        }
-    def _get_published(self, cr, uid, ids, field, args, context = None):
-        tweet_obj = self.pool['website.twitter.wall.tweet']
-        return { 
-            published: tweet_obj.search_count(cr, uid, [('wall_id','=', published),('state', '=', 'published')], context=context)
-            for published in ids
-        }
-    def _get_unpublished(self, cr, uid, ids, field, args, context = None):
-        tweet_obj = self.pool['website.twitter.wall.tweet']
-        return { 
-            unpublished: tweet_obj.search_count(cr, uid, [('wall_id','=', unpublished),('state', '=', 'unpublished')], context=context)
-            for unpublished in ids
-        }
-
     def _website_url(self, cr, uid, ids, field_name, arg, context=None):
         res = dict.fromkeys(ids, '')
         for wall_id in self.browse(cr, uid, ids, context=context):
@@ -98,19 +79,22 @@ class TwitterWall(osv.osv):
     _columns = {
         'name': fields.char('Wall Name'),
         'note': fields.text('Description'),
-        'tags': fields.many2many('website.twitter.tweet.tag', 'rel_wall_tag', 'wall_id', 'tag_id', 'Twitter Tags'),
+        'tags': fields.many2many('website.twitter.tweet.tag', 'rel_wall_tag', 'wall_id', 'tag_id', 'Search tags'),
         'tweet_ids': fields.one2many('website.twitter.wall.tweet', 'wall_id', 'Tweets'),
         'website_id': fields.many2one('website', 'Website'),
         'color': fields.integer('Color Index'),
         'active': fields.boolean('Avtive'),
+        're_tweet': fields.boolean('Include Re-Tweet ?'),
         'state': fields.selection([('not_streaming', 'Draft'), ('streaming', 'In Progress')], string="State"),
-#         'view_id': fields.many2one('ir.ui.view', 'Wall Type', domain=[()]),
+#        'view_id': fields.many2one('ir.ui.view', 'Display Type', domain=[('model','=',)]),
         'website_published': fields.boolean('Visible in Website'),
         'back_image': fields.binary('Background Image'),
         'user_id': fields.many2one('res.users', 'Created User'),
-        'pending': fields.function(_get_pending, type='integer', string='Pending Tweets'),
-        'published': fields.function(_get_published, type='integer', string='Published Tweets'),
-        'unpublished': fields.function(_get_unpublished, type='integer', string='Unpublished Tweets'),
+        
+        'pending': fields.one2many('website.twitter.wall.tweet', 'wall_id', 'Tweets', domain=[('state','=','pending')]),
+        'published': fields.one2many('website.twitter.wall.tweet', 'wall_id', 'Tweets', domain=[('state','=','published')]),
+        'unpublished': fields.one2many('website.twitter.wall.tweet', 'wall_id', 'Tweets', domain=[('state','=','unpublished')]),
+        
         'website_url': fields.function(_website_url, string="Website url", type="char")
     }
 
