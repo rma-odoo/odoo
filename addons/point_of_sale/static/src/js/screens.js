@@ -432,6 +432,10 @@ function openerp_pos_screens(instance, module){ //module is instance.point_of_sa
         template:'ErrorSessionPopupWidget',
     });
 
+    module.ErrorConfigPopupWidget = module.ErrorPopupWidget.extend({
+        template:'ErrorConfigPopupWidget',
+    });
+
     module.ErrorNegativePricePopupWidget = module.ErrorPopupWidget.extend({
         template:'ErrorNegativePricePopupWidget',
     });

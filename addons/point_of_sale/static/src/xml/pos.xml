@@ -552,6 +552,14 @@
         </div>
     </t>
 
+    <t t-name="ErrorConfigPopupWidget">
+        <div class="modal-dialog">
+            <div class="popup popup-help">
+                <p class="message">Sorry, we could not find any PoS Configuration for this session.</p>
+            </div>
+        </div>
+    </t>
+
     <t t-name="ErrorNegativePricePopupWidget">
         <div class="modal-dialog">
             <div class="popup popup-help">
