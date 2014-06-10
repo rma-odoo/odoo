@@ -105,12 +105,12 @@ openerp.website.moderate_tweet = openerp.Class.extend({
             openerp.jsonRpc("/tweet_moderate/streaming", 'call', {'wall_id' : self.wall_id, 'state' : value}).done(function(state) {
                 $start_stop_button.removeClass('stop_streaming start_streaming');
                 if(state == 'startstreaming'){
-                    $start_stop_button.text("Stop Streaming")
+                    $start_stop_button.html("<i class=\"fa fa-refresh\"></i>")
                                  .attr("value", "stopstreaming")
                                  .addClass('stop_streaming btn-danger').removeClass('btn-success');
                     return;
                 }
-                $start_stop_button.text("Start Streaming")
+                $start_stop_button.html("<i class=\"fa fa-refresh\"></i>")
                                 .attr("value", "startstreaming")
                                 .addClass('start_streaming btn-success').removeClass('btn-danger');
                 
