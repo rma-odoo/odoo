@@ -8,6 +8,7 @@ from openerp.osv import fields, osv
 from openerp.tools.translate import _
 import logging
 _logger = logging.getLogger(__name__)
+from Oauth import oauth
 
 # Temprory working this fix for linux OS, need to do more analysis after backend and frontend development.
 # Remove dependency of tweepy lib in future.
@@ -26,11 +27,22 @@ class WallManager(object):
         if (self.check_api_token()):
             listner = WallListener(self.registry, self.uid, self.wall.id, self.wall.name)
             auth = OAuthHandler(self.wall.website_id.twitter_api_key, self.wall.website_id.twitter_api_secret)
+            
             auth.set_access_token(self.wall.website_id.twitter_access_token, self.wall.website_id.twitter_access_token_secret)
             stream = Stream(auth, listner)
             tags = [tag.name for tag in self.wall.tags]
             thread.start_new_thread(func, (tags, ))
             return True
+            
+            
+#             listner = WallListener(self.registry, self.uid, self.wall.id, self.wall.name)
+#             auth = OAuthHandler(self.wall.website_id.twitter_api_key, self.wall.website_id.twitter_api_secret)
+#             
+#             auth.set_access_token(self.wall.website_id.twitter_access_token, self.wall.website_id.twitter_access_token_secret)
+#             stream = Stream(auth, listner)
+#             tags = [tag.name for tag in self.wall.tags]
+#             thread.start_new_thread(func, (tags, ))
+#             return True
         else:
             _logger.error('Contact System Administration for Configure Twitter API KEY and ACCESS TOKEN.')
             raise osv.except_osv(_('Error Configuration!'), _('Contact System Administration for Configure Twitter API KEY and ACCESS TOKEN.')) 
@@ -41,7 +53,11 @@ class WallManager(object):
         if(website.twitter_api_key and website.twitter_api_secret and website.twitter_access_token and website.twitter_access_token_secret):
             return True
         else:
-            return False
+            o_auth = oauth(self.wall.website_id.twitter_api_key, self.wall.website_id.twitter_api_secret)
+            with self.registry.cursor() as cr:
+                base_url = self.registry.get('ir.config_parameter').get_param(cr, openerp.SUPERUSER_ID, 'web.base.url')
+                o_auth._request_token(base_url, cr.dbname, self.wall.website_id.id)
+            return True
 
 class WallListener(StreamListener) :
     def __init__(self, registry, uid, wall_id, wall_name):

@@ -5,6 +5,8 @@ from openerp.addons.web.http import request
 from openerp.addons.website.controllers.main import Website as controllers
 from openerp import SUPERUSER_ID
 from datetime import datetime
+from Oauth import oauth
+from openerp.addons.web.controllers.main import login_redirect, ensure_db
 
 class website_twitter_wall(http.Controller):
     @http.route(['/twitter_walls','/twitter_wall/<model("website.twitter.wall"):wall>'], type='http', auth="public", website=True)
@@ -119,3 +121,28 @@ class website_twitter_wall(http.Controller):
         image_upload_obj = request.registry.get('website.twitter.wall')
         image_upload_obj.write(request.cr, SUPERUSER_ID, int(id), { 'back_image': image_data }, request.context)
         return image_data
+    
+    @http.route('/twitter_callback', type='http', auth="none")
+    def twitter_callback(self, **kw):
+        if not request.session.uid:
+            request.params['redirect']='/twitter_callback?'+request.httprequest.query_string
+            return login_redirect()
+        
+#         oauth_credintial = base64.standard_b64decode(request.params['oauth_credintial'])
+#         oauth_credintial = dict(item.split("=") for item in oauth_credintial.split("&"))
+#         print "oauth_credintial---------------->",oauth_credintial
+#         website_id = int(oauth_credintial['website_id'])
+        website_id = int(request.params['website_id'])
+#         registry = openerp.modules.registry.RegistryManager.get(oauth_credintial['db'])
+#         with registry.cursor() as cr:
+        website_ids = request.registry.get("website").search(request.cr, openerp.SUPERUSER_ID, [('id','=',website_id)])
+        website = request.registry.get("website").browse(request.cr, openerp.SUPERUSER_ID, website_ids, context=request.context)
+        for web in website:
+            access_token_response = oauth._access_token(oauth(web.twitter_api_key,web.twitter_api_secret), request.params['oauth_token'], request.params['oauth_verifier'])
+            vals= {
+                   'twitter_access_token' : access_token_response['oauth_token'],
+                   'twitter_access_token_secret' : access_token_response['oauth_token_secret']
+                   }
+            request.registry.get("website").write(request.cr, openerp.SUPERUSER_ID, website_id, vals, context=request.context)
+
+        return http.local_redirect("/twitter_walls",query=request.params)
