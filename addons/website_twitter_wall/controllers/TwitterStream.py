@@ -50,14 +50,16 @@ class WallManager(object):
     
     def check_api_token(self):
         website = self.wall.website_id
-        if(website.twitter_api_key and website.twitter_api_secret and website.twitter_access_token and website.twitter_access_token_secret):
-            return True
+        if(website.twitter_api_key and website.twitter_api_secret):
+            if(website.twitter_access_token and website.twitter_access_token_secret):
+                return True
+            else:
+                o_auth = oauth(self.wall.website_id.twitter_api_key, self.wall.website_id.twitter_api_secret)
+                with self.registry.cursor() as cr:
+                    base_url = self.registry.get('ir.config_parameter').get_param(cr, openerp.SUPERUSER_ID, 'web.base.url')
+                    return o_auth._request_token(base_url, cr.dbname, self.wall.website_id.id)
         else:
-            o_auth = oauth(self.wall.website_id.twitter_api_key, self.wall.website_id.twitter_api_secret)
-            with self.registry.cursor() as cr:
-                base_url = self.registry.get('ir.config_parameter').get_param(cr, openerp.SUPERUSER_ID, 'web.base.url')
-                o_auth._request_token(base_url, cr.dbname, self.wall.website_id.id)
-            return True
+            return False
 
 class WallListener(StreamListener) :
     def __init__(self, registry, uid, wall_id, wall_name):
