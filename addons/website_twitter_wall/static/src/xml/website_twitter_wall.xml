@@ -65,7 +65,7 @@
       <td>
         <button type="submit" class="btn btn-default btn-sm rowremove"
           value="unpublished">
-        <i class="glyphicon glyphicon-remove" />
+          <i class="fa fa-clock-o"></i> <!--i class="glyphicon glyphicon-remove" /-->
         </button>
 				<button type="submit" class="btn btn-default btn-sm rowremove"
 					value="published">
