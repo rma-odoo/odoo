@@ -22,7 +22,7 @@
     'name' : 'eInvoicing',
     'version' : '1.1',
     'author' : 'OpenERP SA',
-    'category' : 'Accounting & Finance',
+    'category' : 'Accounting & Finance Management',
     'description' : """
 Accounting and Financial Management.
 ====================================
