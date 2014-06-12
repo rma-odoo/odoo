@@ -760,4 +760,8 @@
     border-bottom: 1px solid #dddddd;
     margin-bottom: 10px;
 }
-
+@media print {
+    .openerp .oe_form div.oe_chatter {
+        display: none !important;
+    }
+}
