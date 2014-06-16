@@ -529,7 +529,7 @@ def plaintext2html(text, container_tag=False):
     # 2-3: form paragraphs
     idx = 0
     final = '<p>'
-    result = re.sub(r'(.*?)(<\s*[bB][rR]\s*/?>)', "<p>\g<1></p>", text)
+    result = re.compile(r'(([<]\s*[bB][rR]\s*\/?[>]\s*){<p>\g<1></p>})')
     for item in re.finditer(result, text):
         final += text[idx:item.start()] + '</p><p>'
         idx = item.end()
