@@ -653,32 +653,32 @@ openerp.web_calendar = function(instance) {
                         domain: self.get_range_domain(domain, start, end),
                         context: context,
                     }).done(function(events) {
-
                         if (self.event_source !== current_event_source) {
                             console.log("Consecutive ``do_search`` called. Cancelling.");
                             return;
                         }
                         
                         if (!self.useContacts) {  // If we use all peoples displayed in the current month as filter in sidebars
-                            var filter_value;
                             var filter_item;
                             
                             self.now_filter_ids = [];
-
+                            var color_field = self.fields[self.color_field];
                             _.each(events, function (e) {
-                                filter_value = e[self.color_field][0];
-                                if (!self.all_filters[e[self.color_field][0]]) {
+                                var key = self.fields[self.color_field].type == "selection"?e[self.color_field]:e[self.color_field][0];
+                                var value = self.fields[self.color_field].type == "selection"?
+                                            _.find( self.fields[self.color_field].selection, function(name){ return name[0] === key;}):e[self.color_field];
+                                if (!self.all_filters[key]) {
                                     filter_item = {
-                                        value: filter_value,
-                                        label: e[self.color_field][1],
-                                        color: self.get_color(filter_value),
+                                        value: key,
+                                        label: value[1],
+                                        color: self.get_color(key),
                                         avatar_model: (_.str.toBoolElse(self.avatar_filter, true) ? self.avatar_filter : false ),
                                         is_checked: true
                                     };
-                                    self.all_filters[e[self.color_field][0]] = filter_item;
+                                    self.all_filters[key] = filter_item;
                                 }
-                                if (! _.contains(self.now_filter_ids, filter_value)) {
-                                    self.now_filter_ids.push(filter_value);
+                                if (! _.contains(self.now_filter_ids, key)) {
+                                    self.now_filter_ids.push(key);
                                 }
                             });
 
@@ -687,7 +687,8 @@ openerp.web_calendar = function(instance) {
                                 self.sidebar.filter.set_filters();
                                 
                                 events = $.map(events, function (e) {
-                                    if (_.contains(self.now_filter_ids,e[self.color_field][0]) &&  self.all_filters[e[self.color_field][0]].is_checked) {
+                                    var key = self.fields[self.color_field].type == "selection"?e[self.color_field]:e[self.color_field][0];
+                                    if (_.contains(self.now_filter_ids, key) &&  self.all_filters[key].is_checked) {
                                         return e;
                                     }
                                     return null;
@@ -1373,7 +1374,7 @@ openerp.web_calendar = function(instance) {
                         filters.push(o);
                     }
                 });
-            }            
+            }
             this.$el.html(QWeb.render('CalendarView.sidebar.responsible', { filters: filters }));
         },
         filter_click: function(e) {
@@ -1381,7 +1382,7 @@ openerp.web_calendar = function(instance) {
             if (self.view.all_filters[0] && e.target.value == self.view.all_filters[0].value) {
                 self.view.all_filters[0].is_checked = e.target.checked;
             } else {
-                self.view.all_filters[parseInt(e.target.value)].is_checked = e.target.checked;
+                self.view.all_filters[e.target.value].is_checked = e.target.checked;
             }
             self.view.$calendar.fullCalendar('refetchEvents');
         },
