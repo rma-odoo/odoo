@@ -40,7 +40,7 @@ class WebsiteForum(http.Controller):
                   'notifications': self._get_notifications(),
                   'header': kwargs.get('header', dict()),
                   'searches': kwargs.get('searches', dict()),
-                  'can_edit_own': True,
+                  'can_edit_own': user.karma > Forum._karma_modo_edit_own,
                   'can_edit_all': user.karma > Forum._karma_modo_edit_all,
                   'can_close_own': user.karma > Forum._karma_modo_close_own,
                   'can_close_all': user.karma > Forum._karma_modo_close_all,
@@ -370,9 +370,10 @@ class WebsiteForum(http.Controller):
 
     @http.route('/forum/<model("forum.forum"):forum>/post/<model("forum.post"):post>/edit', type='http', auth="user", website=True)
     def post_edit(self, forum, post, **kwargs):
-        check_res = self._has_enough_karma(post.create_uid.id == request.uid and '_karma_modo_edit_own' or '_karma_modo_edit_all')
-        if not check_res[0]:
-            return werkzeug.utils.redirect("/forum/%s" % slug(forum))
+        
+        # check_res = self._has_enough_karma(post.create_uid.id == request.uid and '_karma_modo_edit_own' or '_karma_modo_edit_all')
+        # if not check_res[0]:
+        #     return werkzeug.utils.redirect("/forum/%s" % slug(forum))
 
         tags = ""
         for tag_name in post.tag_ids:

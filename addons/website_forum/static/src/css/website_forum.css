@@ -56,11 +56,11 @@ img.img-avatar {
 }
 
 .oe_answer_true {
-  color: #3c763d;
+  color: #3c763d !important;
 }
 
 .oe_answer_false {
-  color: #bbbbbb;
+  color: #bbbbbb !important;
 }
 
 .favourite_question {
