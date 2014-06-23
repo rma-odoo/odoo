@@ -97,6 +97,10 @@ class base_action_rule(osv.osv):
             domain="[('model_id', '=', model_id.model)]",
             help="If present, this condition must be satisfied before executing the action rule."),
         'last_run': fields.datetime('Last Run', readonly=1, copy=False),
+        'domain': fields.char(string='Filter Domain',
+              help="If present, this condition must be satisfied before executing the action rule."),
+        'pre_domain': fields.char(string='Pre Filter Domain',
+              help="If present, this condition must be satisfied before the update of the record."),
     }
 
     _defaults = {
@@ -114,21 +118,21 @@ class base_action_rule(osv.osv):
             clear_fields = ['filter_pre_id']
         return {'value': dict.fromkeys(clear_fields, False)}
 
-    def _filter(self, cr, uid, action, action_filter, record_ids, context=None):
+    def _filter(self, cr, uid, action, record_ids, action_filter=False, domain=False, context=None):
         """ filter the list record_ids that satisfy the action filter """
-        if record_ids and action_filter:
+        if record_ids and domain:
+            new_domain = [('id', 'in', record_ids)] + eval(domain)
+            record_ids = self.pool.get(action.model).search(cr, uid, new_domain, context=context)
+        elif record_ids and action_filter:
             assert action.model == action_filter.model_id, "Filter model different from action rule model"
-            model = self.pool[action_filter.model_id]
             domain = [('id', 'in', record_ids)] + eval(action_filter.domain)
             ctx = dict(context or {})
             ctx.update(eval(action_filter.context))
-            record_ids = model.search(cr, uid, domain, context=ctx)
+            record_ids = self.pool[action_filter.model_id].search(cr, uid, domain, context=ctx)
         return record_ids
-
     def _process(self, cr, uid, action, record_ids, context=None):
         """ process the given action on the records """
         model = self.pool[action.model_id.model]
-
         # modify records
         values = {}
         if 'date_action_last' in model._all_columns:
@@ -182,7 +186,8 @@ class base_action_rule(osv.osv):
 
                     # check postconditions, and execute actions on the records that satisfy them
                     for action in action_model.browse(cr, uid, action_ids, context=context):
-                        if action_model._filter(cr, uid, action, action.filter_id, [new_id], context=context):
+                        domain = action.domain or False
+                        if action_model._filter(cr, uid, action, [new_id], action.filter_id, domain=domain, context=context):
                             action_model._process(cr, uid, action, [new_id], context=context)
                     return new_id
 
@@ -205,14 +210,16 @@ class base_action_rule(osv.osv):
                     # check preconditions
                     pre_ids = {}
                     for action in actions:
-                        pre_ids[action] = action_model._filter(cr, uid, action, action.filter_pre_id, ids, context=context)
+                        pre_domain = action.pre_domain  or False
+                        pre_ids[action] = action_model._filter(cr, uid, action, ids, action.filter_pre_id, domain=pre_domain, context=context)
 
                     # call original method
                     write.origin(self, cr, uid, ids, vals, context=context, **kwargs)
 
                     # check postconditions, and execute actions on the records that satisfy them
                     for action in actions:
-                        post_ids = action_model._filter(cr, uid, action, action.filter_id, pre_ids[action], context=context)
+                        domain = action.domain or False
+                        post_ids = action_model._filter(cr, uid, action, pre_ids[action], action.filter_id, domain=domain, context=context)
                         if post_ids:
                             action_model._process(cr, uid, action, post_ids, context=context)
                     return True
@@ -242,7 +249,7 @@ class base_action_rule(osv.osv):
         data = {'model': False, 'filter_pre_id': False, 'filter_id': False}
         if model_id:
             model = self.pool.get('ir.model').browse(cr, uid, model_id, context=context)
-            data.update({'model': model.model})
+            data.update({'model': model.model, 'domain':False, 'pre_domain':False})
         return {'value': data}
 
     def _check_delay(self, cr, uid, action, record, record_dt, context=None):
@@ -269,12 +276,13 @@ class base_action_rule(osv.osv):
                 last_run = get_datetime(action.last_run)
             else:
                 last_run = datetime.utcfromtimestamp(0)
-
             # retrieve all the records that satisfy the action's condition
             model = self.pool[action.model_id.model]
             domain = []
             ctx = dict(context)
-            if action.filter_id:
+            if action.domain:
+                 domain = eval(action.domain)
+            elif action.filter_id:
                 domain = eval(action.filter_id.domain)
                 ctx.update(eval(action.filter_id.context))
                 if 'lang' not in ctx:
