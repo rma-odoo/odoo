@@ -264,20 +264,22 @@
                                         <li><ul class="oe_kanban_colorpicker" data-field="color"/></li>
                                     </ul>
                                 </div>
-                                <div class="oe_kanban_content">
-                                    <h4 class="text-center"><strong><field name="name"/></strong></h4>
-                                    <div class="text-center oe_kanban_alias" t-if="record.alias_name.value and record.alias_domain.value">
-                                        <small><i class="fa fa-envelope-o"></i> <field name="alias_id"/></small>
+                                <div class="oe_project_kanban_content">
+                                    <div class="row">
+                                        <h4 class="text-center"><strong><field name="name"/></strong></h4>
+                                        <div class="text-center oe_kanban_alias" t-if="record.alias_name.value and record.alias_domain.value">
+                                            <small><i class="fa fa-envelope-o"></i> <field name="alias_id"/></small>
+                                        </div>
                                     </div>
-                                    <div class="oe_kanban_project_list">
+                                    <div class="row mt8 oe_kanban_project_list">
                                         <a t-if="record.use_tasks.raw_value" name="%(act_project_project_2_project_task_all)d" type="action" style="margin-right: 10px">
                                             <t t-raw="record.task_ids.raw_value.length"/> Tasks
                                         </a>
                                     </div>
-                                    <div class="oe_kanban_project_list">
+                                    <div class="row mt8 oe_kanban_project_list">
                                         <a t-if="record.doc_count.raw_value" name="attachment_tree_view" type="object" style="margin-right: 10px"> <field name="doc_count"/> Documents</a>
                                     </div>
-                                    <div class="oe_kanban_footer_left">
+                                    <div class="row mt8 oe_kanban_footer_left">
                                         <span groups="project.group_time_work_estimation_tasks">
                                             <span class="oe_e">R</span>
                                             <t t-esc="Math.round(record.effective_hours.raw_value)"/>/<t t-esc="Math.round(record.planned_hours.raw_value)"/> <field name="company_uom_id"/>
@@ -287,7 +289,7 @@
                                             <field name="date"/>
                                         </span>
                                     </div>
-                                    <div class="oe_kanban_project_avatars">
+                                    <div class="row mt8 oe_kanban_project_avatars">
                                         <t t-foreach="record.members.raw_value.slice(0,11)" t-as="member">
                                             <img t-att-src="kanban_image('res.users', 'image_small', member)" t-att-data-member_id="member"/>
                                         </t>
