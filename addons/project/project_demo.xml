@@ -56,7 +56,7 @@
 
         <!-- We assign after so that default values applies -->
         <record id="project_project_2" model="project.project">
-            <field name="type_ids" eval="[(4, ref('project_tt_specification')),(4,ref('project_tt_development')),(4,ref('project_tt_testing')),(4,ref('project_tt_merge')),(4,ref('project_tt_deployment'))]"/>
+            <field name="type_ids" eval="[(4, ref('project_tt_specification')),(4,ref('project_tt_development')),(4,ref('project_tt_testing')),(4,ref('project_tt_deployment'))]"/>
         </record>
 
         <record id="project_project_3" model="project.project">
@@ -70,7 +70,7 @@
         </record>
 
         <record id="project_project_3" model="project.project">
-            <field name="type_ids" eval="[(4, ref('project_tt_specification')),(4,ref('project_tt_development')),(4,ref('project_tt_testing')),(4,ref('project_tt_merge')),(4,ref('project_tt_deployment'))]"/>
+            <field name="type_ids" eval="[(4, ref('project_tt_specification')),(4,ref('project_tt_development')),(4,ref('project_tt_testing')),(4,ref('project_tt_deployment'))]"/>
         </record>
 
         <record id="project_project_4" model="project.project">
@@ -85,7 +85,7 @@
         </record>
 
         <record id="project_project_4" model="project.project">
-            <field name="type_ids" eval="[(4, ref('project_tt_design')),(4,ref('project_tt_development')),(4,ref('project_tt_testing'))]"/>
+            <field name="type_ids" eval="[(4,ref('project_tt_development')),(4,ref('project_tt_testing'))]"/>
         </record>
 
         <record id="project_project_5" model="project.project">
@@ -223,7 +223,7 @@
             <field name="categ_ids" eval="[(6, 0, [
                     ref('project.project_category_02'),
                     ref('project.project_category_04')])]"/>
-            <field name="stage_id" ref="project_tt_merge"/>
+            <field name="stage_id" ref="project_tt_testing"/>
         </record>
 
         <record id="project_task_12" model="project.task">
@@ -233,7 +233,7 @@
             <field name="priority">2</field>
             <field name="project_id" ref="project.project_project_2"/>
             <field name="name">Improve+clean code and functionality</field>
-            <field name="stage_id" ref="project_tt_merge"/>
+            <field name="stage_id" ref="project_tt_analysis"/>
             <field name="color">6</field>
         </record>
 
@@ -303,14 +303,14 @@
         <record id="project_task_19" model="project.task">
             <field name="planned_hours">24.0</field>
             <field name="remaining_hours">24.0</field>
-            <field name="stage_id" ref="project_tt_design"/>
+            <field name="stage_id" ref="project_tt_development"/>
             <field name="user_id" eval="False"/>
             <field name="project_id" ref="project.project_project_4"/>
             <field name="name">Basic outline</field>
             <field name="categ_ids" eval="[(6, 0, [
                     ref('project_category_03')])]"/>
         </record>
-
+ 
         <record id="project_task_20" model="project.task">
             <field name="planned_hours">42.0</field>
             <field name="remaining_hours">42.0</field>

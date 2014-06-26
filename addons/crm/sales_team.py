@@ -58,7 +58,7 @@ class crm_case_section(osv.Model):
             'crm.lead', self._columns['alias_id'], 'name', alias_prefix='Lead+', alias_defaults={}, context=context)
 
     def _get_stage_common(self, cr, uid, context):
-        ids = self.pool.get('crm.case.stage').search(cr, uid, [('case_default', '=', 1)], context=context)
+        ids = self.pool.get('crm.case.stage').search(cr, uid, [('case_default','=','link_to_sales_team')], context=context)
         return ids
 
     _defaults = {
@@ -67,14 +67,41 @@ class crm_case_section(osv.Model):
         'use_opportunities': True,
     }
 
+    def _copy_stages(self, cr, uid, stage_ids, context=None):
+        """ 
+            :param many2many stage_ids: a list of tuples is expected.
+                   [[6, 0, Ids]]
+                   [(4,Id), (4,Id), (4,Id)]
+        """
+        ids = []
+        stage_id = stage_ids[0][0]
+        stage_type = self.pool.get('crm.case.stage')
+        if stage_id == 4: ids = [x[1] for x in stage_ids]
+        if stage_id == 6: ids = stage_ids[0][2]
+        type_vals = stage_type.search_read(cr, uid, domain=[('id', 'in', ids), ('case_default', '=', 'copy_to_sales_team')], fields=['name', 'id'], context=context) 
+        for types in type_vals:
+            new_stage_id = stage_type.copy(cr, uid, types['id'], default={'case_default': 'nothing'}, context=context)
+            if stage_id == 4:
+                stage_ids[ids.index(types['id'])] = (stage_id, new_stage_id)
+            elif stage_id == 6:
+                stage_ids[0][2][ids.index(types['id'])] = new_stage_id
+        return stage_ids
+
     def create(self, cr, uid, vals, context=None):
         if context is None:
             context = {}
+        if vals.get('stage_ids', False):
+            vals['stage_ids'] = self._copy_stages(cr, uid, vals['stage_ids'], context=context)
         create_context = dict(context, alias_model_name='crm.lead', alias_parent_model_name=self._name)
         section_id = super(crm_case_section, self).create(cr, uid, vals, context=create_context)
         section = self.browse(cr, uid, section_id, context=context)
         self.pool.get('mail.alias').write(cr, uid, [section.alias_id.id], {'alias_parent_thread_id': section_id, 'alias_defaults': {'section_id': section_id, 'type': 'lead'}}, context=context)
         return section_id
+
+    def write(self, cr, uid, ids, vals, context=None):
+        if vals.get('stage_ids', False):
+            vals['stage_ids'] = self._copy_stages(cr, uid, vals['stage_ids'], context=context)
+        return super(crm_case_section, self).write(cr, uid, ids, vals, context=context)
 
     def unlink(self, cr, uid, ids, context=None):
         # Cascade-delete mail aliases as well, as they should not exist without the sales team.

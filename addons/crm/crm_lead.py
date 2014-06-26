@@ -141,7 +141,7 @@ class crm_lead(format_address, osv.osv):
             search_domain += ['|', ('section_ids', '=', section_id)]
             search_domain += [('id', 'in', ids)]
         else:
-            search_domain += ['|', ('id', 'in', ids), ('case_default', '=', True)]
+            search_domain += ['|', ('id', 'in', ids), ('case_default', '=', 'link_to_sales_team')]
         # retrieve type from the context (if set: choose 'type' or 'both')
         type = self._resolve_type_from_context(cr, uid, context=context)
         if type:
@@ -361,7 +361,7 @@ class crm_lead(format_address, osv.osv):
             search_domain += [('|')] * len(section_ids)
             for section_id in section_ids:
                 search_domain.append(('section_ids', '=', section_id))
-        search_domain.append(('case_default', '=', True))
+        search_domain.append(('case_default', '=', 'link_to_sales_team'))
         # AND with cases types
         if not avoid_add_type_term:
             search_domain.append(('type', 'in', types))

@@ -680,7 +680,7 @@
             <field name="arch" type="xml">
                 <search string="Tasks Stages">
                    <field name="name" string="Tasks Stages"/>
-                   <filter icon="terp-check" string="Common" name="common" domain="[('case_default', '=', 1)]" help="Stages common to all projects"/>
+                   <filter icon="terp-check" string="Common" name="common" domain="[('case_default', '=', 'link_to_project')]" help="Stages common to all projects"/>
                 </search>
             </field>
         </record>
@@ -696,7 +696,7 @@
                             <field name="sequence"/>
                         </group>
                         <group>
-                            <field name="case_default"/>
+                            <field name="case_default" widget="radio"/>
                             <field name="fold"/>
                         </group>
                     </group>
@@ -712,6 +712,7 @@
                 <tree string="Task Stage">
                     <field name="sequence" widget="handle"/>
                     <field name="name"/>
+                    <field name="case_default"/>
                     <field name="fold"/>
                 </tree>
             </field>

@@ -124,8 +124,10 @@ class crm_case_stage(osv.osv):
         'requirements': fields.text('Requirements'),
         'section_ids': fields.many2many('crm.case.section', 'section_stage_rel', 'stage_id', 'section_id', string='Sections',
                         help="Link between stages and sales teams. When set, this limitate the current stage to the selected sales teams."),
-        'case_default': fields.boolean('Default to New Sales Team',
-                        help="If you check this field, this stage will be proposed by default on each sales team. It will not assign this stage to existing teams."),
+        'case_default': fields.selection([('nothing', 'Nothing'), ('copy_to_sales_team', 'Copy to every new sales team'), ('link_to_sales_team', 'Link to new sales team')], 'Case Default', help="Will allow you to display the stages (Kanban) as per the option selected:\n"
+                    "- Nothing:select this option if you do not want to use this stage as default one.\n" 
+                    "- Copy to every new sales team:select this option if you want to copy of the stage.\n"
+                    "- Link to new sales team:select this option if you want to use this stage as default one.\n"),
         'fold': fields.boolean('Folded in Kanban View',
                                help='This stage is folded in the kanban view when'
                                'there are no records in that stage to display.'),
@@ -142,7 +144,7 @@ class crm_case_stage(osv.osv):
         'on_change': True,
         'fold': False,
         'type': 'both',
-        'case_default': True,
+        'case_default': 'copy_to_sales_team',
     }
 
 class crm_case_categ(osv.osv):

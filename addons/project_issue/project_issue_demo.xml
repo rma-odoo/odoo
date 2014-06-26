@@ -180,9 +180,9 @@
             <field eval="3.2" name="duration"/>
             <field name="project_id" ref="project.project_project_3"/>
             <field name="name">New Features To Be Added</field>
-            <field name="stage_id" ref="project.project_tt_merge"/>
+            <field name="stage_id" ref="project.project_tt_development"/>
         </record>
-
+ 
         <record id="crm_case_addmenustothemodule0" model="project.issue">
             <field eval="time.strftime('%Y-%m-05 18:00:00')" name="date"/>
             <field name="priority">1</field>
