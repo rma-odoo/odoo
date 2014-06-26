@@ -131,6 +131,9 @@ class account_config_settings(osv.osv_memory):
             help="Allows you to use the analytic accounting."),
         'group_check_supplier_invoice_total': fields.boolean('Check the total of supplier invoices', 
             implied_group="account.group_supplier_inv_check_total"),
+        'group_sale_pricelist': fields.boolean('Sale Price List',
+            implied_group="product.group_sale_pricelist",
+            help="Allow you sale price list"),
     }
 
     def _default_company(self, cr, uid, context=None):
@@ -266,10 +269,9 @@ class account_config_settings(osv.osv_memory):
         return {'value': {'purchase_tax_rate': rate or False}}
 
     def onchange_multi_currency(self, cr, uid, ids, group_multi_currency, context=None):
-        res = {}
         if not group_multi_currency:
-            res['value'] = {'income_currency_exchange_account_id': False, 'expense_currency_exchange_account_id': False}
-        return res
+            return {'value':{'income_currency_exchange_account_id': False, 'expense_currency_exchange_account_id': False,'group_sale_pricelist':False}}
+        return {'value':{'group_sale_pricelist':True}}
     
     def onchange_start_date(self, cr, uid, id, start_date):
         if start_date:

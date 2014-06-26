@@ -23,9 +23,10 @@
                         <label for="id" string="Options"/>
                         <div>
                             <div name="multi_company">
-                                <field name="module_multi_company" class="oe_inline"/>
+                                <field name="module_multi_company" on_change="onchange_multi_company(module_multi_company)" class="oe_inline"/>
                                 <label for="module_multi_company"/>
                             </div>
+                            <field name="group_multi_company" class="oe_inline" invisible="1"/>
                         </div>
                     </group>
                     <group>
