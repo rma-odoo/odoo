@@ -476,7 +476,7 @@ class Product(osv.osv):
                 if month_count == 0:
                     duration_count = str(year_count) + ' year'
                 else :
-                    duration_count = str(year_count) + ' year'+' '+str(month_count)+' months'
+                    duration_count = str(month_count) + ' months,'+' '+str(year_count)+' year'
             res.append((record['id'], name +' '+str(duration_count)))
         return res
 
