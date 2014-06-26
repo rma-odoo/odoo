@@ -141,7 +141,6 @@ class TwitterWall(osv.osv):
 
 
 class WebsiteTwitterTweetMedia(osv.osv):
-
     _name = "website.twitter.tweet.media"
     _columns = {
         'media_id': fields.char('ID',size=256),
@@ -212,6 +211,15 @@ class WebsiteTwitterTweet(osv.osv):
         # Todo: reject tweet and remove form the wall
 
     def _process_tweet(self, cr, uid, ids, tweet, context=None):
+        wall_obj = self.pool.get('website.twitter.wall')
+        walls = wall_obj.search_read(cr, uid, [('id', '=', ids)], ["re_tweet"])
+        for wall in walls:
+            re_tweet = wall["re_tweet"]
+        
+        vals = {}
+        if not re_tweet:
+            if tweet.get('retweet_count') != 0:
+                return vals
         vals = {
             'name': tweet.get('user').get('name'),
             'screen_name': tweet.get('user').get('screen_name'),
@@ -221,6 +229,6 @@ class WebsiteTwitterTweet(osv.osv):
             'created_at': tweet.get('created_at'),
             'user_image_url': tweet.get('user').get('profile_image_url'),
             'background_image_url': tweet.get('user').get('profile_background_image_url'),
-            'wall_id': ids,
+            'wall_id': ids
         }
         return vals
