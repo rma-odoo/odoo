@@ -49,13 +49,23 @@ instance.web.DataExport = instance.web.Dialog.extend({
 
         var got_fields = new $.Deferred();
         this.$el.find('#import_compat').change(function() {
-            self.$el.find('#fields_list').empty();
             self.$el.find('#field-tree-structure').remove();
             var import_comp = self.$el.find("#import_compat").val();
             self.rpc("/web/export/get_fields", {
                 model: self.dataset.model,
                 import_compat: !!import_comp,
             }).done(function (records) {
+                if (import_comp) {
+                    var export_list = self.$("#fields_list option").map(function (res) {
+                        var i = 0;
+                        for (i = 0; i < records.length; i++) {
+                            if (this.value === records[i].value) {break;}
+                        }
+                        if (i === records.length) {
+                            this.remove();
+                        }
+                    });
+                }
                 got_fields.resolve();
                 self.on_show_data(records);
             });
@@ -167,9 +177,6 @@ instance.web.DataExport = instance.web.Dialog.extend({
                 return [0, 0, {name: field}];
             })
         }).then(function (export_list_id) {
-            if (!export_list_id) {
-                return;
-            }
             if (!self.$el.find("#saved_export_list").length || self.$el.find("#saved_export_list").is(":hidden")) {
                 self.show_exports_list();
             }
