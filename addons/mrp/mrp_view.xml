@@ -700,7 +700,7 @@
                     </div>
                     <group>
                         <group>
-                            <field name="product_id" on_change="product_id_change(product_id, product_qty)" domain="[('bom_ids','!=',False),('bom_ids.bom_id','=',False),('bom_ids.type','!=','phantom')]" class="oe_inline" context='{"default_type": "product"}'/>
+                            <field name="product_id" on_change="product_id_change(product_id, product_qty)" domain="[('bom_ids','!=',False),('bom_ids.bom_line_ids','!=',False),('bom_ids.type','!=','phantom')]" class="oe_inline" context='{"default_type": "product"}'/>
                             <field name="qty_to_disassemble" invisible="1"/>
                             <label for="product_qty"/>
                             <div>
