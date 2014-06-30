@@ -4,9 +4,7 @@ $(document).ready(function() {
         var id = $(this).attr("data-id");
         $('#back_img').ajaxSubmit({
             data: {
-                type: type,
                 id: id,
-                wall_id:$("div[name='tweets_for_admin']").attr("wall_id")
             },
             success: function(data){
                 if(type == 'wall'){
@@ -16,8 +14,6 @@ $(document).ready(function() {
                                 $("div.full_screen").css({'background-image': 'url("data:image/jpg;base64,' + data + '")'})
                                 .animate({opacity: 1}, '2500');
                         });
-                }else{
-                    $("tr[data-id=" + id + "] .upload_img").attr('src', 'data:image/jpg;base64,'+data);
                 }
             }
         });
@@ -41,6 +37,7 @@ openerp.website.moderate_tweet = openerp.Class.extend({
         this.$el = $el;
         this.wall_id = parseInt(wall_id);
         this.pending = [];
+        this.shown_tweet = {};
         this.limit = 20;
         this.new_tweet_id;
         this.check_new_tweet_id;
@@ -59,21 +56,34 @@ openerp.website.moderate_tweet = openerp.Class.extend({
         this.$el.find("ul#status li#pending").addClass("active");
         
         this.check_new_tweet_id =  setInterval(function(){
-            if(self.pending.length < self.limit){
+            // if(self.pending.length < self.limit){
+            if(self.$el.find(".btn-group button").attr("value") == "stopstreaming"){
                 return self.check_new_tweet();
             }
+            // }
         }, this.check_new_tweet_duration);
         
+        //For upload image
+        $('.upload_img').click(function() {
+            $("input[type=file]").click();
+        });
     },
     //Bind for new tweets when encounter
     bind_new_tweets: function(){
         var self = this;
         this.$el.find(".stream-item").click(function(ev){
-            $(this).addClass('sr-only');
             self.$el.find("table[name='pending'] tbody tr.alert-success").removeClass('alert-success');
-            self.new_tweet_id = self.pending[0]['id'];
-            self.process_tweet(self.pending.reverse(), 'pending', 'alert-success');
-            self.pending = [];
+            // self.new_tweet_id = self.pending[0]['id'];
+            // self.pending.splice(0, self.limit);
+            var temp = self.pending.splice(0, self.limit);
+            temp.forEach(function(entry) {
+                self.shown_tweet[entry['tweet_id']] = entry;
+            });
+            // self.shown_tweet = self.shown_tweet.concat(temp);
+            self.process_tweet(temp, 'pending', 'alert-success');
+            if(self.pending.length == 0) $(this).addClass('sr-only');
+            self.$el.find(".stream-item").find('span strong').text(self.pending.length + " new tweet");
+            // self.pending = [];
         });
     },
     
@@ -136,11 +146,12 @@ openerp.website.moderate_tweet = openerp.Class.extend({
     
     check_new_tweet: function(){
         var self = this;
-        return this.fetch_tweets({'new_tweet_id' : self.new_tweet_id}).done(function(data) {
+        // return this.fetch_tweets({'new_tweet_id' : self.new_tweet_id}).done(function(data) {
+        return this.fetch_tweets().done(function(data) {
                     if (data.length){
-                        self.pending = data;
+                        self.pending = self.pending.concat(data);
                         self.$el.find(".stream-item").removeClass('sr-only');
-                        self.$el.find(".stream-item").find('span strong').text(data.length + " new tweet");
+                        self.$el.find(".stream-item").find('span strong').text(self.pending.length + " new tweet");
                     }
             }).fail(function(){self.error()});
     },
@@ -151,7 +162,10 @@ openerp.website.moderate_tweet = openerp.Class.extend({
         state.forEach(function(state_item){
             self.fetch_tweets({'state':state_item}).done(function(data) {
                     if (data.length){
-                        if (state_item == 'pending') self.new_tweet_id = data[0].id;
+                        data.forEach(function(entry) {
+                            self.shown_tweet[entry['tweet_id']] = entry;
+                        });
+                        // if (state_item == 'pending') self.new_tweet_id = data[0].id;
                         self.process_tweet(data.reverse(), state_item);
                     }
             }).fail(function(){self.error();});
@@ -176,13 +190,13 @@ openerp.website.moderate_tweet = openerp.Class.extend({
         var $tweet = this.$el.find("[data-id=" + tweet_id + "]");
         
         //For upload image
-        $tweet.find(".upload_img").click(function(ev){
-             self.$el.find("input[type=file]").attr("data-id", tweet_id).click();
-        });
+        // $tweet.find(".upload_img").click(function(ev){
+             // self.$el.find("input[type=file]").attr("data-id", tweet_id).click();
+        // });
         
         //For Accept and Reject Tweets
         $tweet.find(".rowremove").click(function(ev){
-            openerp.jsonRpc("/tweet_moderate/state", 'call', {'tweet_id' : parseInt(tweet_id), 'status' : $(this).attr("value")}).done(function(state) {
+            openerp.jsonRpc("/tweet_moderate/state", 'call', {'tweet' : self.shown_tweet[tweet_id], 'status' : $(this).attr("value")}).done(function(state) {
                 $tweet.removeClass('alert-success');
                 self.$el.find("table[name='"+state+"'] tbody tr:first").after($tweet.detach());
             }).fail(function(){self.error();});
@@ -193,7 +207,7 @@ openerp.website.moderate_tweet = openerp.Class.extend({
         var self = this;
         tweets.forEach(function(item){
             var tweet_xml = openerp.qweb.render("twitter_moderate_tweets", {'tweet' : item, 'color_class': color_class || ''});
-            self.append_tweet(tweet_xml, item.id, state, append);
+            self.append_tweet(tweet_xml, item.tweet_id, state, append);
         });
     },
     

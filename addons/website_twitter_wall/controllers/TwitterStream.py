@@ -1,6 +1,6 @@
-from tweepy.streaming import StreamListener
-from tweepy import OAuthHandler
-from tweepy import Stream
+# from tweepy.streaming import StreamListener
+# from tweepy import OAuthHandler
+# from tweepy import Stream
 import json
 import thread
 import openerp.modules.registry
@@ -9,14 +9,16 @@ from openerp.tools.translate import _
 import logging
 _logger = logging.getLogger(__name__)
 from Oauth import oauth
+from streaming import StreamListener, Stream
 
+from openerp.addons.website_twitter_wall.controllers.main import CACHE
 # Temprory working this fix for linux OS, need to do more analysis after backend and frontend development.
 # Remove dependency of tweepy lib in future.
 class WallManager(object):
-    def __init__(self, dbname, uid, wall):
+    def __init__(self, dbname, ids, wall):
         self.registry = openerp.modules.registry.RegistryManager.get(dbname)
-        self.uid = uid
         self.wall = wall
+        self.ids = ids
 
     def start(self):
         def func(tags):
@@ -25,24 +27,17 @@ class WallManager(object):
         if (self.wall.state != 'not_streaming'): 
             return False
         if (self.check_api_token()):
-            listner = WallListener(self.registry, self.uid, self.wall.id, self.wall.name)
-            auth = OAuthHandler(self.wall.website_id.twitter_api_key, self.wall.website_id.twitter_api_secret)
-            
-            auth.set_access_token(self.wall.website_id.twitter_access_token, self.wall.website_id.twitter_access_token_secret)
-            stream = Stream(auth, listner)
-            tags = [tag.name for tag in self.wall.tags]
-            thread.start_new_thread(func, (tags, ))
-            return True
-            
-            
-#             listner = WallListener(self.registry, self.uid, self.wall.id, self.wall.name)
-#             auth = OAuthHandler(self.wall.website_id.twitter_api_key, self.wall.website_id.twitter_api_secret)
-#             
-#             auth.set_access_token(self.wall.website_id.twitter_access_token, self.wall.website_id.twitter_access_token_secret)
-#             stream = Stream(auth, listner)
-#             tags = [tag.name for tag in self.wall.tags]
-#             thread.start_new_thread(func, (tags, ))
-#             return True
+            listner = WallListener(self.registry, self.wall.id, self.wall.name)
+            auth = oauth(self.wall.website_id.twitter_api_key, self.wall.website_id.twitter_api_secret)
+            #OAuthHandler oauth
+            if(self.check_access_token()):
+                auth.set_access_token(self.wall.website_id.twitter_access_token, self.wall.website_id.twitter_access_token_secret)
+#                 import pdb
+#                 pdb.set_trace()
+                stream = Stream(auth, listner)
+                tags = [tag.name for tag in self.wall.tags]
+                thread.start_new_thread(func, (tags, ))
+                return True
         else:
             _logger.error('Contact System Administration for Configure Twitter API KEY and ACCESS TOKEN.')
             raise osv.except_osv(_('Error Configuration!'), _('Contact System Administration for Configure Twitter API KEY and ACCESS TOKEN.')) 
@@ -51,20 +46,22 @@ class WallManager(object):
     def check_api_token(self):
         website = self.wall.website_id
         if(website.twitter_api_key and website.twitter_api_secret):
-            if(website.twitter_access_token and website.twitter_access_token_secret):
-                return True
-            else:
-                o_auth = oauth(self.wall.website_id.twitter_api_key, self.wall.website_id.twitter_api_secret)
-                with self.registry.cursor() as cr:
-                    base_url = self.registry.get('ir.config_parameter').get_param(cr, openerp.SUPERUSER_ID, 'web.base.url')
-                    return o_auth._request_token(base_url, cr.dbname, self.wall.website_id.id)
+            return True
         else:
             return False
+    def check_access_token(self):
+        website = self.wall.website_id
+        if(website.twitter_access_token and website.twitter_access_token_secret):
+            return True
+        else:
+            o_auth = oauth(self.wall.website_id.twitter_api_key, self.wall.website_id.twitter_api_secret)
+            with self.registry.cursor() as cr:
+                base_url = self.registry.get('ir.config_parameter').get_param(cr, openerp.SUPERUSER_ID, 'web.base.url')
+                return o_auth._request_token(base_url, cr.dbname, self.wall.website_id.id)
 
-class WallListener(StreamListener) :
-    def __init__(self, registry, uid, wall_id, wall_name):
+class WallListener(StreamListener):
+    def __init__(self, registry, wall_id, wall_name):
         super(WallListener, self).__init__()
-        self.uid = uid
         self.wall_id = wall_id
         self.registry = registry
         self.wall_name = wall_name
@@ -80,7 +77,7 @@ class WallListener(StreamListener) :
             if stream_state != 'streaming':
                 self.on_disconnect(None)
                 return False
-            wall_obj._set_tweets(cr, openerp.SUPERUSER_ID, self.wall_id, json.loads(data), context=None)
+            self._process_tweet(json.loads(data))
         return True
     
     def on_status(self, status):
@@ -99,3 +96,44 @@ class WallListener(StreamListener) :
     def on_disconnect(self, notice):
         _logger.info('StreamListener disconnect with wall: %s - %s', self.wall_name, self.wall_id)
         return False
+    
+    def _process_tweet(self, tweet):
+        wall_obj = self.registry.get('website.twitter.wall')
+        with self.registry.cursor() as cr:
+            walls = wall_obj.search_read(cr, openerp.SUPERUSER_ID, [('id', '=', self.wall_id)], ["re_tweet"])
+            for wall in walls:
+                re_tweet = wall["re_tweet"]
+        
+        if not re_tweet:
+            if tweet.get('retweet_count') != 0:
+                return
+        tweets = {
+            'name': tweet.get('user').get('name'),
+            'screen_name': tweet.get('user').get('screen_name'),
+            'tweet': tweet.get('text'),
+            'tweet_url': tweet.get('entities').get('urls'),
+            'tweet_id': tweet.get('id_str'),
+            'created_at': tweet.get('created_at'),
+            'user_image_url': tweet.get('user').get('profile_image_url'),
+            'background_image_url': tweet.get('user').get('profile_background_image_url'),
+            'wall_id': self.wall_id,
+        }
+        vals = []
+        if tweet.get('entities') and tweet.get('entities').has_key('media'):
+            for media in tweet.get('entities').get('media'):
+                values = {
+                    'media_id':media.get('id_str'),
+                    'media_url': media.get('media_url'),
+                    'media_url_https': media.get('media_url_https'),
+                    'url': media.get('url'),
+                    'display_url': media.get('display_url'),
+                    'expanded_url': media.get('expanded_url'),
+                    'media_height': media.get('sizes').get('small').get('h'),
+                    'media_width': media.get('sizes').get('small').get('w')
+                }
+                vals.append(values)
+        tweets['tweet_media_ids'] = vals
+        if self.wall_id not in CACHE:
+            CACHE.update({self.wall_id : []})
+        CACHE[self.wall_id].append(tweets)
+#         print "\n---####----TWEET---####----",tweets,"\n"
