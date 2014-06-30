@@ -339,7 +339,7 @@
         Template used to display Like/Unlike in a mail.message
     -->
     <span t-name="mail.thread.message.vote">
-        <span class="oe_mail_vote_count" t-if='widget.vote_nb > 0'>
+        <span class="oe_mail_vote_count oe_wholike_voters_list" t-if='widget.vote_nb > 0'>
             <t t-esc='widget.vote_nb' />
             <i class="fa fa-thumbs-o-up"></i>
         </span>

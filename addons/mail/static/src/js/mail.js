@@ -916,12 +916,53 @@ openerp.mail = function (session) {
             this.$('.oe_reply').on('click', this.on_message_reply);
             this.$('.oe_star').on('click', this.on_star);
             this.$('.oe_msg_vote').on('click', this.on_vote);
+            this.$('.oe_wholike_voters_list').on('mouseenter', this.on_hover);
             this.$('.oe_mail_expand').on('click', this.on_expand);
             this.$('.oe_mail_reduce').on('click', this.on_expand);
             this.$('.oe_mail_action_model').on('click', this.on_record_clicked);
             this.$('.oe_mail_action_author').on('click', this.on_record_author_clicked);
         },
-
+        on_hover : function(event){
+            var self = this;
+            var voter = "";
+            event.stopPropagation();
+            var $target = $(event.target).hasClass("oe_e") ? $(event.target).parent() : $(event.target);
+            //Note: We can set data-content attr on target element once we fetch data so that next time when one moves mouse on element it saves call
+            //But if there is new like comes then we'll not have new likes in popover in that case
+            this.ds_message.call('people_like_list', [this.id])
+                .done(function (data) {
+                    _.each(data, function(people, index) {
+                        voter = voter + people.substring(0,1).toUpperCase() + people.substring(1);
+                        if(index != data.length-1) {
+                            voter = voter + "<br/>";
+                        }
+                    });
+                    self.bindPopoverTo($target, voter);
+                    $target.popover('hide').popover('show');
+                    $(".popover").on("mouseleave", function () {
+                        $(this).remove();
+                    });
+                });
+            return true;
+        },
+        bindPopoverTo: function($el, value) {
+            $el.addClass("bootstrap_popover");
+            $el.popover({
+                'content': value,
+                'placement': 'left',
+                'container': this.el,
+                'html': true,
+                'trigger': 'manual',
+                'animation': false,
+                'toggle': 'popover'
+            }).on("mouseleave", function () {
+                setTimeout(function () {
+                    if (!$(".popover:hover").length) {
+                        $el.popover("hide");
+                    }
+                },100);
+            });
+        },
         on_record_clicked: function  (event) {
             event.preventDefault();
             var self = this;
@@ -1124,6 +1165,7 @@ openerp.mail = function (session) {
             this.$(".oe_msg_footer:first .oe_mail_vote_count").remove();
             this.$(".oe_msg_footer:first .oe_msg_vote").replaceWith(vote_element);
             this.$('.oe_msg_vote').on('click', this.on_vote);
+            this.$('.oe_wholike_voters_list').on('mouseenter', this.on_hover);
         },
 
         /**

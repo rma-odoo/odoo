@@ -584,6 +584,13 @@ class mail_message(osv.Model):
             thread_level=thread_level, message_unload_ids=message_unload_ids, domain=domain, parent_id=parent_id, context=context)
         return message_list
 
+    def people_like_list(self, cr, uid, ids, context=None):
+        """ Return the people list who liked this message. """
+        voter_names = []
+        message = self.browse(cr, uid, ids, context=context)
+        for voter in message.vote_user_ids:
+            voter_names.append(voter.name)
+        return voter_names
     #------------------------------------------------------
     # mail_message internals
     #------------------------------------------------------
