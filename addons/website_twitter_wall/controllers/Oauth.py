@@ -47,7 +47,7 @@ class oauth(object):
     def _build_signature(self, URL, HEADER, params):
         PARAMETER_STRING = ''
         if params:
-            PARAMETER_STRING = "delimited=length&" + self._header_to_parameter(HEADER)+"&track=test"
+            PARAMETER_STRING = "delimited=length&" + self._header_to_parameter(HEADER)+"&track="+quote(params['track'], '')
         else:
             PARAMETER_STRING = self._header_to_parameter(HEADER)
         print "PARAMETER_STRING",PARAMETER_STRING

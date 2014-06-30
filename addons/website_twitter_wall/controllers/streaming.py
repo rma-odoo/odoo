@@ -145,6 +145,8 @@ class Stream(object):
                     conn = httplib.HTTPConnection(self.host, timeout=self.timeout)
                 else:
                     conn = httplib.HTTPSConnection(self.host, timeout=self.timeout)
+#                 import pdb
+#                 pdb.set_trace()
 #                 self.auth.apply_auth(url, 'POST', self.headers, self.parameters)
 #                 BODY_STRING = '&'.join(['%s=%s' % (k, v) for k, v in self.parameters.iteritems()])
                 self.headers['Authorization'] = str(self.auth._generate_header(url.split('?')[0], 'HMAC-SHA1', '1.0', params=self.parameters))
