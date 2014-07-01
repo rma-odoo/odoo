@@ -114,7 +114,7 @@ class TwitterWall(osv.osv):
         'active': True,
         'state': 'not_streaming',
         'website_published': True,
-        'view_mode' : 'List Mode',
+        'view_mode' : 'list_mode',
         'user_id': lambda obj, cr, uid, ctx=None: uid,
     }
 
