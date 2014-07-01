@@ -205,7 +205,7 @@ class im_chat_session(osv.Model):
             if messages:
                 start_date = datetime.datetime.strptime(messages[0]["create_date"], DEFAULT_SERVER_DATETIME_FORMAT)
                 end_date = datetime.datetime.strptime(messages[-1]["create_date"], DEFAULT_SERVER_DATETIME_FORMAT)
-                result[session.id] = (end_date - start_date).seconds / 60 # minutes
+                result[session.id] = (end_date - start_date).seconds
             else:
                 result[session.id] = 0
         return result
@@ -248,18 +248,26 @@ class im_chat_session(osv.Model):
         'channel_id': fields.many2one("im_livechat.channel", "Channel"),
         'fullname' : fields.function(_get_fullname, type="char", string="Complete name"),
         'nbr_speakers' : fields.function(_get_nbr_speakers, type="integer", string="Number of speakers",
+            help="Computed as the number of identified message author. The anonymous user is not taken into account.",
             store = {
                 'im_chat.message': (_get_session_from_message, ['message'], 10),
-        }),
+            }
+        ),
         'nbr_messages' : fields.function(_get_nbr_messages, type="integer", string="Number of messages",
+            help="The number of messages contained in the conversation.",
             store = {
                 'im_chat.message': (_get_session_from_message, ['message'], 10),
-        }),
-        'duration' : fields.function(_get_duration, string='Duration', help="Computed as difference between first and last message sent.",
+            }
+        ),
+        'duration' : fields.function(_get_duration, string='Duration',
+            help="Computed as difference between first and last message sent.",
             store = {
                 'im_chat.message': (_get_session_from_message, ['message'], 10),
-        }),
-        'time_first_answer' : fields.function(_get_time_first_answer, string="Time for the first answer", help="Computed as the difference between the start session date and the first message date from an operator in seconds", )
+            }
+        ),
+        'time_first_answer' : fields.function(_get_time_first_answer, string="Time for the first answer",
+            help="Computed as the difference between the start session date and the first message date from an operator in seconds",
+        )
     }
 
     def users_infos(self, cr, uid, ids, context=None):
