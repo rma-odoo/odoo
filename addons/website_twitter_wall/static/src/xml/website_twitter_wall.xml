@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <template>
-    <t t-name="twitter_tweets" name="res">
+    <t t-name="twitter_tweets_list_mode" name="res">
         <div class="col-md-12 oe_tweets">
             <div class="col-md-1 oe_padding">
                 <img class="img-rounded oe_profile_image" t-att-src="res.user_image_url"></img>
@@ -19,7 +19,7 @@
                     </span>
                 </div>
                 <div>
-                    <p style="font-size:20px">
+                    <p class="oe_tweet_text">
                         <t t-raw="res.tweet"></t>
                     </p>
                 </div>
@@ -32,7 +32,27 @@
             </div>
         </div>
     </t>
+
+    <t t-name="twitter_tweets_box_mode" name="res">
+        <div class="oe_box_mode">
+            <div class="col-md-3">
+                <img class="img-rounded oe_profile_image_box" t-att-src="res.user_image_url"></img>
+            </div>
+            <div class="col-md-9">
+                    <b><t t-raw="res.name" /></b><br />
+                    <small>@<t t-raw="res.screen_name" /></small><br />
+                    <t t-raw="res.created_at_formated_date"></t>
+            </div>
+            <div class="col-md-12">
+                <p class="oe_tweet_text">
+                    <t t-raw="res.tweet"></t>
+                </p>
+            </div>
+        </div>
+    </t>
+    
     <t t-name="twitter_load_tweets" />
+    
     <t t-name="twitter_moderate_tweets">
         <tr data-type="tweet" t-att-data-id="tweet.tweet_id" t-att-class="color_class">
             <td>

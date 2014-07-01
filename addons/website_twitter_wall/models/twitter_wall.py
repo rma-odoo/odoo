@@ -70,6 +70,17 @@ class TwitterTweetTag(osv.osv):
 class TwitterWall(osv.osv):
     _name = "website.twitter.wall"
 
+    def _get_pending(self, cr, uid, ids, field, args, context = None):
+        tweet_obj = self.pool['website.twitter.wall.tweet']
+        res = {}
+        for obj in tweet_obj.browse(cr, uid, ids, context=context):
+            res[obj.id] = {
+                'pending' : tweet_obj.search_count(cr, uid, [('wall_id','=', obj.id),('state', '=', 'pending')], context=context),
+                'published' : tweet_obj.search_count(cr, uid, [('wall_id','=', obj.id),('state', '=', 'published')], context=context),
+                'unpublished' : tweet_obj.search_count(cr, uid, [('wall_id','=', obj.id),('state', '=', 'unpublished')], context=context)
+            }
+        return res
+
     def _website_url(self, cr, uid, ids, field_name, arg, context=None):
         res = dict.fromkeys(ids, '')
         for wall_id in self.browse(cr, uid, ids, context=context):
@@ -90,11 +101,10 @@ class TwitterWall(osv.osv):
         'website_published': fields.boolean('Visible in Website'),
         'back_image': fields.binary('Background Image'),
         'user_id': fields.many2one('res.users', 'Created User'),
-        
-        'pending': fields.one2many('website.twitter.wall.tweet', 'wall_id', 'Tweets', domain=[('state','=','pending')]),
-        'published': fields.one2many('website.twitter.wall.tweet', 'wall_id', 'Tweets', domain=[('state','=','published')]),
-        'unpublished': fields.one2many('website.twitter.wall.tweet', 'wall_id', 'Tweets', domain=[('state','=','unpublished')]),
-        
+        'pending': fields.function(_get_pending, type="integer", string='Pending Tweets', multi='status'),
+        'published': fields.function(_get_pending, type="integer", string='Published Tweets', multi='status'),
+        'unpublished': fields.function(_get_pending, type="integer", string='Unpublished Tweets', multi='status'),
+        'view_mode' : fields.char('View Mode', size=30, required=True),
         'website_url': fields.function(_website_url, string="Website url", type="char")
     }
 
@@ -104,6 +114,7 @@ class TwitterWall(osv.osv):
         'active': True,
         'state': 'not_streaming',
         'website_published': True,
+        'view_mode' : 'List Mode',
         'user_id': lambda obj, cr, uid, ctx=None: uid,
     }
 

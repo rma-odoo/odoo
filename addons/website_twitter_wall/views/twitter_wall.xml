@@ -33,8 +33,56 @@
                                             </center>
                                         </h2>
                                         <t t-esc="wall.note" />
+                                        <div t-if="wall.tags" class="clearfloat">
+                                            <span t-foreach="wall.tags" t-as="tag" class="tagcloud">
+                                            # <t t-esc="tag.name" />
+                                            </span>
+                                        </div>
+                                        <div class="clearfloat"><br /></div>
+                                        <div class="wall_tweet_count clearfloat">
+                                            <ul class="nav nav-pills">
+                                              <li class="state_count">Pending <span class="badge badgespace"><t t-esc="status[wall.id][0]"/></span></li>
+                                              <li class="state_count"><a t-attf-href="/twitter_wall/#{ slug(wall) }/approved" class="state_link">Aprove <span class="badge badgespace"><t t-esc="status[wall.id][1]"/></span></a></li>
+                                              <li class="state_count">Rejected<span class="badge badgespace"><t t-esc="status[wall.id][2]"/></span></li>
+                                            </ul>
+                                        </div>
                                     </div>
                                 </t>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </template>
+
+        <template id="twitter_wall_approve" name="Twitter Wall Approve Tweet">
+            <t t-call="website.layout">
+                <t t-set="head">
+                    <script type="text/javascript">
+                        openerp.qweb.add_template('/website_twitter_wall/static/src/xml/website_twitter_wall.xml');
+                    </script>
+                    <link rel="stylesheet"
+                        href="/website_twitter_wall/static/src/css/website_twitter_wall.css"
+                        type="text/css" />
+                    <script type="text/javascript"
+                        src="/website_twitter_wall/static/src/js/website_twitter_wall.js"></script>
+                </t>
+                <div name="tweets_for_approve" t-att-wall_id="wall.id">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-sm-10" id="approve_tweet_wall" t-att-view_mode="wall.view_mode">
+
+                            </div>
+                            <div class="col-sm-2 pull-right">
+                                <div class="pos_fix">
+                                    <h3>
+                                        Tweet us :<br />
+                                        <t t-foreach="wall.tags" t-as="tag">
+                                            <label class="label label-danger"><t t-esc="tag.name" /></label>
+                                        </t>
+                                    </h3> &amp;nbsp;
+                                    Twitter wall powered by Odoo.
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -74,7 +122,8 @@
                             </form>
                         </div>
                         <div class="row">
-                            <div class="col-sm-10" id="tweet_wall_div">
+                            <div class="col-sm-10" id="tweet_wall_div" t-att-view_mode="view_mode">
+
                             </div>
                             <div class="col-sm-2 pull-right">
                                 <h3>
@@ -96,6 +145,7 @@
             <field name="parent_id" ref="website.main_menu" />
             <field name="sequence" type="int">25</field>
         </record>
+        
         <template id="tweet_modetate">
             <t t-call="website.layout">
                 <t t-set="head">
@@ -135,19 +185,19 @@
                                     <!--form class="navbar-form navbar-right">
                                         <input type="text" class="form-control" placeholder="Quick filter" />
                                         <button type="submit" class="btn btn-default">Search</button>
-                  </form-->
-                  <ul class="nav navbar-nav">
-                    <li class="dropdown">
-                      <a href="#" class="dropdown-toggle" data-toggle="dropdown">Filters <b class="caret"></b></a>
-                      <ul class="dropdown-menu">
-                        <li><a href="#">Pending</a></li>
-                        <li><a href="#">Scheduled</a></li>
-                        <li><a href="#">Published</a></li>
-                        <li><a href="#">Unpublished</a></li>
-                      </ul>
-                    </li>
-                  </ul>
-                  
+                    </form-->
+                    <ul class="nav navbar-nav">
+                        <li class="dropdown">
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Filters <b class="caret"></b></a>
+                            <ul class="dropdown-menu">
+                                <li><a href="#">Pending</a></li>
+                                <li><a href="#">Scheduled</a></li>
+                                <li><a href="#">Published</a></li>
+                                <li><a href="#">Unpublished</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                    
                     <form method="POST" action="/twitter_wall/upload_image"
                         enctype="multipart/form-data" class="form-inline" id="back_img">
                         <div class="form-group pull-left">
@@ -157,6 +207,19 @@
                                 style="position: absolute; opacity: 0; width: 1px; height: 1px;" />
                         </div>
                     </form>
+
+                    <div class="btn-group" data-toggle="buttons">
+                        <t t-set="list_mode" t-value="'active' if wall.view_mode == 'list_mode' else ''" />
+                        <label t-attf-class="control-label btn btn-sm btn-default navbar-btn #{list_mode}">
+                            <input type="radio" name="view_mode" value="list_mode" /> 
+                            <strong>List Mode</strong>
+                        </label>
+                        <t t-set="box_mode" t-value="'active' if wall.view_mode == 'box_mode' else ''" />
+                        <label id="box_id" t-attf-class="control-label btn btn-sm btn-default navbar-btn #{box_mode}">
+                            <input type="radio" name="view_mode" value="box_mode" />
+                            <strong>Box Mode</strong>
+                        </label>
+                    </div>
 
                     <ul class="nav navbar-nav navbar-right">
                         <li><a href="#" class="upload_img"><i class="fa fa-upload"></i> Background</a></li>
