@@ -29,7 +29,6 @@ class website_twitter_wall(http.Controller):
         tweet_state = {}
         for wall in wall_list:
             wall_state = wall_obj._get_pending(request.cr, SUPERUSER_ID, [wall.id], '', '',context=request.context)
-            print "wall_state", wall_state
             tweet_state[wall.id] = [wall_state[wall.id]['pending'], wall_state[wall.id]['published'], wall_state[wall.id]['unpublished']]
         values = {
             'walls': wall_list,

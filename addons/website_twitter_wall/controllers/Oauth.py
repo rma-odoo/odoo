@@ -20,6 +20,7 @@ class oauth(object):
         self.API_secret = API_secret  # "s3gbksdBkI8Ou9FOkYhurwgejyrPEGHJfosPuqJjsgrtv1yFOO"
         self.Oauth_Token = None
         self.Oauth_Token_Secret = None
+        self.parameters = {}
         
     def _get_nonce(self):
         NONCE = ""
@@ -31,35 +32,51 @@ class oauth(object):
         return str(int(time.time()))
     
     def _generate_header(self, URL, signature_method, oauth_version, callback_url = None, request_token=None, oauth_verifier = None, params=None):
-        HEADER = ''
-        if callback_url: HEADER += 'oauth_callback="' + quote(callback_url, '') + '", '
-        if request_token: HEADER += 'oauth_token="' + request_token + '", '
-        if oauth_verifier: HEADER += 'oauth_verifier="' + oauth_verifier + '", '
-        HEADER += 'oauth_consumer_key="' + self.API_key + '", '
-        HEADER += 'oauth_nonce="' + self._get_nonce() + '", '
-        HEADER += 'oauth_signature_method="' + signature_method + '", '
-        HEADER += 'oauth_timestamp="' + self._get_timestamp() + '", '
-        if self.Oauth_Token: HEADER += 'oauth_token="' + self.Oauth_Token + '", '
-        HEADER += 'oauth_version="' + oauth_version + '"'
-        HEADER += ', oauth_signature="' + self._build_signature(URL, HEADER, params) + '"'
-        return 'OAuth realm="", ' + HEADER
-    
-    def _build_signature(self, URL, HEADER, params):
-        PARAMETER_STRING = ''
         if params:
-            PARAMETER_STRING = "delimited=length&" + self._header_to_parameter(HEADER)+"&track="+quote(params['track'], '')
-        else:
-            PARAMETER_STRING = self._header_to_parameter(HEADER)
-        print "PARAMETER_STRING",PARAMETER_STRING
-        BASE_STRING = 'POST&' + quote(URL, '') + '&' + quote(PARAMETER_STRING, '')
-        SIGNING_KEY = quote(self.API_secret, '') + '&' + (quote(self.Oauth_Token_Secret, '') if self.Oauth_Token_Secret else '')
-        print("DEBUG : SIGNING KEY " + SIGNING_KEY + " BASE STRING " + BASE_STRING + "\n")
-        return quote(base64.standard_b64encode(hmac.new(SIGNING_KEY.encode(), BASE_STRING.encode(), sha1).digest()).decode('ascii'))
+            self.parameters.update(params)
+        if callback_url: self.parameters['oauth_callback'] = callback_url
+        if request_token: self.parameters['oauth_token'] = request_token
+        if oauth_verifier: self.parameters['oauth_verifier'] = oauth_verifier
+        if self.Oauth_Token: self.parameters['oauth_token'] = self.Oauth_Token
+        self.parameters['oauth_consumer_key'] = self.API_key
+        self.parameters['oauth_nonce'] = self._get_nonce()
+        self.parameters['oauth_signature_method'] = signature_method
+        self.parameters['oauth_timestamp'] = self._get_timestamp()
+        self.parameters['oauth_version'] = oauth_version
+        self.parameters['oauth_signature'] = self._build_signature(URL)
+        return self.to_header()
     
-    def _header_to_parameter(self, HEADER):
-        PARAMETER_STRING = HEADER.replace(", ", "&")
-        PARAMETER_STRING = PARAMETER_STRING.replace("\"", "")
-        return PARAMETER_STRING
+    def _build_signature(self, URL):
+        BASE_STRING = 'POST&' + quote(URL, '') + '&' + quote(self.to_parameter_string(), '')
+        SIGNING_KEY = quote(self.API_secret, '') + '&' + (quote(self.Oauth_Token_Secret, '') if self.Oauth_Token_Secret else '')
+#         print("DEBUG : SIGNING KEY " + SIGNING_KEY + " BASE STRING " + BASE_STRING + "\n")
+        return base64.standard_b64encode(hmac.new(SIGNING_KEY.encode(), BASE_STRING.encode(), sha1).digest()).decode('ascii')
+    
+    def to_header(self, realm=''):
+        """Serialize as a header for an HTTPAuth request."""
+        auth_header = 'OAuth realm="%s"' % realm
+        # Add the oauth parameters.
+        if self.parameters:
+            for k, v in self.parameters.iteritems():
+                if k[:6] == 'oauth_':
+                    auth_header += ', %s="%s"' % (k, quote(v, ''))
+        return auth_header
+
+    def to_parameter_string(self):
+        """Return a string that contains the parameters that must be signed."""
+        params = self.parameters
+        try:
+            del params['oauth_signature']
+        except:
+            pass
+        key_values = [(quote(str(k), ''), quote(str(v), '')) for k,v in params.items()]
+        key_values.sort()
+        return '&'.join(['%s=%s' % (k, v) for k, v in key_values])
+        
+#     def _header_to_parameter(self, HEADER):
+#         PARAMETER_STRING = HEADER.replace(", ", "&")
+#         PARAMETER_STRING = PARAMETER_STRING.replace("\"", "")
+#         return PARAMETER_STRING
     
     def _string_to_dict(self, request_response):
         return dict(item.split("=") for item in request_response.split("&"))
@@ -69,7 +86,7 @@ class oauth(object):
         # callback_url = base_url + "/web/login?db=" + dbname + "&redirect=/twitter_callback#oauth_credintial=" + oauth_credintial   # "http://127.0.0.1:8069/"
         callback_url = base_url + "/twitter_callback?db=" + dbname + "&website_id=" + str(website_id)  # "http://127.0.0.1:8069/"
         HEADER = self._generate_header(self.REQUEST_URL, 'HMAC-SHA1', '1.0', callback_url = callback_url)
-
+        
         HTTP_REQUEST = Request(self.REQUEST_URL)
         HTTP_REQUEST.add_header('Authorization', HEADER)
         request_response = urlopen(HTTP_REQUEST, '').read()
@@ -101,4 +118,4 @@ class oauth(object):
     
     def set_access_token(self, Oauth_Token, Oauth_Token_Secret):
         self.Oauth_Token = Oauth_Token
-        self.Oauth_Token_Secret = Oauth_Token_Secret        
+        self.Oauth_Token_Secret = Oauth_Token_Secret
