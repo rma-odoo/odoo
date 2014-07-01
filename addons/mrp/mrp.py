@@ -618,27 +618,6 @@ class mrp_production(osv.osv):
                 raise osv.except_osv(_('Invalid Action!'), _('Cannot delete a manufacturing order in state \'%s\'.') % production.state)
         return super(mrp_production, self).unlink(cr, uid, ids, context=context)
 
-    def copy(self, cr, uid, id, default=None, context=None):
-        if default is None:
-            default = {}
-        mo = self.browse(cr, uid, id, context=context)
-        origin = False
-        if default.get('disassemble'):
-            origin = mo.origin + '-' + mo.name if not mo.disassemble and mo.origin else mo.name
-        if not mo.disassemble:
-            origin = mo.origin
-        default.update({
-            'name': self.pool.get('ir.sequence').get(cr, uid, 'mrp.production'),
-            'move_lines': [],
-            'move_lines2': [],
-            'move_created_ids': [],
-            'move_created_ids2': [],
-            'product_lines': [],
-            'move_prod_id': False,
-            'origin': origin,
-        })
-        return super(mrp_production, self).copy(cr, uid, id, default, context)
-
     def location_id_change(self, cr, uid, ids, src, dest, context=None):
         """ Changes destination location if source location is changed.
         @param src: Source location id.
@@ -1158,8 +1137,8 @@ class mrp_production(osv.osv):
             'product_uom': uom_id,
             'product_uos_qty': uos_id and uos_qty or False,
             'product_uos': uos_id or False,
-            'location_id': source_location_id,
-            'location_dest_id': destination_location_id,
+            'location_id': production.disassemble and destination_location_id or source_location_id,
+            'location_dest_id': production.disassemble and source_location_id or destination_location_id,
             'company_id': production.company_id.id,
             'procure_method': prev_move and 'make_to_stock' or self._get_raw_material_procure_method(cr, uid, product, context=context), #Make_to_stock avoids creating procurement
             'raw_material_production_id': production.id,

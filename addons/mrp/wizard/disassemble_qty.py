@@ -55,9 +55,9 @@ class change_disassemble_qty(osv.osv_memory):
         if qty >= 0:
             raise osv.except_osv(_('Warning!'), _('Quantity must be negative to disassemble.'))
         mrp_record = mrp_production_obj.browse(cr, uid, mrp_id, context=context)
-        mrp_record.write({'qty_to_disassemble': mrp_record.qty_to_disassemble - abs(qty)}, context=context)
         if mrp_record.qty_to_disassemble < abs(qty) :
             raise osv.except_osv(_('Warning!'), _('You are going to disassemble total %s quantities of "%s".\nBut you can only disassemble up to total %s quantities.') % (abs(qty), mrp_record.product_id.name, mrp_record.qty_to_disassemble))
+        mrp_record.write({'qty_to_disassemble': mrp_record.qty_to_disassemble - abs(qty)}, context=context)
         return mrp_production_obj.action_disassemble(cr, uid, mrp_id, qty, context=context)
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

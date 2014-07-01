@@ -129,7 +129,7 @@ class mrp_production_workcenter_line(osv.osv):
                     if production.move_lines or production.move_created_ids:
                         product_qty = production.disassemble and abs(production.product_qty) or production.product_qty
                         prod_obj_pool.action_produce(cr,uid, production.id, product_qty, 'consume_produce', context = None)
-                prod_obj_pool.signal_button_produce_done(cr, uid, [oper_obj.production_id.id])
+                prod_obj_pool.signal_workflow(cr, uid, [oper_obj.production_id.id], 'button_produce_done')
         return
 
     def write(self, cr, uid, ids, vals, context=None, update=True):
