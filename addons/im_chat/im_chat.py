@@ -5,10 +5,11 @@ import logging
 import time
 import uuid
 import random
-
+import re
 import simplejson
-
 import openerp
+import cgi
+
 from openerp.http import request
 from openerp.osv import osv, fields
 from openerp.tools.misc import DEFAULT_SERVER_DATETIME_FORMAT
@@ -157,6 +158,20 @@ class im_chat_message(osv.Model):
         'type' : 'message',
     }
 
+    def _escape_keep_url(self, message):
+        """ escape the message and transform the url into clickable link """
+        safe_message = ""
+        first = 0
+        last = 0
+        for m in re.finditer('(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?', message):
+            last = m.start()
+            safe_message += cgi.escape(message[first:last])
+            safe_message += '<a href="%s" target="_blank">%s</a>' % (cgi.escape(m.group(0)), m.group(0))
+            first = m.end()
+            last = m.end()
+        safe_message += cgi.escape(message[last:])
+        return safe_message
+
     def init_messages(self, cr, uid, context=None):
         """ get unread messages and old messages received less than AWAY_TIMER
             ago and the session_info for open or folded window
@@ -202,7 +217,9 @@ class im_chat_message(osv.Model):
         session_ids = Session.search(cr, uid, [('uuid','=',uuid)], context=context)
         notifications = []
         for session in Session.browse(cr, uid, session_ids, context=context):
-            # build the new message
+            # build and escape the new message
+            message_content = self._escape_keep_url(message_content)
+            message_content = self.pool['im_chat.shortcode'].replace_shortcode(cr, uid, message_content, context=context)
             vals = {
                 "from_id": from_uid,
                 "to_id": session.id,
@@ -218,6 +235,25 @@ class im_chat_message(osv.Model):
                 notifications.append([(cr.dbname, 'im_chat.session', user.id), data])
             self.pool['bus.bus'].sendmany(cr, uid, notifications)
         return message_id
+
+
+class im_chat_shortcode(osv.Model):
+    """ Message shortcuts """
+    _name = "im_chat.shortcode"
+
+    _columns = {
+        'source' : fields.char('Shortcut', required=True, select=True, help="The shortcut which must be replace in the Chat Messages"),
+        'substitution' : fields.char('Substitution', required=True, select=True, help="The html code replacing the shortcut"),
+        'description' : fields.char('Description'),
+    }
+
+    def replace_shortcode(self, cr, uid, message, context=None):
+        ids = self.search(cr, uid, [], context=context)
+        for shortcode in self.browse(cr, uid, ids, context=context):
+            regex = "(?:^|\s)(%s)(?:\s|$)" % re.escape(shortcode.source)
+            message = re.sub(regex, " " + shortcode.substitution + " ", message)
+        return message
+
 
 class im_chat_presence(osv.Model):
     """ im_chat_presence status can be: online, away or offline.

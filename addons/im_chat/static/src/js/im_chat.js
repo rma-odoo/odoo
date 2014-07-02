@@ -217,13 +217,14 @@
         },
         define_options: function(){
             // add here the option to put in the dropdown menu
-            this._add_option("coucou", "test", "fa fa-eye");
+            this._add_option("Shortcuts", "option_shortcut", "fa fa-info-circle");
+            this.$('.oe_im_chatview_option_list .option_shortcut').on('click', _.bind(this.click_option_shortcut, this));
         },
         _add_option: function(label, style_class, icon_fa_class){
             if(icon_fa_class){
                 label = '<i class="'+icon_fa_class+'"></i> ' + label;
             }
-            this.$('.oe_im_chatview_option_list').append('<li class="'+style_class+'">'+label+'</li>')
+            this.$('.oe_im_chatview_option_list').append('<li class="'+style_class+'">'+label+'</li>');
          },
         show: function(){
             this.$().animate({
@@ -310,8 +311,6 @@
                 if(!m.from_id){
                     m.from_id = [false, self.options["defaultUsername"]];
                 }
-                m.message = self.escape_keep_url(m.message);
-                m.message = self.smiley(m.message);
                 m.create_date = Date.parse(m.create_date).setTimezone("UTC").toString("yyyy-dd-MM HH:mm:ss");
                 return m;
             });
@@ -356,62 +355,6 @@
             this.$("input").val("");
             this.send_message(mes, "message");
         },
-        get_smiley_list: function(){
-            var kitten = jQuery.deparam !== undefined && jQuery.deparam(jQuery.param.querystring()).kitten !== undefined;
-            var smileys = {
-                ":'(": "&#128546;",
-                ":O" : "&#128561;",
-                "3:)": "&#128520;",
-                ":)" : "&#128522;",
-                ":D" : "&#128517;",
-                ";)" : "&#128521;",
-                ":p" : "&#128523;",
-                ":(" : "&#9785;",
-                ":|" : "&#128528;",
-                ":/" : "&#128527;",
-                "8)" : "&#128563;",
-                ":s" : "&#128534;",
-                ":pinky" : "<img src='/im_chat/static/src/img/pinky.png'/>",
-                ":musti" : "<img src='/im_chat/static/src/img/musti.png'/>",
-            };
-            if(kitten){
-                _.extend(smileys, {
-                    ":)" : "&#128570;",
-                    ":D" : "&#128569;",
-                    ";)" : "&#128572;",
-                    ":p" : "&#128573;",
-                    ":(" : "&#128576;",
-                    ":|" : "&#128575;",
-                });
-            }
-            return smileys;
-        },
-        smiley: function(str){
-            var re_escape = function(str){
-                return String(str).replace(/([.*+?=^!:${}()|[\]\/\\])/g, '\\$1');
-             };
-             var smileys = this.get_smiley_list();
-            _.each(_.keys(smileys), function(key){
-                str = str.replace( new RegExp("(?:^|\\s)(" + re_escape(key) + ")(?:\\s|$)"), ' <span class="smiley">'+smileys[key]+'</span> ');
-            });
-            return str;
-        },
-        escape_keep_url: function(str){
-            var url_regex = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/gi;
-            var last = 0;
-            var txt = "";
-            while (true) {
-                var result = url_regex.exec(str);
-                if (! result)
-                    break;
-                txt += _.escape(str.slice(last, result.index));
-                last = url_regex.lastIndex;
-                var url = _.escape(result[0]);
-                txt += '<a href="' + url + '" target="_blank">' + url + '</a>';
-            }
-            txt += _.escape(str.slice(last, str.length));
-            return txt;
-        },
         _go_bottom: function() {
             this.$(".oe_im_chatview_content").scrollTop(this.$(".oe_im_chatview_content").get(0).scrollHeight);
         },
@@ -423,6 +366,17 @@
         },
         click_options: function(e){
             this.$('.oe_im_chatview_options').dropdown();
+        },
+        click_option_shortcut: function(){
+            openerp.client.action_manager.do_action({
+                type: 'ir.actions.act_window',
+                res_model: 'im_chat.shortcode',
+                view_mode: 'tree,form',
+                view_type: 'tree',
+                views: [[false, 'list'], [false, 'form']],
+                target: "current",
+                limit: 80,
+            });
         },
         click_header: function(){
             var classes = event.target.className.split(' ');
