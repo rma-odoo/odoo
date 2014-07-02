@@ -535,16 +535,16 @@ class website(osv.osv):
         # conditional request match
         if response.status_code == 304:
             return response
-
+        
         data = record[field].decode('base64')
-
+        
         if (not max_width) and (not max_height):
             response.data = data
             return response
 
         image = Image.open(cStringIO.StringIO(data))
         response.mimetype = Image.MIME[image.format]
-
+        
         w, h = image.size
         try:
             max_w, max_h = int(max_width), int(max_height)
@@ -670,7 +670,7 @@ class ir_attachment(osv.osv):
                 result[record.id] = openerp.tools.image_resize_image_big(record.datas)
             except IOError: # apparently the error PIL.Image.open raises
                 pass
-
+            
         return result
 
     _columns = {

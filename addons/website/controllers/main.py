@@ -295,11 +295,35 @@ class Website(openerp.addons.web.controllers.main.Home):
                         new_trans['gengo_comment'] = t.get('gengo_comment')
                     irt.create(request.cr, request.uid, new_trans)
         return True
+    
+    def compress_image(self, image, quality):
+        image_format = image.format
+        optimized = True
+        if quality == '95':
+            optimized = False 
+        img = cStringIO.StringIO()
+        if image.format == 'PNG' :
+           im = Image.new("RGB", image.size, (255,255,255))
+           if image.mode in ('RGBA', 'LA'):
+               image_format = 'JPEG'
+               if image.mode == 'LA':
+                   im.paste(image, im.convert('RGBA').split()[-1])
+               if image.mode == 'RGBA':
+                   im.paste(image, image.split()[3])
+               image = im
+           elif image.mode in ('P','I'):
+               image_format = image.format
+           image.save(img, image_format, quality=quality, optimize = optimized)
+        else:
+           image.save(img, image_format, quality=quality)
+           
+        image_data = img.getvalue()
+        return image_data
 
     @http.route('/website/attach', type='http', auth='user', methods=['POST'], website=True)
-    def attach(self, func, upload=None, url=None):
+    def attach(self, func, upload=None, url=None, quality=None):
         Attachments = request.registry['ir.attachment']
-
+        
         website_url = message = None
         if not upload:
             website_url = url
@@ -319,7 +343,9 @@ class Website(openerp.addons.web.controllers.main.Home):
                     raise ValueError(
                         u"Image size excessive, uploaded images must be smaller "
                         u"than 42 million pixel")
-
+                if quality != '0':
+                    image_data = Website.compress_image(self,image,int(quality))
+                
                 attachment_id = Attachments.create(request.cr, request.uid, {
                     'name': upload.filename,
                     'datas': image_data.encode('base64'),
