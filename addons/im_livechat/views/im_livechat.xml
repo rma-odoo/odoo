@@ -103,6 +103,8 @@
             <script type="text/javascript" src="/web/static/src/js/openerpframework.js"></script>
             <!-- add the internal lib -->
             <t t-call="im_livechat.internal_lib"/>
+            <!-- Style for livechat extern only -->
+            <link rel="stylesheet" href="/im_livechat/static/src/css/im_livechat.css"></link>
         </template>
 
         <!-- Bundle of Librairies of the Bus, Chat, Livechat -->

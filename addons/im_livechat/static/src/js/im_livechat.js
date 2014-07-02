@@ -20,6 +20,8 @@
             this._super.apply(this, arguments);
             this.shown = true;
             this.loading_history = false; // unactivate the loading history
+            this.feedback = false;
+            this.rating = false;
         },
         define_options: function(){
             // no options for anonymous user
@@ -52,6 +54,50 @@
             session.state = state;
             this.set('session', session);
         },
+        click_close: function(event) {
+            this.$('.oe_im_chatview_input').attr('disabled','disabled');
+            if(!this.feedback){
+                this.feedback = true;
+                this.$(".oe_im_chatview_content").html(openerp.qweb.render("support_feedback"));
+                this.$('.oe_im_feedback_choices a').on('click', _.bind(this.choose_feedback, this));
+                this.$('.oe_im_chatview_feedback #submit').on('click', _.bind(this.submit_feedback, this));
+            }else{
+                if(this.rating){
+                    this.send_feedback(this.rating);
+                }
+                this._super.apply(this, arguments);
+            }
+        },
+        choose_feedback: function(e){
+            var self = this;
+            this.rating = parseInt($(e.currentTarget).data('value'));
+            this.$('.oe_im_feedback_choices a').removeClass('selected');
+            this.$('.oe_im_feedback_choices a[data-value="'+this.rating+'"]').addClass('selected');
+        },
+        submit_feedback: function(e){
+            var self = this;
+            if(this.rating){
+                var reason = self.$('.oe_im_chatview_feedback textarea').val();
+                if(this.rating > 1){
+                    this.send_feedback(this.rating, reason);
+                }else{
+                    if(reason){
+                        this.send_feedback(this.rating, reason);
+                    }else{
+                        self.$('.oe_im_chatview_feedback textarea').css('border', 'red solid 2px');
+                    }
+                }
+            }else{
+                this.feedback = false;
+            }
+        },
+        send_feedback: function(rate, reason){
+            var self = this;
+            openerp.session.rpc("/im_livechat/feedback", {uuid: this.get('session').uuid, rating: rate, reason : reason}).then(function(res) {
+                self.$(".oe_im_chatview_feedback").html($(document.createElement('div')).addClass("oe_im_feedback_text").html(_t("Thanks you for your feedback. You can close the chat window now.")));
+            });
+            this.rating = false;
+        }
     });
 
     im_livechat.LiveSupport = openerp.Widget.extend({

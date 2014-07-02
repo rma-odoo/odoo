@@ -220,11 +220,17 @@
                             <field name="fullname" widget="html"/>
                             <field name="create_date" readonly="1"/>
                         </group>
-                        <group colspan="2" col="2" string="Statistics">
-                            <field name="duration"/>
-                            <field name="nbr_speakers"/>
-                            <field name="nbr_messages"/>
-                            <field name="time_first_answer"/>
+                        <group>
+                            <group string="Statistics">
+                                <field name="duration"/>
+                                <field name="nbr_speakers"/>
+                                <field name="nbr_messages"/>
+                                <field name="time_first_answer"/>
+                            </group>
+                            <group string="Feedback">
+                                <field name="feedback_rating"/>
+                                <field name="feedback_reason"/>
+                            </group>
                         </group>
                         <field name="message_ids" type="tree">
                             <tree string="History">

@@ -30,6 +30,7 @@ from openerp import http
 from openerp.http import request
 from openerp.tools.misc import DEFAULT_SERVER_DATETIME_FORMAT
 
+
 class im_livechat_channel(osv.Model):
     _name = 'im_livechat.channel'
 
@@ -267,7 +268,10 @@ class im_chat_session(osv.Model):
         ),
         'time_first_answer' : fields.function(_get_time_first_answer, string="Time for the first answer",
             help="Computed as the difference between the start session date and the first message date from an operator in seconds",
-        )
+        ),
+
+        'feedback_rating': fields.selection([('10','Good'),('5','Ok'),('1','Bad')], 'Grade', help='Feedback from user (Bad, Ok or Good)'),
+        'feedback_reason': fields.text('Reason', help="Reason explaining the bad rate only."),
     }
 
     def users_infos(self, cr, uid, ids, context=None):
@@ -314,3 +318,12 @@ class LiveChatController(http.Controller):
         reg = openerp.modules.registry.RegistryManager.get(db)
         with reg.cursor() as cr:
             return len(reg.get('im_livechat.channel').get_available_users(cr, uid, channel)) > 0
+
+
+    @http.route('/im_livechat/feedback', type='json', auth="none")
+    def feedback(self, uuid, rating, reason=None):
+        cr, uid, context, db = request.cr, request.uid or openerp.SUPERUSER_ID, request.context, request.db
+        registry = openerp.modules.registry.RegistryManager.get(db)
+        Session = registry['im_chat.session']
+        session_ids = Session.search(cr, uid, [('uuid','=',uuid)], context=context)
+        Session.write(cr, uid, session_ids, {'feedback_rating' : str(rating), 'feedback_reason' : reason}, context=context)
