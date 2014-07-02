@@ -35,6 +35,7 @@ import cStringIO
 import subprocess
 from distutils.version import LooseVersion
 from functools import partial
+from os import unlink
 from pyPdf import PdfFileWriter, PdfFileReader
 
 
@@ -329,7 +330,6 @@ class Report(osv.Model):
         """
         command = ['wkhtmltopdf']
         command_args = []
-        tmp_dir = tempfile.gettempdir()
 
         # Passing the cookie to wkhtmltopdf in order to resolve internal links.
         try:
@@ -356,39 +356,38 @@ class Report(osv.Model):
             command_args.extend(['--orientation', 'landscape'])
 
         # Execute WKhtmltopdf
-        pdfdocuments = []
+        pdfdocuments_path = []
         for index, reporthtml in enumerate(bodies):
             local_command_args = []
-            pdfreport = tempfile.NamedTemporaryFile(suffix='.pdf', prefix='report.tmp.', mode='w+b')
+            pdfreport = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
 
             # Directly load the document if we already have it
             if save_in_attachment and save_in_attachment['loaded_documents'].get(reporthtml[0]):
                 pdfreport.write(save_in_attachment['loaded_documents'].get(reporthtml[0]))
-                pdfreport.seek(0)
-                pdfdocuments.append(pdfreport)
+                pdfreport.close()
+                pdfdocuments_path.append(pdfreport.name)
                 continue
 
             # Wkhtmltopdf handles header/footer as separate pages. Create them if necessary.
             if headers:
-                head_file = tempfile.NamedTemporaryFile(suffix='.html', prefix='report.header.tmp.', dir=tmp_dir, mode='w+')
+                head_file = tempfile.NamedTemporaryFile(delete=False, suffix=".html")
                 head_file.write(headers[index])
-                head_file.seek(0)
+                head_file.close()
                 local_command_args.extend(['--header-html', head_file.name])
             if footers:
-                foot_file = tempfile.NamedTemporaryFile(suffix='.html', prefix='report.footer.tmp.', dir=tmp_dir, mode='w+')
+                foot_file = tempfile.NamedTemporaryFile(delete=False, suffix=".html")
                 foot_file.write(footers[index])
-                foot_file.seek(0)
+                foot_file.close()
                 local_command_args.extend(['--footer-html', foot_file.name])
 
             # Body stuff
-            content_file = tempfile.NamedTemporaryFile(suffix='.html', prefix='report.body.tmp.', dir=tmp_dir, mode='w+')
+            content_file = tempfile.NamedTemporaryFile(delete=False, suffix=".html")
             content_file.write(reporthtml[1])
-            content_file.seek(0)
+            content_file.close()
 
             try:
                 wkhtmltopdf = command + command_args + local_command_args
                 wkhtmltopdf += [content_file.name] + [pdfreport.name]
-
                 process = subprocess.Popen(wkhtmltopdf, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 out, err = process.communicate()
 
@@ -410,23 +409,25 @@ class Report(osv.Model):
                     _logger.info('The PDF document %s is now saved in the '
                                  'database' % attachment['name'])
 
-                pdfreport.seek(0)
-                pdfdocuments.append(pdfreport)
+                pdfreport.close()
+                pdfdocuments_path.append(pdfreport.name)
 
+                # Manual unlink of all the temporary files
+                unlink(content_file.name)
                 if headers:
-                    head_file.close()
+                    unlink(head_file.name)
                 if footers:
-                    foot_file.close()
+                    unlink(foot_file.name)
             except:
                 raise
 
         # Return the entire document
-        if len(pdfdocuments) == 1:
-            content = pdfdocuments[0].read()
-            pdfdocuments[0].close()
+        if len(pdfdocuments_path) == 1:
+            with open(pdfdocuments_path[0], 'r') as f:
+                content = f.read()
+            unlink(pdfdocuments_path[0])
         else:
-            content = self._merge_pdf(pdfdocuments)
-
+            content = self._merge_pdf(pdfdocuments_path)
         return content
 
     def _get_report_from_name(self, cr, uid, report_name):
@@ -482,18 +483,18 @@ class Report(osv.Model):
 
         return command_args
 
-    def _merge_pdf(self, documents):
+    def _merge_pdf(self, documents_path):
         """Merge PDF files into one.
 
-        :param documents: list of pdf files
+        :param documents_path: list of path of pdf files
         :returns: string containing the merged pdf
         """
         writer = PdfFileWriter()
-        for document in documents:
-            reader = PdfFileReader(file(document.name, "rb"))
+        for document_path in documents_path:
+            reader = PdfFileReader(file(document_path, 'rb'))
             for page in range(0, reader.getNumPages()):
                 writer.addPage(reader.getPage(page))
-            document.close()
+            unlink(document_path)
         merged = cStringIO.StringIO()
         writer.write(merged)
         merged.seek(0)
