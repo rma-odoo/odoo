@@ -163,6 +163,7 @@
         className: "openerp_style oe_im_chatview",
         events: {
             "keydown input": "keydown",
+            "click .oe_im_chatview_options" : "click_options",
             "click .oe_im_chatview_close": "click_close",
             "click .oe_im_chatview_header": "click_header"
         },
@@ -205,7 +206,25 @@
             self.$().show();
             // prepare the header and the correct state
             self.update_session();
+
+            self.init_options();
         },
+        init_options: function(){
+            this.define_options();
+            if(this.$('.oe_im_chatview_option_list li').length === 0){
+                this.$('.oe_im_chatview_option_group').hide();
+            }
+        },
+        define_options: function(){
+            // add here the option to put in the dropdown menu
+            this._add_option("coucou", "test", "fa fa-eye");
+        },
+        _add_option: function(label, style_class, icon_fa_class){
+            if(icon_fa_class){
+                label = '<i class="'+icon_fa_class+'"></i> ' + label;
+            }
+            this.$('.oe_im_chatview_option_list').append('<li class="'+style_class+'">'+label+'</li>')
+         },
         show: function(){
             this.$().animate({
                 height: this.full_height
@@ -402,11 +421,16 @@
         focus: function() {
             this.$(".oe_im_chatview_input").focus();
         },
+        click_options: function(e){
+            this.$('.oe_im_chatview_options').dropdown();
+        },
         click_header: function(){
-            this.update_fold_state();
+            var classes = event.target.className.split(' ');
+            if(_.contains(classes, 'oe_im_chatview_header_name') || _.contains(classes, 'oe_im_chatview_header')){
+                this.update_fold_state();
+            }
         },
         click_close: function(event) {
-            event.stopPropagation();
             this.update_fold_state('closed');
         },
         destroy: function() {

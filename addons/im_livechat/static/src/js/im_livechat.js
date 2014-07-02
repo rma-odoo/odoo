@@ -21,6 +21,9 @@
             this.shown = true;
             this.loading_history = false; // unactivate the loading history
         },
+        define_options: function(){
+            // no options for anonymous user
+        },
         show: function(){
             this._super.apply(this, arguments);
             this.shown = true;
