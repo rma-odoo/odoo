@@ -36,6 +36,7 @@ import subprocess
 from distutils.version import LooseVersion
 from functools import partial
 from os import unlink
+from platform import system
 from pyPdf import PdfFileWriter, PdfFileReader
 
 
@@ -460,10 +461,19 @@ class Report(osv.Model):
         elif paperformat.margin_top:
             command_args.extend(['--margin-top', str(paperformat.margin_top)])
 
+        # Special handling of DPI arg which behavior differs according to the used platform
+        dpi = None
         if specific_paperformat_args and specific_paperformat_args.get('data-report-dpi'):
-            command_args.extend(['--dpi', str(specific_paperformat_args['data-report-dpi'])])
+            dpi = specific_paperformat_args['data-report-dpi']
         elif paperformat.dpi:
-            command_args.extend(['--dpi', str(paperformat.dpi)])
+            dpi = paperformat.dpi
+
+        if dpi:
+            if system() == 'Windows' and int(dpi) <= 96:
+                _logger.info("Cannot set a DPI lighter than 96 on Windows. Use of 96 instead.")
+                command_args.extend(['--dpi', '96'])
+            else:
+                command_args.extend(['--dpi', str(dpi)])
 
         if specific_paperformat_args and specific_paperformat_args.get('data-report-header-spacing'):
             command_args.extend(['--header-spacing', str(specific_paperformat_args['data-report-header-spacing'])])
