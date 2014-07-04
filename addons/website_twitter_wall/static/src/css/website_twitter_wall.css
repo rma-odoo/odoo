@@ -201,24 +201,28 @@ table#tweet_table tbody td {
 }
 
 .wall_box {
-	padding: 0px 15px 10px 15px;
-	-moz-border-radius: 7px;
-	-webkit-border-radius: 7px;
-	border-radius: 7px;
+	padding: 10px 15px 10px 15px;
+	border: 1px solid #000000 !important;
+	-moz-border-radius: 3px;
+	-webkit-border-radius: 3px;
+	border-radius: 3px;
 	min-height: 250px !important;
 	margin: 5px;
 	width: 32.1%;
 	display: inline-block;
 	vertical-align: top;
 }
-
-.published_True {
+.oe_wall_image {
+    width: 60px;
+    height: 60px;
+}
+/*.published_True {
 	background-color: #FFC7C7;
 }
 
 .published_False {
 	background-color: #C7FFD5;
-}
+}*/
 
 div span.tagcloud {
 	font-size: 11px;

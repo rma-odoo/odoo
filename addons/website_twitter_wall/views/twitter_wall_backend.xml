@@ -37,6 +37,8 @@
 							</h1>
 							<label for="tags" />
 							<field name="tags" string="Hash tags" widget="many2many_tags" />
+							<label for="screen_name" />
+                            <field name="screen_name" string="Screen Name" widget="many2many_tags" />
 						</div>
 						<group>
 							<group>

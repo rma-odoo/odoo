@@ -21,23 +21,28 @@
                         <div class="container-fluid">
                             <div class="row" t-if="walls">
                                 <t t-foreach="walls" t-as="wall">
-                                    <t t-set="class1"
-                                        t-value="'published_True' if wall.website_published else 'published_False' " />
-                                    <div t-attf-class="wall_box #{class1}">
-                                        <h2>
-                                            <center>
-                                                <a itemprop="url" t-att-class="wall.website_published"
-                                                    t-attf-href="/twitter_wall/#{ slug(wall) }">
-                                                    <span t-esc="wall.name"></span>
-                                                </a>
-                                            </center>
-                                        </h2>
-                                        <t t-esc="wall.note" />
-                                        <div t-if="wall.tags" class="clearfloat">
-                                            <span t-foreach="wall.tags" t-as="tag" class="tagcloud">
-                                            # <t t-esc="tag.name" />
-                                            </span>
+                                    <!-- <t t-set="class1"
+                                        t-value="'published_True' if wall.website_published else 'published_False' " /> -->
+                                    <div class="wall_box">
+                                        <div class="row-fulid">
+                                            <div class="col-md-2 oe_padding">
+                                                <img class="img-rounded oe_wall_image" t-att-src="'/website/image?model=website.twitter.wall&amp;field=back_image&amp;id='+str(wall.id)"></img>
+                                            </div>
+                                            <div class="col-md-10">
+                                                <b>
+                                                    <a itemprop="url" t-att-class="wall.website_published"
+                                                        t-attf-href="/twitter_wall/#{ slug(wall) }">
+                                                        <span t-esc="wall.name"></span>
+                                                    </a>
+                                                </b>
+                                                <div t-if="wall.tags" class="clearfloat">
+                                                    <span t-foreach="wall.tags" t-as="tag" class="tagcloud">
+                                                    # <t t-esc="tag.name" />
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </div>
+                                        <t t-esc="wall.note" />
                                         <div class="clearfloat"><br /></div>
                                         <div class="wall_tweet_count clearfloat">
                                             <ul class="nav nav-pills">

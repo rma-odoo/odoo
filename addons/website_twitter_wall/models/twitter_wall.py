@@ -23,7 +23,6 @@
 from openerp.osv import osv
 from openerp.osv import fields
 from openerp.addons.website_twitter_wall.controllers.TwitterStream import WallManager
-import simplejson as json
 import datetime
 
 
@@ -66,6 +65,11 @@ class TwitterTweetTag(osv.osv):
         'name': fields.char('Twitter HashTag', size=30),
     }
 
+class TwitterScreenName(osv.osv):
+    _name = "website.twitter.screen.name"
+    _columns = {
+        'name': fields.char('Twitter Screen Name', size=30),
+    }
 
 class TwitterWall(osv.osv):
     _name = "website.twitter.wall"
@@ -91,6 +95,7 @@ class TwitterWall(osv.osv):
         'name': fields.char('Wall Name'),
         'note': fields.text('Description'),
         'tags': fields.many2many('website.twitter.tweet.tag', 'rel_wall_tag', 'wall_id', 'tag_id', 'Search tags'),
+        'screen_name': fields.many2many('website.twitter.screen.name', 'rel_wall_screen_name', 'wall_id', 'screen_name_id', 'Screen Name'),
         'tweet_ids': fields.one2many('website.twitter.wall.tweet', 'wall_id', 'Tweets'),
         'website_id': fields.many2one('website', 'Website'),
         'color': fields.integer('Color Index'),
