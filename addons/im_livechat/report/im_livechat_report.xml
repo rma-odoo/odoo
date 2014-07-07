@@ -50,7 +50,7 @@
 
         <menuitem id="menu_reporting_livechat" name="Livechat" parent="base.menu_reporting" sequence="50"/>
 
-        <menuitem name="Support Statistics" parent="menu_reporting_livechat" id="livechat_support_report_session" action="action_livechat_support_report" />
+        <menuitem name="Support Statistics" parent="menu_reporting_livechat" id="livechat_support_report_session" action="action_livechat_support_report" groups="group_im_livechat_manager" />
 
     </data>
 </openerp>
