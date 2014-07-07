@@ -122,57 +122,17 @@
             </field>
         </record>
 
-        <!-- Message History for Support (@deprecated, remove me when Session History is validate) -->
-        <record id="action_history" model="ir.actions.act_window">
-            <field name="name">History</field>
-            <field name="res_model">im_chat.message</field>
-            <field name="view_mode">list</field>
-            <field name="domain">[('to_id.channel_id', '!=', None)]</field>
-            <field name="context">{'search_default_group_by_to_id': 1}</field>
-        </record>
-        <menuitem name="History" parent="im_livechat" id="history" action="action_history" groups="group_im_livechat_manager"/>
-
-        <record id="im_message_form" model="ir.ui.view">
-            <field name="name">im.chat.message.tree</field>
-            <field name="model">im_chat.message</field>
-            <field name="arch" type="xml">
-                <tree string="History" create="false">
-                    <field name="to_id"/>
-                    <field name="create_date"/>
-                    <field name="from_id"/>
-                    <field name="message"/>
-                </tree>
-            </field>
-        </record>
-
-        <record id="im_message_search" model="ir.ui.view">
-            <field name="name">im.chat.message.search</field>
-            <field name="model">im_chat.message</field>
-            <field name="arch" type="xml">
-                <search string="Search history">
-                    <filter name="to_id" string="My Sessions" domain="[('to_id.user_ids','in', uid)]"/>
-                    <field name="from_id"/>
-                    <field name="to_id"/>
-                    <group expand="0" string="Group By...">
-                        <filter name="group_by_to_id" string="Session" domain="[]" context="{'group_by':'to_id'}"/>
-                        <filter name="group_by_date" string="Date" domain="[]" context="{'group_by':'create_date'}"/>
-                    </group>
-                </search>
-            </field>
-        </record>
-
-
 
         <!-- Session History for Support -->
         <record id="action_session_history" model="ir.actions.act_window">
-            <field name="name">History Session</field>
+            <field name="name">History</field>
             <field name="res_model">im_chat.session</field>
             <field name="view_type">form</field>
-            <field name="view_mode">list,form,graph</field>
+            <field name="view_mode">list,form</field>
             <field name="domain">[('channel_id', '!=', None)]</field>
-            <field name="context">{'search_default_group_by_channel': 1}</field>
+            <field name="context">{'group_by': ['channel_id', 'create_date:month']}</field>
         </record>
-        <menuitem name="History Session" parent="im_livechat" id="session_history" action="action_session_history" groups="group_im_livechat_manager"/>
+        <menuitem name="History" parent="im_livechat" id="session_history" action="action_session_history" groups="group_im_livechat_manager"/>
 
         <record id="im_chat_session_search" model="ir.ui.view">
             <field name="name">im_chat.session.search</field>
@@ -180,7 +140,6 @@
             <field name="arch" type="xml">
                 <search string="Search history">
                     <filter name="id" string="My sessions" domain="[('user_ids','in', uid)]"/>
-                    <filter name="id" string="Missed sessions" domain="[('nbr_speakers','&lt;=', '1')]"/>
                     <group expand="0" string="Group By...">
                         <filter name="group_by_channel" string="Channel" domain="[]" context="{'group_by':'channel_id'}"/>
                         <separator orientation="vertical" />
@@ -200,10 +159,9 @@
                 <tree string="History" create="false">
                     <field name="id"/>
                     <field name="fullname"/>
-                    <field name="nbr_speakers"/>
-                    <field name="duration"/>
-                    <field name="nbr_messages"/>
-                    <field name="channel_id"/>
+                    <field name="uuid"/>
+                    <field name="create_date"/>
+                    <field name="feedback_rating"/>
                 </tree>
             </field>
         </record>
@@ -214,18 +172,12 @@
             <field name="arch" type="xml">
                 <form string="Session Form" version="7.0" create="false" edit="false">
                     <sheet>
-                       <group colspan="2" col="2" string="General">
-                            <field name="id"/>
-                            <field name="uuid" readonly="1"/>
-                            <field name="fullname" widget="html"/>
-                            <field name="create_date" readonly="1"/>
-                        </group>
                         <group>
-                            <group string="Statistics">
-                                <field name="duration"/>
-                                <field name="nbr_speakers"/>
-                                <field name="nbr_messages"/>
-                                <field name="time_first_answer"/>
+                           <group string="General">
+                                <field name="id"/>
+                                <field name="uuid" readonly="1"/>
+                                <field name="fullname" widget="html"/>
+                                <field name="create_date" readonly="1"/>
                             </group>
                             <group string="Feedback">
                                 <field name="feedback_rating"/>
@@ -241,16 +193,6 @@
                         </field>
                     </sheet>
                 </form>
-            </field>
-        </record>
-
-        <record id="im_chat_session_graph_view" model="ir.ui.view">
-            <field name="name">Session Graph</field>
-            <field name="model">im_chat.session</field>
-            <field name="arch" type="xml">
-                <graph string="Session Graph" type="bar">
-                    <field name="create_date" type="row"/>
-                </graph>
             </field>
         </record>
 

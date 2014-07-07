@@ -178,58 +178,6 @@ class im_chat_session(osv.Model):
 
     _inherit = 'im_chat.session'
 
-    def _get_nbr_speakers(self, cr, uid, ids, fields, arg, context=None):
-        """ get the number of speakers in the session """
-        result = {}
-        for session in self.browse(cr, uid, ids, context=context):
-            speakers = []
-            for m in session.message_ids:
-                if m.from_id:
-                    speakers.append(m.from_id.id)
-                else:
-                    speakers.append(False)
-            result[session.id] = len(set(speakers))
-        return result
-
-    def _get_nbr_messages(self, cr, uid, ids, fields, arg, context=None):
-        """ get the duration between the first and the last message of the session """
-        result = {}
-        for session in self.browse(cr, uid, ids, context=context):
-            result[session.id] = len(session.message_ids)
-        return result
-
-    def _get_duration(self, cr, uid, ids, fields, arg, context=None):
-        """ get the duration between the first and the last message of the session """
-        result = {}
-        for session in self.browse(cr, uid, ids, context=context):
-            messages = self.pool['im_chat.message'].search_read(cr, uid, [('to_id', '=', session.id)], order="create_date asc", context=context)
-            if messages:
-                start_date = datetime.datetime.strptime(messages[0]["create_date"], DEFAULT_SERVER_DATETIME_FORMAT)
-                end_date = datetime.datetime.strptime(messages[-1]["create_date"], DEFAULT_SERVER_DATETIME_FORMAT)
-                result[session.id] = (end_date - start_date).seconds
-            else:
-                result[session.id] = 0
-        return result
-
-    def _get_time_first_answer(self, cr, uid, ids, fields, arg, context=None):
-        """ compute the time of the first answer """
-        result = {}
-        for session in self.browse(cr, uid, ids, context=context):
-            messages = self.pool['im_chat.message'].search_read(cr, uid, [('to_id', '=', session.id), ('from_id', 'in', [u.id for u in session.channel_id.user_ids])], order="create_date asc", limit=1, context=context)
-            if messages:
-                # compute time difference between the create_date session and the first message send the operator
-                message_date = datetime.datetime.strptime(messages[0]["create_date"], DEFAULT_SERVER_DATETIME_FORMAT)
-                start_date = datetime.datetime.strptime(session.create_date, DEFAULT_SERVER_DATETIME_FORMAT)
-                result[session.id] = (message_date - start_date).seconds  # seconds
-            else:
-                result[session.id] = 0
-        return result
-
-    def _get_session_from_message(self, cr, uid, message_ids, context=None):
-        messages = self.pool['im_chat.message'].browse(cr, uid, message_ids, context=context)
-        return [m.to_id.id for m in messages]
-
-
     def _get_fullname(self, cr, uid, ids, fields, arg, context=None):
         """ built the complete name of the session """
         result = {}
@@ -248,30 +196,8 @@ class im_chat_session(osv.Model):
         'create_date': fields.datetime('Create Date', required=True, select=True),
         'channel_id': fields.many2one("im_livechat.channel", "Channel"),
         'fullname' : fields.function(_get_fullname, type="char", string="Complete name"),
-        'nbr_speakers' : fields.function(_get_nbr_speakers, type="integer", string="Number of speakers",
-            help="Computed as the number of identified message author. The anonymous user is not taken into account.",
-            store = {
-                'im_chat.message': (_get_session_from_message, ['message'], 10),
-            }
-        ),
-        'nbr_messages' : fields.function(_get_nbr_messages, type="integer", string="Number of messages",
-            help="The number of messages contained in the conversation.",
-            store = {
-                'im_chat.message': (_get_session_from_message, ['message'], 10),
-            }
-        ),
-        'duration' : fields.function(_get_duration, string='Duration',
-            help="Computed as difference between first and last message sent.",
-            store = {
-                'im_chat.message': (_get_session_from_message, ['message'], 10),
-            }
-        ),
-        'time_first_answer' : fields.function(_get_time_first_answer, string="Time for the first answer",
-            help="Computed as the difference between the start session date and the first message date from an operator in seconds",
-        ),
-
         'feedback_rating': fields.selection([('10','Good'),('5','Ok'),('1','Bad')], 'Grade', help='Feedback from user (Bad, Ok or Good)'),
-        'feedback_reason': fields.text('Reason', help="Reason explaining the bad rate only."),
+        'feedback_reason': fields.text('Reason', help="Reason explaining the rating."),
     }
 
     def users_infos(self, cr, uid, ids, context=None):
