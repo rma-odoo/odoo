@@ -106,6 +106,10 @@ class oauth(object):
         else:
             res = webbrowser.open(url, new=0, autoraise=True)
         return True
+#         return """<html><head><script>
+#                     window.location = "%s";
+#                 </script></head></html>
+#                 """ % (url,)
     
     def _access_token(self, request_token, oauth_verifier):
         HEADER = self._generate_header(self.ACCESS_URL, 'HMAC-SHA1', '1.0', request_token = request_token, oauth_verifier = oauth_verifier)
@@ -119,3 +123,17 @@ class oauth(object):
     def set_access_token(self, Oauth_Token, Oauth_Token_Secret):
         self.Oauth_Token = Oauth_Token
         self.Oauth_Token_Secret = Oauth_Token_Secret
+        
+#     def get_user_id(self, screen_name):
+#         print "get_user_id",screen_name
+#         params={}
+#         params['screen_name']='openerp13'
+#         params['include_entities']='true'
+#         url = "https://api.twitter.com/1.1/users/show.json?screen_name=openerp13&include_entities=true"
+#         HEADER = self._generate_header(url, 'HMAC-SHA1', '1.0', params= params, method='GET')
+#         
+#         HTTP_REQUEST = Request(url)
+#         HTTP_REQUEST.add_header('Authorization', HEADER)
+#         request_response = urlopen(HTTP_REQUEST, '').read()
+#         print "==========",request_response
+#         return '123'

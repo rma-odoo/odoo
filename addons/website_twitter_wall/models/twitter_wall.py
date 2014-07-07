@@ -135,13 +135,19 @@ class TwitterWall(osv.osv):
 
     def _set_tweets(self, cr, uid, ids, vals, context=None):
         tweet = self.pool.get('website.twitter.wall.tweet')
-        tweet_media_ids = vals['tweet_media_ids']
-        del vals['tweet_media_ids']
-        tweet_id = tweet.create(cr, uid, vals, context)
-        if tweet_media_ids:
-            tweet_media = self.pool.get('website.twitter.tweet.media')
-            for tweet_data in tweet_media_ids:
-                tweet_data['wall_tweet_id'] = tweet_id
+        tweet_media = self.pool.get('website.twitter.tweet.media')
+        tweet_val = tweet._process_tweet(cr, uid, ids, vals, context)
+        tweet_id = tweet.create(cr, uid, tweet_val, context)
+        if vals.get('entities') and vals.get('entities').has_key('media'):
+            tweet_med = tweet_media._process_media_tweet(cr, uid, vals, tweet_id, context)
+            for tweet_data in tweet_med:
+#         tweet_media_ids = vals['tweet_media_ids']
+#         del vals['tweet_media_ids']
+#         tweet_id = tweet.create(cr, uid, vals, context)
+#         if tweet_media_ids:
+#             tweet_media = self.pool.get('website.twitter.tweet.media')
+#             for tweet_data in tweet_media_ids:
+#                 tweet_data['wall_tweet_id'] = tweet_id
                 tweet_media.create(cr, uid, tweet_data, context)
         return tweet_id
 
@@ -174,23 +180,23 @@ class WebsiteTwitterTweetMedia(osv.osv):
         'wall_tweet_id': fields.many2one('website.twitter.wall.tweet')
     }
 
-#     def _process_media_tweet(self, cr, uid, tweet, tweet_id, context=None):
-#         media_tweet = tweet.get('entities').get('media')
-#         vals = []
-#         for media in media_tweet:
-#             values = {
-#                 'wall_tweet_id':tweet_id,
-#                 'media_id':media.get('id_str'),
-#                 'media_url': media.get('media_url'),
-#                 'media_url_https': media.get('media_url_https'),
-#                 'url': media.get('url'),
-#                 'display_url': media.get('display_url'),
-#                 'expanded_url': media.get('expanded_url'),
-#                 'media_height': media.get('sizes').get('small').get('h'),
-#                 'media_width': media.get('sizes').get('small').get('w')
-#             }
-#             vals.append(values)
-#         return vals
+    def _process_media_tweet(self, cr, uid, tweet, tweet_id, context=None):
+        media_tweet = tweet.get('entities').get('media')
+        vals = []
+        for media in media_tweet:
+            values = {
+                'wall_tweet_id':tweet_id,
+                'media_id':media.get('id_str'),
+                'media_url': media.get('media_url'),
+                'media_url_https': media.get('media_url_https'),
+                'url': media.get('url'),
+                'display_url': media.get('display_url'),
+                'expanded_url': media.get('expanded_url'),
+                'media_height': media.get('sizes').get('small').get('h'),
+                'media_width': media.get('sizes').get('small').get('w')
+            }
+            vals.append(values)
+        return vals
 
 
 class WebsiteTwitterTweet(osv.osv):
@@ -227,16 +233,18 @@ class WebsiteTwitterTweet(osv.osv):
         return
         # Todo: reject tweet and remove form the wall
 
-#     def _process_tweet(self, cr, uid, ids, tweet, context=None):
-#         vals = {
-#             'name': tweet.get('user').get('name'),
-#             'screen_name': tweet.get('user').get('screen_name'),
-#             'tweet': tweet.get('text'),
-#             'tweet_url': tweet.get('entities').get('urls'),
-#             'tweet_id': tweet.get('id_str'),
-#             'created_at': tweet.get('created_at'),
-#             'user_image_url': tweet.get('user').get('profile_image_url'),
-#             'background_image_url': tweet.get('user').get('profile_background_image_url'),
-#             'wall_id': ids
-#         }
-#         return vals
+    def _process_tweet(self, cr, uid, ids, tweet, context=None):
+        vals = {
+            'name': tweet.get('user').get('name'),
+            'screen_name': tweet.get('user').get('screen_name'),
+            'tweet': tweet.get('text'),
+            'tweet_url': tweet.get('entities').get('urls'),
+            'tweet_id': tweet.get('id_str'),
+            'created_at': tweet.get('created_at'),
+            'user_image_url': tweet.get('user').get('profile_image_url'),
+            'background_image_url': tweet.get('user').get('profile_background_image_url'),
+            'wall_id': ids,
+            'state': 'published',
+            'published_date': datetime.datetime.now()
+        }
+        return vals
