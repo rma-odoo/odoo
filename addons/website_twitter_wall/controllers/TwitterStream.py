@@ -21,8 +21,8 @@ class WallManager(object):
         self.ids = ids
     
     def start(self):
-        def func(screen_names):
-            return stream.filter(follow=['2446916136'])
+        def func(user_id):
+            return stream.filter(follow=user_id)
         
         if (self.wall.state != 'not_streaming'): 
             return False
@@ -34,10 +34,11 @@ class WallManager(object):
                 auth.set_access_token(self.wall.website_id.twitter_access_token, self.wall.website_id.twitter_access_token_secret)
 #                 import pdb
 #                 pdb.set_trace()
-#                 auth.get_user_id('openerp13')
                 stream = Stream(auth, listner)
-                screen_names = [screen_name.name for screen_name in self.wall.screen_name]
-                thread.start_new_thread(func, (screen_names, ))
+#                 screen_names = [screen_name.name for screen_name in self.wall.screen_name]
+                #get authorized user's user_id
+                user_id = [auth.get_user_id()]
+                thread.start_new_thread(func, (user_id, ))
                 return True
         else:
             _logger.error('Contact System Administration for Configure Twitter API KEY and ACCESS TOKEN.')

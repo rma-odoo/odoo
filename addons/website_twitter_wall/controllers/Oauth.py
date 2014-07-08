@@ -31,7 +31,7 @@ class oauth(object):
     def _get_timestamp(self):
         return str(int(time.time()))
     
-    def _generate_header(self, URL, signature_method, oauth_version, callback_url = None, request_token=None, oauth_verifier = None, params=None):
+    def _generate_header(self, URL, signature_method, oauth_version, callback_url = None, request_token=None, oauth_verifier = None, params=None, method='POST'):
         if params:
             self.parameters.update(params)
         if callback_url: self.parameters['oauth_callback'] = callback_url
@@ -43,11 +43,13 @@ class oauth(object):
         self.parameters['oauth_signature_method'] = signature_method
         self.parameters['oauth_timestamp'] = self._get_timestamp()
         self.parameters['oauth_version'] = oauth_version
-        self.parameters['oauth_signature'] = self._build_signature(URL)
+        self.parameters['oauth_signature'] = self._build_signature(URL, method)
+        if method == 'GET':
+            return self.to_get_header()
         return self.to_header()
     
-    def _build_signature(self, URL):
-        BASE_STRING = 'POST&' + quote(URL, '') + '&' + quote(self.to_parameter_string(), '')
+    def _build_signature(self, URL, method):
+        BASE_STRING = method + '&' + quote(URL, '') + '&' + quote(self.to_parameter_string(), '')
         SIGNING_KEY = quote(self.API_secret, '') + '&' + (quote(self.Oauth_Token_Secret, '') if self.Oauth_Token_Secret else '')
 #         print("DEBUG : SIGNING KEY " + SIGNING_KEY + " BASE STRING " + BASE_STRING + "\n")
         return base64.standard_b64encode(hmac.new(SIGNING_KEY.encode(), BASE_STRING.encode(), sha1).digest()).decode('ascii')
@@ -60,6 +62,16 @@ class oauth(object):
             for k, v in self.parameters.iteritems():
                 if k[:6] == 'oauth_':
                     auth_header += ', %s="%s"' % (k, quote(v, ''))
+        return auth_header
+    
+    def to_get_header(self):
+        """Serialize as a header for an HTTPAuth GET request."""
+        auth_header = ""
+        # Add the oauth parameters.
+        if self.parameters:
+            for k, v in self.parameters.iteritems():
+                if k[:6] == 'oauth_':
+                    auth_header += '&%s=%s' % (quote(k, ''), quote(v, ''))
         return auth_header
 
     def to_parameter_string(self):
@@ -124,16 +136,9 @@ class oauth(object):
         self.Oauth_Token = Oauth_Token
         self.Oauth_Token_Secret = Oauth_Token_Secret
         
-#     def get_user_id(self, screen_name):
-#         print "get_user_id",screen_name
-#         params={}
-#         params['screen_name']='openerp13'
-#         params['include_entities']='true'
-#         url = "https://api.twitter.com/1.1/users/show.json?screen_name=openerp13&include_entities=true"
-#         HEADER = self._generate_header(url, 'HMAC-SHA1', '1.0', params= params, method='GET')
-#         
-#         HTTP_REQUEST = Request(url)
-#         HTTP_REQUEST.add_header('Authorization', HEADER)
-#         request_response = urlopen(HTTP_REQUEST, '').read()
-#         print "==========",request_response
-#         return '123'
+    def get_user_id(self):
+        url="https://api.twitter.com/1.1/account/verify_credentials.json"
+        HEADER = self._generate_header(url, 'HMAC-SHA1', '1.0', method='GET')
+        HTTP_REQUEST = Request(url + '?' + HEADER)
+        request_response = urlopen(HTTP_REQUEST).read()
+        return json.loads(request_response)['id_str']
