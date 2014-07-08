@@ -56,7 +56,7 @@
         },
         click_close: function(event) {
             this.$('.oe_im_chatview_input').attr('disabled','disabled');
-            if(!this.feedback){
+            if(!this.feedback && (this.get('messages').length > 1)){
                 this.feedback = true;
                 this.$(".oe_im_chatview_content").html(openerp.qweb.render("support_feedback"));
                 this.$('.oe_im_feedback_choices a').on('click', _.bind(this.choose_feedback, this));
