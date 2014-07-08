@@ -131,7 +131,7 @@ class im_chat_session(osv.Model):
         """ remove a user from the given session and notify the other people """
         sids = self.search(cr, uid, [('uuid', '=', uuid)], context=context, limit=1)
         for session in self.browse(cr, openerp.SUPERUSER_ID, sids, context=context):
-            if uid and uid in [u.id for u in session.user_ids] and len([u.id for u in session.user_ids if u.id != uid]) > 1:
+            if uid and uid in [u.id for u in session.user_ids]:
                 # send a message to the conversation
                 user = self.pool['res.users'].read(cr, uid, uid, ['name'], context=context)
                 self.pool["im_chat.message"].post(cr, uid, uid, session.uuid, "meta", user['name'] + " left the conversation.", context=context)
