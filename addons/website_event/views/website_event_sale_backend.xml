@@ -17,6 +17,24 @@
             </xpath>
         </field>
     </record>
+    
+    <record model="ir.ui.view" id="view_event_kanban">
+            <field name="name">event.event.kanban</field>
+            <field name="model">event.event</field>
+            <field name="inherit_id" ref="event.view_event_kanban"/>
+            <field name="arch" type="xml">
+                <data>
+                    <xpath expr="//templates" position="before">
+                        <field name="website_url"/>
+                    </xpath>
+                    <xpath expr="//div[@name='event_kanban_view'][last()]" position="inside">
+                      <div class="oe_event_agenda">
+                         <a t-attf-href="{record.website_url.raw_value}/agenda">Agenda</a>
+                      </div>
+                    </xpath>
+                </data>
+            </field>
+        </record>
 
  </data>
 </openerp>

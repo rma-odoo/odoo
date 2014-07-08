@@ -1,53 +1,38 @@
-.oe_event_date{
-  border-top-left-radius:3px;
-  border-top-right-radius:3px;
-  font-size: 36px;
-  height: auto;
-  font-weight: bold;
-  text-align: center;
-  margin-bottom:-7px;
-  color: #FFFFFF;
-  -webkit-box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
-  background-color: #8A89BA;
+.openerp .oe_kanban_view .oe_event_kanban_view{
+ /* Customize width and height of kanban according bootstrap3 */
+  width: 355px;
+  min-height: 180px !important;
+  /* End of customize */
+  cursor: default;
 }
-.oe_event_time{
-  border-bottom-left-radius:3px;
-  border-bottom-right-radius:3px;
-  font-size: 12px;
-  border-collapse: separate;
-  text-align: center;
-  font-weight: bold;
-  color: #8A89BA;
-  -webkit-box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
-  background-color: #FFFFFF;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);  
-}
-.oe_event_month_year{
-  border-bottom-left-radius:3px;
-  border-bottom-right-radius:3px;
-  font-size: 12px;
-  text-align: center;
-  font-weight: bold;
-  color: #FFFFFF;
-  background-color: #8A89BA;
+.openerp .oe_kanban_view .oe_kanban_content div:first-child{
+  margin:0px !important
 }
 
-.no_of_seats{
-    width:35px;
+.oe_event_kanban_view .oe_event_time_contry{
+  margin-top:5px;
+  text-align:center;
+  font-size: 11px;
 }
-
-.oe_mapbox
-{ 
+.oe_event_kanban_view .oe_event_seat_value{
+  padding-left:30px;
+  padding-top:5px;
+  font-size: 14px !important;
+}
+#oe_event_tracks{
+  height:130px;
+  padding-top: 35px;
+  padding-right:0px !important;
+}
+.oe_event_tracks, .oe_event_sponsors, .oe_event_agenda{
+  text-align:center;
+  display: inline;
+  vertical-align: middle;
+  line-height:normal;
+}
+.oe_event_kanban_view .oe_event_sparklin_bar div {
+    height: 22px;
+    margin: 0 !important;
     position: relative;
-    float: right;
-    height:200px;
-    width:256px;
-    border: 1px solid #eeeeee;
+    display: inline-block;
 }
-.oe_unsubscribe, .oe_unsubscribe_button:hover span {
-   display: none;
- }
-.oe_unsubscribe_button:hover .oe_unsubscribe {
-   display: inline;
- }
-

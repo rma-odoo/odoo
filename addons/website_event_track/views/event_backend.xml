@@ -2,6 +2,46 @@
 <openerp>
     <data>
 
+        <record model="ir.ui.view" id="view_event_sponsor_tree">
+            <field name="name">Event Sponsors</field>
+            <field name="model">event.sponsor</field>
+            <field name="arch" type="xml">
+                <tree string="Event Sponsor">
+                    <field name="event_id"/>
+                    <field name="sponsor_type_id"/>
+                    <field name="partner_id"/>
+                    <field name="url"/>
+                    <field name="sequence"/>
+                </tree>
+            </field>
+        </record>
+        
+        <record model="ir.ui.view" id="view_event_sponsor_search">
+            <field name="name">Event Sponsors</field>
+            <field name="model">event.sponsor</field>
+            <field name="arch" type="xml">
+                <search string="Event Sponsor">
+                    <field name="event_id"/>
+                    <field name="sponsor_type_id"/>
+                    <field name="partner_id"/>
+                    <field name="url"/>
+                    <field name="sequence"/>
+                    <group expand="0" string="Group By">
+                        <filter string="Event" context="{'group_by':'event_id'}"/>
+                        <filter string="Sponsor Type" context="{'group_by':'sponsor_type_id'}"/>
+                        <filter string="Partner" context="{'group_by':'partner_id'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <record model="ir.actions.act_window" id="action_event_sponsors">
+            <field name="name">Event Sponsors</field>
+            <field name="res_model">event.sponsor</field>
+            <field name="view_mode">tree,form</field>
+            <field name="context">{'search_default_event_id': active_id, 'default_event_id': active_id}</field> 
+        </record>
+
         <record id="act_event_list_tracks" model="ir.actions.act_window">
             <field name="res_model">event.track</field>
             <field name="name">Event Tracks</field>
@@ -17,7 +57,6 @@
               </p>
             </field>
         </record>
-
 
         <!-- EVENTS/CONFIGURATION/EVENT locations -->
         <record model="ir.ui.view" id="view_event_location_form">
@@ -208,7 +247,37 @@
                 </xpath>
             </field>
         </record>
-
+        
+        <record model="ir.ui.view" id="view_event_kanban">
+            <field name="name">event.event.kanban</field>
+            <field name="model">event.event</field>
+            <field name="inherit_id" ref="event.view_event_kanban"/>
+            <field name="arch" type="xml">
+                <data>
+                    <xpath expr="//templates" position="before">
+                        <field name="count_tracks"/>
+                        <field name="sponsor_ids"/>
+                    </xpath>
+                    <xpath expr="//div[@name='event_kanban_view']" position="inside">
+                      <div class="oe_event_tracks">
+                      <a name="%(website_event_track.act_event_list_tracks)d" 
+                        type="action" >
+                        <t t-if="record.count_tracks.raw_value > 0">
+                        <t t-esc="record.count_tracks.raw_value" /> Tracks</t>
+                        <t t-if="record.count_tracks.raw_value lte 0">No Tracks</t></a>
+                      </div><br/>
+                      <div class="oe_event_sponsors">
+                      <a name="%(website_event_track.action_event_sponsors)d" 
+                        type="action" >
+                        <t t-if="record.sponsor_ids.raw_value.length > 0"> 
+                        <t t-esc="record.sponsor_ids.raw_value.length" /> Sponsors</t>
+                        <t t-if="record.sponsor_ids.raw_value.length lte 0">No Sponsor</t></a>
+                      </div><br/><br/>
+                    </xpath>
+                </data>
+            </field>
+        </record>
+        
         <!-- Event Tracks -->
 
         <record model="ir.ui.view" id="view_event_track_kanban">

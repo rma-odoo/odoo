@@ -19,8 +19,14 @@
 #
 ##############################################################################
 
+from datetime import datetime, timedelta
+from dateutil import relativedelta
+import json
+import babel
 from openerp import api
-from openerp.fields import Integer, One2many, Html
+from openerp.fields import Integer, One2many, Html, Char 
+from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT
+from openerp import tools
 from openerp.osv import fields, osv
 from openerp.tools.translate import _
 
@@ -126,6 +132,7 @@ class sale_order_line(osv.osv):
 
 class event_event(osv.osv):
     _inherit = 'event.event'
+    _period_number = 5
 
     event_ticket_ids = One2many('event.event.ticket', 'event_id', string='Event Ticket',
         default=lambda rec: rec._default_tickets())
@@ -137,6 +144,7 @@ class event_event(osv.osv):
     badge_back = Html('Badge Back', translate=True, states={'done': [('readonly', True)]})
     badge_innerleft = Html('Badge Innner Left', translate=True, states={'done': [('readonly', True)]})
     badge_innerright = Html('Badge Inner Right', translate=True, states={'done': [('readonly', True)]})
+    event_ticket_weekly = Char(readonly=True, compute='_weekly_registration', string="weekly Registrations")
 
     @api.model
     def _default_tickets(self):
@@ -154,6 +162,50 @@ class event_event(osv.osv):
     @api.depends('event_ticket_ids.seats_max')
     def _compute_seats_max(self):
         self.seats_max = sum(ticket.seats_max for ticket in self.event_ticket_ids)
+
+    @api.cr_uid_context
+    def __get_bar_values(self, cr, uid, obj, domain, read_fields, value_field, groupby_field, date_begin , context=None):
+        """ Generic method to generate data for bar chart values using SparklineBarWidget.
+            This method performs obj.read_group(cr, uid, domain, read_fields, groupby_field).
+
+            :param obj: the target model (i.e. crm_lead)
+            :param domain: the domain applied to the read_group
+            :param list read_fields: the list of fields to read in the read_group
+            :param str value_field: the field used to compute the value of the bar slice
+            :param str groupby_field: the fields used to group
+
+            :return list section_result: a list of dicts: [
+                                                {   'value': (int) bar_column_value,
+                                                    'tootip': (str) bar_column_tooltip,
+                                                }
+                                            ]
+        """
+        section_result = [{'value': 0,
+                           'tooltip': "W"+((date_begin+relativedelta.relativedelta(weeks=+1)) + relativedelta.relativedelta(weeks=i)).strftime('%W'),
+                           } for i in range(0 ,self._period_number)]
+        group_obj = obj.read_group(cr, uid, domain, read_fields, groupby_field, context=context) 
+        field_col_info = obj._all_columns.get(groupby_field.split(':')[0])
+        pattern = tools.DEFAULT_SERVER_DATE_FORMAT if field_col_info.column._type == 'date' else tools.DEFAULT_SERVER_DATETIME_FORMAT
+        for group in group_obj:
+            ticket_type_week = ""
+            for ticket_group in obj.read_group(cr, uid, group['__domain'] , read_fields, 'event_ticket_id', context=context):
+                if ticket_group['event_ticket_id']:
+                    ticket_type_week += " %s : %s"%(ticket_group['event_ticket_id'][1],ticket_group['nb_register'])
+            group_begin_date = datetime.strptime(group['__domain'][0][2], pattern).date()
+            group_begin_week = babel.dates.format_date(group_begin_date, format='w', locale=context.get('lang', 'en_US'))
+            date_begin_week = babel.dates.format_date(date_begin, format='w', locale=context.get('lang', 'en_US'))
+            week = int(group_begin_week) - int(date_begin_week)
+            section_result[week] = {'value':group.get(value_field, 0) , 'tooltip' : "%s   Total attendees in %s "%(ticket_type_week,group.get(groupby_field).split(' ')[0])}
+        return section_result
+
+    @api.multi
+    def _weekly_registration(self):
+        obj = self.pool['event.registration']
+        for event in self: 
+            date_begin = datetime.now().date() + relativedelta.relativedelta(weeks= -(self._period_number -1))
+            date_end = datetime.today()
+            domain = [('event_id','=',event.id),('create_date', '>=', date_begin.strftime(tools.DEFAULT_SERVER_DATETIME_FORMAT)), ('create_date', '<=', date_end.strftime(tools.DEFAULT_SERVER_DATETIME_FORMAT))]
+            event.event_ticket_weekly = json.dumps(self.__get_bar_values(obj, domain, ['create_date','nb_register','event_ticket_id'],'nb_register','create_date:week', date_begin))
 
 class event_ticket(osv.osv):
     _name = 'event.event.ticket'

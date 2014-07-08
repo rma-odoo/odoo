@@ -60,6 +60,16 @@
             <field name="context">{"group_by_no_leaf":1, "group_by":[]}</field>
         </record>
 
+        <record model="ir.actions.act_window" id="action_report_event_registration_week">
+            <field name="name">week</field>
+            <field name="res_model">report.event.registration</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">graph</field>
+            <field name="search_view_id" ref="view_report_event_registration_search"/>
+            <field name="context">{"search_default_week": 1,"search_default_event_id": active_id,"group_by":[]}</field>
+            <field name="domain">[]</field>
+        </record>
+
         <record model="ir.actions.act_window.view" id="action_report_event_registration_graph">
             <field name="sequence" eval="2"/>
             <field name="view_mode">graph</field>

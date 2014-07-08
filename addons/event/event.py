@@ -109,6 +109,7 @@ class event_event(models.Model):
         readonly=True, states={'draft': [('readonly', False)]})
     date_end = fields.Datetime(string='End Date', required=True,
         readonly=True, states={'draft': [('readonly', False)]})
+    color = fields.Integer('Color Index')
 
     @api.model
     def _tz_get(self):
@@ -170,7 +171,7 @@ class event_event(models.Model):
         required=False, readonly=False, states={'done': [('readonly', True)]})
     organizer_id = fields.Many2one('res.partner', string='Organizer',
         default=lambda self: self.env.user.company_id.partner_id)
-
+ 
     is_subscribed = fields.Boolean(string='Subscribed',
         compute='_compute_subscribe')
 
@@ -178,7 +179,7 @@ class event_event(models.Model):
     @api.depends('registration_ids')
     def _count_registrations(self):
         self.count_registrations = len(self.registration_ids)
-
+ 
     @api.one
     @api.depends('registration_ids.user_id', 'registration_ids.state')
     def _compute_subscribe(self):
