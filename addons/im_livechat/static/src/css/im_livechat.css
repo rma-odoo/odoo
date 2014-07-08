@@ -1,14 +1,15 @@
 /* feedback */
 .oe_im_chatview_feedback{
     padding: 15px;
-    color: white;
     vertical-align: middle;
 }
 .oe_im_chatview_feedback .oe_im_feedback_text {
+    color: white;
     vertical-align: middle;
     font-size: 14px;
 }
 .oe_im_chatview_feedback .oe_im_feedback_small_text {
+    color: white;
     vertical-align: middle;
     font-size: 12px;
 }
