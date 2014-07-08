@@ -219,13 +219,26 @@
             // add here the option to put in the dropdown menu
             this._add_option("Shortcuts", "option_shortcut", "fa fa-info-circle");
             this.$('.oe_im_chatview_option_list .option_shortcut').on('click', _.bind(this.click_option_shortcut, this));
+            // quit the conversation
+            this._add_option('Quit discussion', 'im_chat_option_quit', 'fa fa-minus-square');
+            this.$('.oe_im_chatview_option_list .im_chat_option_quit').on('click', this, _.bind(this.action_quit_conversation, this));
+
         },
         _add_option: function(label, style_class, icon_fa_class){
             if(icon_fa_class){
                 label = '<i class="'+icon_fa_class+'"></i> ' + label;
             }
             this.$('.oe_im_chatview_option_list').append('<li class="'+style_class+'">'+label+'</li>');
-         },
+        },
+         action_quit_conversation: function(){
+            var self = this;
+            var Session = new openerp.Model("im_chat.session");
+            return Session.call("quit_user", [this.get("session").uuid]).then(function(res) {
+               if(! res){
+                    self.do_warn(_t("You can not leave the conversation (You must be in the conversation, and more than one user must stay)."));
+               }
+            });
+        },
         show: function(){
             this.$().animate({
                 height: this.full_height
@@ -378,7 +391,7 @@
                 limit: 80,
             });
         },
-        click_header: function(){
+        click_header: function(event){
             var classes = event.target.className.split(' ');
             if(_.contains(classes, 'oe_im_chatview_header_name') || _.contains(classes, 'oe_im_chatview_header')){
                 this.update_fold_state();

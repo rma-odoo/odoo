@@ -127,6 +127,30 @@ class im_chat_session(osv.Model):
                 user = self.pool['res.users'].read(cr, uid, user_id, ['name'], context=context)
                 self.pool["im_chat.message"].post(cr, uid, uid, session.uuid, "meta", user['name'] + " joined the conversation.", context=context)
 
+    def quit_user(self, cr, uid, uuid, context=None):
+        """ remove a user from the given session and notify the other people """
+        sids = self.search(cr, uid, [('uuid', '=', uuid)], context=context, limit=1)
+        for session in self.browse(cr, openerp.SUPERUSER_ID, sids, context=context):
+            if uid and uid in [u.id for u in session.user_ids] and len([u.id for u in session.user_ids if u.id != uid]) > 1:
+                # send a message to the conversation
+                user = self.pool['res.users'].read(cr, uid, uid, ['name'], context=context)
+                self.pool["im_chat.message"].post(cr, uid, uid, session.uuid, "meta", user['name'] + " left the conversation.", context=context)
+                # close his session state, and remove the user from session
+                self.update_state(cr, uid, uuid, 'closed', context=None)
+                self.write(cr, uid, [session.id], {"user_ids": [(3, uid)]}, context=context)
+                # notify the all the channel users and anonymous channel
+                notifications = []
+                for channel_user_id in session.user_ids:
+                    if uid != channel_user_id.id:
+                        info = self.session_info(cr, channel_user_id.id, [session.id], context=context)
+                        notifications.append([(cr.dbname, 'im_chat.session', channel_user_id.id), info])
+                # anonymous are not notified when a new user left : cannot exec session_info as uid = None
+                info = self.session_info(cr, openerp.SUPERUSER_ID, [session.id], context=context)
+                notifications.append([session.uuid, info])
+                self.pool['bus.bus'].sendmany(cr, uid, notifications)
+                return True
+            return False
+
     def get_image(self, cr, uid, uuid, user_id, context=None):
         """ get the avatar of a user in the given session """
         #default image
