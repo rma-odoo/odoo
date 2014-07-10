@@ -540,3 +540,51 @@ div.media_iframe_video div {
     transform: none !important;
   }
 }
+
+.countdown-text {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+    height: 0;
+    border-radius: 50%;
+    background-image: url("/website/static/src/img/countdown_pattern.png") !important;
+    padding:50% 0;
+    text-align: center;
+    border:3px solid #fff;
+}
+.countdown-text p{
+    color:white;
+}
+.countdown-text p:first-child {
+    font-size: 4em;
+    margin-top: -50px;
+    margin-bottom: -0.2em;
+}
+
+.countdown-text p:last-child {
+    font-size: 1.4em;
+}
+
+.readable .countdown-text p:first-child {
+    font-size: 2em;
+    margin-top: -30px;
+    margin-bottom: -0.2em;
+}
+.readable .countdown-text p:last-child{
+    font-size: 1.0em;
+}
+.css_editable_hidden{
+    display:none !important;
+}
+span.show_counter,span.show_release{
+    cursor:pointer;
+    font-size:1.2em;
+    border-top-right-radius:0px;
+    border-top-left-radius:0px;
+    -webkit-box-shadow: 0px 3px 7px 0px rgba(50, 50, 50, 0.75);
+    -moz-box-shadow:0px 3px 7px 0px rgba(50, 50, 50, 0.75);
+    box-shadow:0px 3px 7px 0px rgba(50, 50, 50, 0.75);
+}
+.countdown_buttons{
+    padding-top:2px;
+}

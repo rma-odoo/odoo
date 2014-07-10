@@ -319,5 +319,74 @@
         $('[data-target="#oe_applications"]').attr("data-target", "#oe_applications_collapse");
     });
 
+    /* ----- WEBSITE COUNT-DOWN ---- */
+    website.countdown = function(counter){
+        var release_date = $(counter).attr('data-release_date');
+        var days=0,hours=0,minutes=0,seconds=0;
+        if(release_date){
+            var current_date = new Date();
+            var msec = parseInt(release_date) - current_date.getTime();
+            if (msec > 0){
+                days = Math.floor(msec / 1000 / 60 / 60 /24 );
+                msec -= days * 1000 * 60 * 60 *24;
+                hours = Math.floor(msec / 1000 / 60 / 60);
+                msec -= hours * 1000 * 60 * 60;
+                minutes = Math.floor(msec / 1000 / 60);
+                msec -= minutes * 1000 * 60;
+                seconds = Math.floor(msec / 1000);
+                msec -= seconds * 1000;
+            }
+        }
+        var update_timer = function(day, hh, mm, ss){
+            day !== false && $(counter).find('.counter_day p.count_val').text(day);
+            hh !== false && $(counter).find('.counter_hour p.count_val').text(hh);
+            mm !== false && $(counter).find('.counter_min p.count_val').text(mm);
+            $(counter).find('.counter_sec p.count_val').text(ss);
+        }
+        var update_visuals = function(el_hide, el_show){
+            $(counter).find(el_hide).addClass("hidden");
+            $(counter).find(el_show).removeClass("hidden");
+        }
+        update_timer(days, hours, minutes, seconds);
+        if(days == 0 & hours == 0 & minutes == 0 & seconds == 0){
+            update_visuals('.countdown_main','.countdown_over');
+        }else{
+            update_visuals('.countdown_over','.countdown_main');
+            var count_interval;
+            count_interval = setInterval(function(){
+                if(seconds == 0){
+                    if(minutes == 0){
+                        if(hours == 0){
+                            if(days == 0){
+                                $(counter).find('.countdown_over').parent().slideToggle("slow" ,function(){
+                                    update_visuals('.countdown_main','.countdown_over');
+                                    $(this).slideToggle("slow");
+                                });
+                                clearInterval(count_interval);
+                            }else{
+                                days-=1, hours=23,minutes=59, seconds=59;
+                                update_timer(days, hours, minutes, seconds);
+                            }
+                        }else{
+                            hours-=1, minutes=59,seconds=59;
+                            update_timer(false, hours, minutes, seconds);
+                        }
+                    }else{
+                        minutes-=1,seconds=59;
+                        update_timer(false, false, minutes, seconds);
+                    }
+                }else{
+                    seconds-=1;
+                    update_timer(false, false, false, seconds);
+                }
+            },1000);
+        }
+    };
+    $(document).ready(function(){
+        _.each($(".countdown"), function(counter){
+            website.countdown(counter);
+        });
+    });
+    
     return website;
 })();

@@ -1121,6 +1121,87 @@
         },
     });
 
+    website.editor.countdown = website.editor.Dialog.extend({
+        template: 'website.countdown_configuration',
+        events : _.extend({}, website.editor.Dialog.prototype.events, {
+            'click button[data-action=set_countdown]': 'set_countdown',
+        }),
+        init: function (parent) {
+            this.$target = parent.$target;
+            return this._super();
+        },
+        start: function () {
+            var self = this;
+            this.date_input = self.$el.find("#web_countdown_date").datepicker({
+                minDate: 0,
+            });
+            return this._super();
+        },
+        set_countdown: function () {
+            var self = this;
+            var release_date = this.date_input.datepicker( 'getDate' );
+            var hour = document.getElementById("web_countdown_hour").value;
+            var minute = document.getElementById("web_countdown_min").value;
+            var second = document.getElementById("web_countdown_sec").value;
+            var local_date  = new Date(release_date.getFullYear(),release_date.getMonth(),release_date.getDate(), hour, minute, second);
+            var add_warning = function (msg){
+                self.$el.find(".alert").remove();
+                self.$el.find(".modal-body").append('<div class="alert alert-danger mt8">'+ msg +'</div>');
+            }
+            if(hour > 23 | hour < 0 ){
+                add_warning("Enter valid HOURS (Between 0 to 23)");
+            }
+            else if(minute > 59 | minute < 0 ){
+                add_warning("Enter valid MINUTES (Between 0 to 59)");
+            }
+            else if(second > 59 | second < 0 ){
+                add_warning("Enter valid SECONDS (Between 0 to 59)");
+            }
+            else if(local_date == "Invalid Date" ){
+                add_warning("Invalid date format. Valid Date format is MM/DD/YYYY");
+            }else{
+                self.$target.attr("data-release_date",local_date.getTime())
+                self.trigger('set_countdown');
+            }
+        },
+        
+    });
+    
+    website.snippet.options.countdown = website.snippet.Option.extend({
+        start : function () {
+            var self = this;
+            this._super();
+            this.$el.find(".set_countdown").on('click', function () {self.on_set_countdown(); return false;});
+        },
+        on_set_countdown:function(){
+            var self = this;
+            var set_dialog = new website.editor.countdown(self);
+            set_dialog.appendTo($(document.body));
+            set_dialog.on('set_countdown', this, function () {
+                website.countdown(self.$target[0]);
+                set_dialog.$el.modal('hide');
+            });
+        }
+    });
+    website.EditorBar.include({
+        edit: function () {
+            var self = this;
+            this._super();
+            $('body').on('click',
+                '.show_counter',
+                function(){
+                    $(this).closest('.container').find(".countdown_main").removeClass('hidden');
+                    $(this).closest('.container').find(".countdown_over").addClass('hidden');
+            });
+            $('body').on('click',
+                '.show_release',
+                function(){
+                    $(this).closest('.container').find(".countdown_main").addClass('hidden');
+                    $(this).closest('.container').find(".countdown_over").removeClass('hidden');
+            });
+        },
+   });
+    
     website.snippet.options.marginAndResize = website.snippet.Option.extend({
         start: function () {
             var self = this;
