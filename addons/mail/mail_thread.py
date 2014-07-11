@@ -24,6 +24,7 @@ from collections import OrderedDict
 import datetime
 import dateutil
 import email
+from email.message import Message
 try:
     import simplejson as json
 except ImportError:
@@ -34,15 +35,14 @@ import pytz
 import re
 import socket
 import time
-import xmlrpclib
-import re
-from email.message import Message
 from urllib import urlencode
+import xmlrpclib
 
-from openerp import api, tools
+from openerp import fields, api, tools
 from openerp import SUPERUSER_ID
 from openerp.addons.mail.mail_message import decode
-from openerp.osv import fields, osv, orm
+from openerp.exceptions import except_orm
+from openerp.osv import osv, orm
 from openerp.osv.orm import BaseModel
 from openerp.tools.safe_eval import safe_eval as eval
 from openerp.tools.translate import _
@@ -52,293 +52,234 @@ _logger = logging.getLogger(__name__)
 
 mail_header_msgid_re = re.compile('<[^<>]+>')
 
+
 def decode_header(message, header, separator=' '):
     return separator.join(map(decode, filter(None, message.get_all(header, []))))
 
 
 class mail_thread(osv.AbstractModel):
     ''' mail_thread model is meant to be inherited by any model that needs to
-        act as a discussion topic on which messages can be attached. Public
-        methods are prefixed with ``message_`` in order to avoid name
-        collisions with methods of the models that will inherit from this class.
+    act as a discussion topic on which messages can be attached. Public methods
+    are prefixed with ``message_`` in order to avoid name collisions with methods
+    of the models that will inherit from this class.
 
-        ``mail.thread`` defines fields used to handle and display the
-        communication history. ``mail.thread`` also manages followers of
-        inheriting classes. All features and expected behavior are managed
-        by mail.thread. Widgets has been designed for the 7.0 and following
-        versions of OpenERP.
+    ``mail.thread`` defines fields used to handle and display the communication
+    history. ``mail.thread`` also manages followers of inheriting classes. All
+    features and expected behavior are managed by mail.thread. Widgets has been
+    designed for the 7.0 and following versions of OpenERP.
 
-        Inheriting classes are not required to implement any method, as the
-        default implementation will work for any model. However it is common
-        to override at least the ``message_new`` and ``message_update``
-        methods (calling ``super``) to add model-specific behavior at
-        creation and update of a thread when processing incoming emails.
+    Inheriting classes are not required to implement any method, as the default
+    implementation will work for any model. However it is common to override at
+    least the ``message_new`` and ``message_update`` methods (calling ``super``)
+    to add model-specific behavior at creation and update of a thread when
+    processing incoming emails.
 
-        Options:
-            - _mail_flat_thread: if set to True, all messages without parent_id
-                are automatically attached to the first message posted on the
-                ressource. If set to False, the display of Chatter is done using
-                threads, and no parent_id is automatically set.
+    Options:
+
+     - _mail_flat_thread=<bool>: if set to True, all messages without parent_id are
+       automatically attached to the first message posted on the ressource. If set
+       to False, the display of Chatter is done using threads, and no parent_id
+       is automatically set.
+     - _track: automatic logging using subtypes of tracked fields. This dict has
+       to use the form
+        _track = {
+            'field': {
+                'module.subtype_xml': lambda self, cr, uid, obj, context=None: obj[state] == done,
+                'module.subtype_xml2': lambda self, cr, uid, obj, context=None: obj[state] != done,
+            }, 'field2': {
+                ...
+            },
+        }
+        where
+        :param string field: field name
+        :param module.subtype_xml: xml_id of a mail.message.subtype (i.e. mail.mt_comment)
+        :param obj: is a browse_record
+        :param function lambda: returns whether the tracking should record using this subtype
+     - _mail_mass_mailing=<string>: when using the mass_mailing module, allow performing
+       mass mailing on the model, using the string as the displayed selection value.
     '''
     _name = 'mail.thread'
     _description = 'Email Thread'
+
     _mail_flat_thread = True
     _mail_post_access = 'write'
-
-    # Automatic logging system if mail installed
-    # _track = {
-    #   'field': {
-    #       'module.subtype_xml': lambda self, cr, uid, obj, context=None: obj[state] == done,
-    #       'module.subtype_xml2': lambda self, cr, uid, obj, context=None: obj[state] != done,
-    #   },
-    #   'field2': {
-    #       ...
-    #   },
-    # }
-    # where
-    #   :param string field: field name
-    #   :param module.subtype_xml: xml_id of a mail.message.subtype (i.e. mail.mt_comment)
-    #   :param obj: is a browse_record
-    #   :param function lambda: returns whether the tracking should record using this subtype
     _track = {}
-
-    # Mass mailing feature
     _mail_mass_mailing = False
 
-    def get_empty_list_help(self, cr, uid, help, context=None):
+    @api.model
+    def get_empty_list_help(self, help):
         """ Override of BaseModel.get_empty_list_help() to generate an help message
             that adds alias information. """
-        model = context.get('empty_list_help_model')
-        res_id = context.get('empty_list_help_id')
-        ir_config_parameter = self.pool.get("ir.config_parameter")
-        catchall_domain = ir_config_parameter.get_param(cr, uid, "mail.catchall.domain", context=context)
-        document_name = context.get('empty_list_help_document_name', _('document'))
+        model = self.env.context.get('empty_list_help_model')
+        res_id = self.env.context.get('empty_list_help_id')
+        document_name = self.env.context.get('empty_list_help_document_name', _('document'))
+        catchall_domain = self.env['ir.config_parameter'].get_param('mail.catchall.domain')
         alias = None
 
-        if catchall_domain and model and res_id:  # specific res_id -> find its alias (i.e. section_id specified)
-            object_id = self.pool.get(model).browse(cr, uid, res_id, context=context)
-            # check that the alias effectively creates new records
-            if object_id.alias_id and object_id.alias_id.alias_name and \
-                    object_id.alias_id.alias_model_id and \
-                    object_id.alias_id.alias_model_id.model == self._name and \
-                    object_id.alias_id.alias_force_thread_id == 0:
-                alias = object_id.alias_id
-        if not alias and catchall_domain and model:  # no res_id or res_id not linked to an alias -> generic help message, take a generic alias of the model
-            alias_obj = self.pool.get('mail.alias')
-            alias_ids = alias_obj.search(cr, uid, [("alias_parent_model_id.model", "=", model), ("alias_name", "!=", False), ('alias_force_thread_id', '=', False), ('alias_parent_thread_id', '=', False)], context=context, order='id ASC')
-            if alias_ids and len(alias_ids) == 1:
-                alias = alias_obj.browse(cr, uid, alias_ids[0], context=context)
-
-        if alias:
-            alias_email = alias.name_get()[0][1]
-            return _("""<p class='oe_view_nocontent_create'>
-                            Click here to add new %(document)s or send an email to: <a href='mailto:%(email)s'>%(email)s</a>
-                        </p>
-                        %(static_help)s"""
-                    ) % {
+        if catchall_domain and model:
+            if res_id:  # specific res_id -> find its alias (i.e. section_id specified)
+                obj_alias = self.env[model].browse(res_id).alias_id
+                # check that the alias effectively creates new records
+                if obj_alias.alias_name and \
+                        obj_alias.alias_model_id.model == self._name and \
+                        obj_alias.alias_force_thread_id == 0:
+                    alias = obj_alias
+            if not alias:  # no res_id or res_id not linked to an alias -> generic help message, take a generic alias of the model
+                try:
+                    alias = self.env['mail.alias'].search(
+                        [("alias_parent_model_id.model", "=", model), ("alias_name", "!=", False), ('alias_force_thread_id', '=', False), ('alias_parent_thread_id', '=', False)]
+                    ).ensure_one()
+                except except_orm:
+                    pass
+            if alias:
+                alias_email = alias.name_get()[0][1]
+                return """<p class='oe_view_nocontent_create'>%(message)s</p>%(static_help)s""" % {
+                    'message': _("Click here to add new %(document)s or send an email to: %(email_link)s") % {
                         'document': document_name,
-                        'email': alias_email,
-                        'static_help': help or ''
-                    }
+                        'email_link': "<a href='mailto:{0}'>{0}</a>".format(alias_email),
+                    },
+                    'static_help': help or ''}
 
         if document_name != 'document' and help and help.find("oe_view_nocontent_create") == -1:
-            return _("<p class='oe_view_nocontent_create'>Click here to add new %(document)s</p>%(static_help)s") % {
-                        'document': document_name,
-                        'static_help': help or '',
-                    }
+            return "<p class='oe_view_nocontent_create'>%(message)s</p>%(static_help)s" % {
+                'message': _("Click here to add new %s") % document_name,
+                'static_help': help or '',
+            }
 
         return help
 
-    def _get_message_data(self, cr, uid, ids, name, args, context=None):
+    @api.multi
+    def get_message_data(self):
         """ Computes:
             - message_unread: has uid unread message for the document
             - message_summary: html snippet summarizing the Chatter for kanban views """
-        res = dict((id, dict(message_unread=False, message_unread_count=0, message_summary=' ')) for id in ids)
-        user_pid = self.pool.get('res.users').read(cr, uid, [uid], ['partner_id'], context=context)[0]['partner_id'][0]
+        res = dict((id, dict(message_unread=False, message_unread_count=0, message_summary=' ')) for id in self.ids)
+        user_pid = self.env.user.partner_id
 
         # search for unread messages, directly in SQL to improve performances
-        cr.execute("""  SELECT m.res_id FROM mail_message m
-                        RIGHT JOIN mail_notification n
-                        ON (n.message_id = m.id AND n.partner_id = %s AND (n.is_read = False or n.is_read IS NULL))
-                        WHERE m.model = %s AND m.res_id in %s""",
-                    (user_pid, self._name, tuple(ids),))
-        for result in cr.fetchall():
+        self.env.cr.execute("""SELECT m.res_id FROM mail_message m
+            RIGHT JOIN mail_notification n
+            ON (n.message_id = m.id AND n.partner_id = %s AND (n.is_read = False or n.is_read IS NULL))
+            WHERE m.model = %s AND m.res_id in %s""", (user_pid.id, self._name, tuple(self.ids),))
+        for result in self.env.cr.fetchall():
             res[result[0]]['message_unread'] = True
             res[result[0]]['message_unread_count'] += 1
 
-        for id in ids:
-            if res[id]['message_unread_count']:
-                title = res[id]['message_unread_count'] > 1 and _("You have %d unread messages") % res[id]['message_unread_count'] or _("You have one unread message")
-                res[id]['message_summary'] = "<span class='oe_kanban_mail_new' title='%s'><span class='oe_e'>9</span> %d %s</span>" % (title, res[id].pop('message_unread_count'), _("New"))
-            res[id].pop('message_unread_count', None)
-        return res
+        for rec in self:
+            if res[rec.id]['message_unread_count']:
+                res[rec.id]['message_summary'] = "<span class='oe_kanban_mail_new' title='%s'><span class='oe_e'>9</span> %d %s</span>" % (
+                    ("You have %d unread message(s)") % res[rec.id]['message_unread_count'], res[rec.id].pop('message_unread_count'), _("New"))
+            rec.message_unread = res[rec.id]['message_unread']
+            rec.message_summary = res[rec.id]['message_summary']
 
-    def read_followers_data(self, cr, uid, follower_ids, context=None):
-        result = []
-        technical_group = self.pool.get('ir.model.data').get_object(cr, uid, 'base', 'group_no_one', context=context)
-        for follower in self.pool.get('res.partner').browse(cr, uid, follower_ids, context=context):
-            is_editable = uid in map(lambda x: x.id, technical_group.users)
-            is_uid = uid in map(lambda x: x.id, follower.user_ids)
-            data = (follower.id,
-                    follower.name,
-                    {'is_editable': is_editable, 'is_uid': is_uid},
-                    )
-            result.append(data)
-        return result
+    @api.model
+    def read_followers_data(self, follower_ids):
+        id_editable = self.env.ref('base.group_no_one') in self.env.user.groups_id
+        return [(fol.id, fol.name, {'id_editable': id_editable, 'is_uid': self.env.user.partner_id == fol})
+                for fol in self.env['res.partner'].browse(follower_ids)]
 
-    def _get_subscription_data(self, cr, uid, ids, name, args, user_pid=None, context=None):
-        """ Computes:
-            - message_subtype_data: data about document subtypes: which are
-                available, which are followed if any """
-        res = dict((id, dict(message_subtype_data='')) for id in ids)
-        if user_pid is None:
-            user_pid = self.pool.get('res.users').read(cr, uid, [uid], ['partner_id'], context=context)[0]['partner_id'][0]
+    @api.multi
+    def get_subscription_data(self, partner_id=None, context=None):
+        """ Computes message_subtype_data: data about document subtypes: which are
+        available, which are followed if any """
+        if partner_id is None:
+            partner_id = self.env.user.partner_id.id
 
         # find current model subtypes, add them to a dictionary
-        subtype_obj = self.pool.get('mail.message.subtype')
-        subtype_ids = subtype_obj.search(
-            cr, uid, [
-                '&', ('hidden', '=', False), '|', ('res_model', '=', self._name), ('res_model', '=', False)
-            ], context=context)
+        subtypes = self.env['mail.message.subtype'].search(['&', ('hidden', '=', False), '|', ('res_model', '=', self._name), ('res_model', '=', False)])
         subtype_dict = OrderedDict(
             (subtype.name, {
                 'default': subtype.default,
                 'followed': False,
                 'parent_model': subtype.parent_id and subtype.parent_id.res_model or self._name,
-                'id': subtype.id}
-            ) for subtype in subtype_obj.browse(cr, uid, subtype_ids, context=context))
-        for id in ids:
-            res[id]['message_subtype_data'] = subtype_dict.copy()
+                'id': subtype.id
+            }) for subtype in subtypes)
+        res = dict((id, subtype_dict.copy()) for id in self.ids)
 
         # find the document followers, update the data
-        fol_obj = self.pool.get('mail.followers')
-        fol_ids = fol_obj.search(cr, uid, [
-            ('partner_id', '=', user_pid),
-            ('res_id', 'in', ids),
-            ('res_model', '=', self._name),
-        ], context=context)
-        for fol in fol_obj.browse(cr, uid, fol_ids, context=context):
-            thread_subtype_dict = res[fol.res_id]['message_subtype_data']
-            for subtype in [st for st in fol.subtype_ids if st.name in thread_subtype_dict]:
-                thread_subtype_dict[subtype.name]['followed'] = True
-            res[fol.res_id]['message_subtype_data'] = thread_subtype_dict
+        followers = self.env['mail.followers'].search([
+            ('partner_id', '=', partner_id),
+            ('res_id', 'in', self.ids),
+            ('res_model', '=', self._name)])
+        for fol in followers:
+            for subtype in [st for st in fol.subtype_ids if st.name in res[fol.res_id]]:
+                res[fol.res_id][st.name]['followed'] = True
 
         return res
 
-    def _search_message_unread(self, cr, uid, obj=None, name=None, domain=None, context=None):
-        return [('message_ids.to_read', '=', True)]
+    def _search_message_unread(self, operator, value):
+        return [('message_ids.to_read', operator, value)]
 
-    def _get_followers(self, cr, uid, ids, name, arg, context=None):
-        fol_obj = self.pool.get('mail.followers')
-        fol_ids = fol_obj.search(cr, SUPERUSER_ID, [('res_model', '=', self._name), ('res_id', 'in', ids)])
-        res = dict((id, dict(message_follower_ids=[], message_is_follower=False)) for id in ids)
-        user_pid = self.pool.get('res.users').read(cr, uid, [uid], ['partner_id'], context=context)[0]['partner_id'][0]
-        for fol in fol_obj.browse(cr, SUPERUSER_ID, fol_ids):
+    @api.multi
+    def get_followers(self):
+        user_pid = self.env.user.partner_id
+        fols = self.sudo().env['mail.followers'].search([('res_model', '=', self._name), ('res_id', 'in', self.ids)])
+        res = dict((rec.id, dict(message_follower_ids=[], message_is_follower=False)) for rec in self)
+        for fol in fols:
             res[fol.res_id]['message_follower_ids'].append(fol.partner_id.id)
-            if fol.partner_id.id == user_pid:
+            if fol.partner_id == user_pid:
                 res[fol.res_id]['message_is_follower'] = True
-        return res
+        for rec in self:
+            rec.message_is_follower = res[rec.id]['message_is_follower']
+            rec.message_follower_ids = res[rec.id]['message_follower_ids']
 
-    def _set_followers(self, cr, uid, id, name, value, arg, context=None):
-        if not value:
-            return
-        partner_obj = self.pool.get('res.partner')
-        fol_obj = self.pool.get('mail.followers')
-
+    @api.multi
+    def set_followers(self):
         # read the old set of followers, and determine the new set of followers
-        fol_ids = fol_obj.search(cr, SUPERUSER_ID, [('res_model', '=', self._name), ('res_id', '=', id)])
-        old = set(fol.partner_id.id for fol in fol_obj.browse(cr, SUPERUSER_ID, fol_ids))
-        new = set(old)
+        fols = self.sudo().env['mail.followers'].search([('res_model', '=', self._name), ('res_id', 'in', self.ids)])
+        old_dict = dict.fromkeys(self.ids, self.env['res.partner'])
+        for fol in fols:
+            old_dict[fol.res_id] += fol.partner_id
+        for record in self:
+            old = old_dict[record.id]
+            new = record.message_follower_ids
+            # remove partners that are no longer followers
+            record.message_unsubscribe([p.id for p in old-new])
+            # add new followers
+            record.message_subscribe([p.id for p in new-old])
 
-        for command in value or []:
-            if isinstance(command, (int, long)):
-                new.add(command)
-            elif command[0] == 0:
-                new.add(partner_obj.create(cr, uid, command[2], context=context))
-            elif command[0] == 1:
-                partner_obj.write(cr, uid, [command[1]], command[2], context=context)
-                new.add(command[1])
-            elif command[0] == 2:
-                partner_obj.unlink(cr, uid, [command[1]], context=context)
-                new.discard(command[1])
-            elif command[0] == 3:
-                new.discard(command[1])
-            elif command[0] == 4:
-                new.add(command[1])
-            elif command[0] == 5:
-                new.clear()
-            elif command[0] == 6:
-                new = set(command[2])
+    def search_followers(self, operator, value):
+        # TDE TODO: check with 'not in' operator
+        followers = self.sudo().env['mail.followers'].search([('res_model', '=', self._name), ('partner_id', operator, value)])
+        return [('id', 'in', [fol.res_id for fol in followers])]
 
-        # remove partners that are no longer followers
-        self.message_unsubscribe(cr, uid, [id], list(old-new), context=context)
-        # add new followers
-        self.message_subscribe(cr, uid, [id], list(new-old), context=context)
+    def search_is_follower(self, operator, value):
+        partner_id = self.env.user.partner_id.id
+        if (operator == '=' and value) or (operator == '!=' and not value):  # is a follower
+            return [('message_follower_ids', 'in', [partner_id])]
+        else:  # is not a follower or unknown domain
+            return [('message_follower_ids', 'not in', [partner_id])]
 
-    def _search_followers(self, cr, uid, obj, name, args, context):
-        """Search function for message_follower_ids
+    message_follower_ids = fields.Many2many(
+        'res.partner', string='Followers',
+        compute='get_followers', inverse='set_followers', search='search_followers'
+    )
+    message_is_follower = fields.Boolean(
+        string='Is a Follower',
+        compute='get_followers', search='search_is_follower'
+    )
+    message_ids = fields.One2many(
+        'mail.message', 'res_id',
+        domain=lambda self: [('model', '=', self._name)],
+        auto_join=True,
+        string='Messages',
+        help="Messages and communication history"
+    )
+    message_last_post = fields.Datetime('Last Message Date', help='Date of the last message posted on the record.')
+    message_unread = fields.Boolean(
+        string='Unread Messages',
+        compute='get_message_data', search='_search_message_unread',
+        help="If checked new messages require your attention."
+    )
+    message_summary = fields.Text(
+        string='Summary',
+        compute='get_message_data',
+        help="Holds the Chatter summary (number of messages, ...). This summary is directly in html format in order to be inserted in kanban views."
+    )
 
-        Do not use with operator 'not in'. Use instead message_is_followers
-        """
-        fol_obj = self.pool.get('mail.followers')
-        res = []
-        for field, operator, value in args:
-            assert field == name
-            # TOFIX make it work with not in
-            assert operator != "not in", "Do not search message_follower_ids with 'not in'"
-            fol_ids = fol_obj.search(cr, SUPERUSER_ID, [('res_model', '=', self._name), ('partner_id', operator, value)])
-            res_ids = [fol.res_id for fol in fol_obj.browse(cr, SUPERUSER_ID, fol_ids)]
-            res.append(('id', 'in', res_ids))
-        return res
-
-    def _search_is_follower(self, cr, uid, obj, name, args, context):
-        """Search function for message_is_follower"""
-        res = []
-        for field, operator, value in args:
-            assert field == name
-            partner_id = self.pool.get('res.users').browse(cr, uid, uid, context=context).partner_id.id
-            if (operator == '=' and value) or (operator == '!=' and not value):  # is a follower
-                res_ids = self.search(cr, uid, [('message_follower_ids', 'in', [partner_id])], context=context)
-            else:  # is not a follower or unknown domain
-                mail_ids = self.search(cr, uid, [('message_follower_ids', 'in', [partner_id])], context=context)
-                res_ids = self.search(cr, uid, [('id', 'not in', mail_ids)], context=context)
-            res.append(('id', 'in', res_ids))
-        return res
-
-    _columns = {
-        'message_is_follower': fields.function(_get_followers, type='boolean',
-            fnct_search=_search_is_follower, string='Is a Follower', multi='_get_followers,'),
-        'message_follower_ids': fields.function(_get_followers, fnct_inv=_set_followers,
-            fnct_search=_search_followers, type='many2many', priority=-10,
-            obj='res.partner', string='Followers', multi='_get_followers'),
-        'message_ids': fields.one2many('mail.message', 'res_id',
-            domain=lambda self: [('model', '=', self._name)],
-            auto_join=True,
-            string='Messages',
-            help="Messages and communication history"),
-        'message_last_post': fields.datetime('Last Message Date',
-            help='Date of the last message posted on the record.'),
-        'message_unread': fields.function(_get_message_data,
-            fnct_search=_search_message_unread, multi="_get_message_data",
-            type='boolean', string='Unread Messages',
-            help="If checked new messages require your attention."),
-        'message_summary': fields.function(_get_message_data, method=True,
-            type='text', string='Summary', multi="_get_message_data",
-            help="Holds the Chatter summary (number of messages, ...). "\
-                 "This summary is directly in html format in order to "\
-                 "be inserted in kanban views."),
-    }
-
-    def _get_user_chatter_options(self, cr, uid, context=None):
-        options = {
-            'display_log_button': False
-        }
-        group_ids = self.pool.get('res.users').browse(cr, uid, uid, context=context).groups_id
-        group_user_id = self.pool.get("ir.model.data").get_object_reference(cr, uid, 'base', 'group_user')[1]
-        is_employee = group_user_id in [group.id for group in group_ids]
-        if is_employee:
-            options['display_log_button'] = True
-        return options
+    @api.model
+    def _get_user_chatter_options(self):
+        return {'display_log_button': self.env.ref('base.group_user') in self.env.user.groups_id}
 
     def fields_view_get(self, cr, uid, view_id=None, view_type='form', context=None, toolbar=False, submenu=False):
         res = super(mail_thread, self).fields_view_get(cr, uid, view_id=view_id, view_type=view_type, context=context, toolbar=toolbar, submenu=submenu)
@@ -355,110 +296,92 @@ class mail_thread(osv.AbstractModel):
     # CRUD overrides for automatic subscription and logging
     #------------------------------------------------------
 
-    def create(self, cr, uid, values, context=None):
+    @api.model
+    def create(self, values):
         """ Chatter override :
             - subscribe uid
             - subscribe followers of parent
             - log a creation message
         """
-        if context is None:
-            context = {}
-
-        if context.get('tracking_disable'):
-            return super(mail_thread, self).create(
-                cr, uid, values, context=context)
+        if self.env.context.get('tracking_disable'):
+            return super(mail_thread, self).create(values)
 
         # subscribe uid unless asked not to
-        if not context.get('mail_create_nosubscribe'):
-            pid = self.pool['res.users'].browse(cr, SUPERUSER_ID, uid).partner_id.id
+        if not self.env.context.get('mail_create_nosubscribe'):
             message_follower_ids = values.get('message_follower_ids') or []  # webclient can send None or False
-            message_follower_ids.append([4, pid])
+            message_follower_ids.append([4, self.env.user.partner_id.id])
             values['message_follower_ids'] = message_follower_ids
-        thread_id = super(mail_thread, self).create(cr, uid, values, context=context)
+        thread_id = super(mail_thread, self).create(values)
 
         # automatic logging unless asked not to (mainly for various testing purpose)
-        if not context.get('mail_create_nolog'):
-            self.message_post(cr, uid, thread_id, body=_('%s created') % (self._description), context=context)
+        if not self.env.context.get('mail_create_nolog'):
+            self.message_post(self.env.cr, self.env.user.id, thread_id, body=_('%s created') % (self._description))
 
         # auto_subscribe: take values and defaults into account
-        create_values = dict(values)
-        for key, val in context.iteritems():
-            if key.startswith('default_'):
-                create_values[key[8:]] = val
-        self.message_auto_subscribe(cr, uid, [thread_id], create_values.keys(), context=context, values=create_values)
+        create_values = dict((key[8:], val) for key, val in self.env.context.iteritems() if key.startswith('default_'), **values)
+        # self.message_auto_subscribe(self.env.cr, self.env.user.id, [thread_id], create_values.keys(), context=self.env.context, values=create_values)
 
         # track values
-        track_ctx = dict(context)
-        if 'lang' not in track_ctx:
-            track_ctx['lang'] = self.pool.get('res.users').browse(cr, uid, uid, context=context).lang
-        if not context.get('mail_notrack'):
-            tracked_fields = self._get_tracked_fields(cr, uid, values.keys(), context=track_ctx)
-            if tracked_fields:
-                initial_values = {thread_id: dict.fromkeys(tracked_fields, False)}
-                self.message_track(cr, uid, [thread_id], tracked_fields, initial_values, context=track_ctx)
+        # if not self.env.context.get('mail_notrack'):
+        #     track_ctx = dict(self.env.context)
+        #     if 'lang' not in track_ctx:
+        #         track_ctx['lang'] = self.env.user.lang
+        #     tracked_fields = self._get_tracked_fields(self.env.cr, self.env.uid, values.keys(), context=track_ctx)
+        #     if tracked_fields:
+        #         initial_values = {thread_id: dict.fromkeys(tracked_fields, False)}
+        #         self.message_track(self.env.cr, self.env.uid, [thread_id], tracked_fields, initial_values, context=track_ctx)
         return thread_id
 
-    def write(self, cr, uid, ids, values, context=None):
-        if context is None:
-            context = {}
-        if isinstance(ids, (int, long)):
-            ids = [ids]
-        if context.get('tracking_disable'):
-            return super(mail_thread, self).write(
-                cr, uid, ids, values, context=context)
-        # Track initial values of tracked fields
-        track_ctx = dict(context)
-        if 'lang' not in track_ctx:
-            track_ctx['lang'] = self.pool.get('res.users').browse(cr, uid, uid, context=context).lang
+    @api.multi
+    def write(self, values):
+        if self.env.context.get('tracking_disable'):
+            return super(mail_thread, self).write(values)
 
-        tracked_fields = None
-        if not context.get('mail_notrack'):
-            tracked_fields = self._get_tracked_fields(cr, uid, values.keys(), context=track_ctx)
-
-        if tracked_fields:
-            records = self.browse(cr, uid, ids, context=track_ctx)
-            initial_values = dict((record.id, dict((key, getattr(record, key)) for key in tracked_fields))
-                                  for record in records)
+        if not self.env.context.get('mail_notrack'):
+            track_ctx = dict(self.env.context)
+            if 'lang' not in track_ctx:
+                track_ctx['lang'] = self.env.user.lang
+            tracked_fields = self._get_tracked_fields(values.keys(), context=track_ctx)
+            if tracked_fields:
+                initial_values = dict((record.id, dict((key, getattr(record, key)) for key in tracked_fields))
+                                      for record in self)  # todo: rebrowse in lang ?
 
         # Perform write, update followers
-        result = super(mail_thread, self).write(cr, uid, ids, values, context=context)
-        self.message_auto_subscribe(cr, uid, ids, values.keys(), context=context, values=values)
+        result = super(mail_thread, self).write(values)
+        self.message_auto_subscribe(values.keys(), values=values)
 
         # Perform the tracking
-        if tracked_fields:
-            self.message_track(cr, uid, ids, tracked_fields, initial_values, context=track_ctx)
+        if not self.env.context.get('mail_notrack') and tracked_fields:
+            self.message_track(tracked_fields, initial_values, context=track_ctx)
 
         return result
 
-    def unlink(self, cr, uid, ids, context=None):
+    @api.multi
+    def unlink(self):
         """ Override unlink to delete messages and followers. This cannot be
             cascaded, because link is done through (res_model, res_id). """
-        msg_obj = self.pool.get('mail.message')
-        fol_obj = self.pool.get('mail.followers')
-        # delete messages and notifications
-        msg_ids = msg_obj.search(cr, uid, [('model', '=', self._name), ('res_id', 'in', ids)], context=context)
-        msg_obj.unlink(cr, uid, msg_ids, context=context)
-        # delete
-        res = super(mail_thread, self).unlink(cr, uid, ids, context=context)
-        # delete followers
-        fol_ids = fol_obj.search(cr, SUPERUSER_ID, [('res_model', '=', self._name), ('res_id', 'in', ids)], context=context)
-        fol_obj.unlink(cr, SUPERUSER_ID, fol_ids, context=context)
+        self.env['mail.message'].search([('model', '=', self._name), ('res_id', 'in', self.ids)]).unlink()
+        res = super(mail_thread, self).unlink()
+        self.env['mail.followers'].sudo().search([('res_model', '=', self._name), ('res_id', 'in', self.ids)]).unlink()
         return res
 
-    def copy_data(self, cr, uid, id, default=None, context=None):
+    @api.cr_uid_id_context
+    def copy_data(self, default=None):
         # avoid tracking multiple temporary changes during copy
-        context = dict(context or {}, mail_notrack=True)
-        return super(mail_thread, self).copy_data(cr, uid, id, default=default, context=context)
+        context = dict(self.env.context or {}, mail_notrack=True)
+        return super(mail_thread, self).copy_data(default=default, context=context)
 
     #------------------------------------------------------
     # Automatically log tracked fields
     #------------------------------------------------------
 
-    def _get_tracked_fields(self, cr, uid, updated_fields, context=None):
-        """ Return a structure of tracked fields for the current model.
-            :param list updated_fields: modified field names
-            :return list: a list of (field_name, column_info obj), containing
-                always tracked fields and modified on_change fields
+    @api.cr_uid_context
+    def _get_tracked_fields(self, updated_fields):
+        """ Return a fields_get of the tracked fields. This list is based on
+        updated field to match the track_visibility parameter.
+
+        :param list updated_fields: modified field names
+        :return dict: the result of fields_get on the tracked fields (or void)
         """
         tracked_fields = []
         for name, column_info in self._all_columns.items():
@@ -467,10 +390,11 @@ class mail_thread(osv.AbstractModel):
                 tracked_fields.append(name)
 
         if tracked_fields:
-            return self.fields_get(cr, uid, tracked_fields, context=context)
+            return self.fields_get(tracked_fields)
         return {}
 
-    def message_track(self, cr, uid, ids, tracked_fields, initial_values, context=None):
+    @api.multi
+    def message_track(self, tracked_fields, initial_values):
 
         def convert_for_display(value, col_info):
             if not value and col_info['type'] == 'boolean':
@@ -483,38 +407,36 @@ class mail_thread(osv.AbstractModel):
                 return dict(col_info['selection'])[value]
             return value
 
-        def format_message(message_description, tracked_values):
-            message = ''
-            if message_description:
-                message = '<span>%s</span>' % message_description
+        def format_message(description, tracked_values):
+            message = description and '<span>%s</span>' % description or ''
             for name, change in tracked_values.items():
-                message += '<div> &nbsp; &nbsp; &bull; <b>%s</b>: ' % change.get('col_info')
-                if change.get('old_value'):
-                    message += '%s &rarr; ' % change.get('old_value')
-                message += '%s</div>' % change.get('new_value')
+                message += '<div> &nbsp; &nbsp; &bull; <b>%(col_info)s</b>: %(old_value)s%(new_value)s</div>' % {
+                    'col_info': change.get('col_info'),
+                    'old_value': change.get('old_value') and '%s &rarr; ' % change.get('old_value') or '',
+                    'new_value': change.get('new_value')
+                }
             return message
 
         if not tracked_fields:
             return True
 
-        for browse_record in self.browse(cr, uid, ids, context=context):
-            initial = initial_values[browse_record.id]
+        for record in self:
             changes = set()
             tracked_values = {}
 
             # generate tracked_values data structure: {'col_name': {col_info, new_value, old_value}}
             for col_name, col_info in tracked_fields.items():
-                initial_value = initial[col_name]
-                record_value = getattr(browse_record, col_name)
-
-                if record_value == initial_value and getattr(self._all_columns[col_name].column, 'track_visibility', None) == 'always':
+                initial_value = initial_values[record.id][col_name]
+                record_value = getattr(record, col_name)
+                column = self._all_columns[col_name].column
+                if record_value == initial_value and getattr(column, 'track_visibility', None) == 'always':
                     tracked_values[col_name] = dict(col_info=col_info['string'],
-                                                        new_value=convert_for_display(record_value, col_info))
+                                                    new_value=convert_for_display(record_value, col_info))
                 elif record_value != initial_value and (record_value or initial_value):  # because browse null != False
-                    if getattr(self._all_columns[col_name].column, 'track_visibility', None) in ['always', 'onchange']:
+                    if getattr(column, 'track_visibility', None) in ['always', 'onchange']:
                         tracked_values[col_name] = dict(col_info=col_info['string'],
-                                                            old_value=convert_for_display(initial_value, col_info),
-                                                            new_value=convert_for_display(record_value, col_info))
+                                                        old_value=convert_for_display(initial_value, col_info),
+                                                        new_value=convert_for_display(record_value, col_info))
                     if col_name in tracked_fields:
                         changes.add(col_name)
             if not changes:
@@ -525,13 +447,11 @@ class mail_thread(osv.AbstractModel):
             for field, track_info in self._track.items():
                 if field not in changes:
                     continue
-                for subtype, method in track_info.items():
-                    if method(self, cr, uid, browse_record, context):
-                        subtypes.append(subtype)
+                subtypes = [subtype for subtype, method in track_info.items() if method(self, self.env.cr, self.env.uid, record, self.env.context)]
 
             posted = False
             for subtype in subtypes:
-                subtype_rec = self.pool.get('ir.model.data').xmlid_to_object(cr, uid, subtype, context=context)
+                subtype_rec = self.env.ref(subtype)
                 if not (subtype_rec and subtype_rec.exists()):
                     _logger.debug('subtype %s not found' % subtype)
                     continue
@@ -1505,8 +1425,8 @@ class mail_thread(osv.AbstractModel):
             m2m_attachment_ids.append((0, 0, data_attach))
         return m2m_attachment_ids
 
-    @api.cr_uid_ids_context
-    def message_post(self, cr, uid, thread_id, body='', subject=None, type='notification',
+    @api.cr_uid_id_context
+    def message_post(self, body='', subject=None, type='notification',
                      subtype=None, parent_id=False, attachments=None, context=None,
                      content_subtype='html', **kwargs):
         """ Post a new message in an existing thread, returning the new
@@ -1640,7 +1560,7 @@ class mail_thread(osv.AbstractModel):
         # Post-process: subscribe author, update message_last_post
         if model and model != 'mail.thread' and thread_id and subtype_id:
             # done with SUPERUSER_ID, because on some models users can post only with read access, not necessarily write access
-            self.write(cr, SUPERUSER_ID, [thread_id], {'message_last_post': fields.datetime.now()}, context=context)
+            self.write(cr, SUPERUSER_ID, [thread_id], {'message_last_post': fields.Datetime.now()}, context=context)
         message = mail_message.browse(cr, uid, msg_id, context=context)
         if message.author_id and thread_id and type != 'notification' and not context.get('mail_create_nosubscribe'):
             self.message_subscribe(cr, uid, [thread_id], [message.author_id.id], context=context)
@@ -1650,98 +1570,90 @@ class mail_thread(osv.AbstractModel):
     # Followers API
     #------------------------------------------------------
 
-    def message_get_subscription_data(self, cr, uid, ids, user_pid=None, context=None):
-        """ Wrapper to get subtypes data. """
-        return self._get_subscription_data(cr, uid, ids, None, None, user_pid=user_pid, context=context)
-
-    def message_subscribe_users(self, cr, uid, ids, user_ids=None, subtype_ids=None, context=None):
+    @api.multi
+    def message_subscribe_users(self, user_ids=None, subtype_ids=None):
         """ Wrapper on message_subscribe, using users. If user_ids is not
             provided, subscribe uid instead. """
         if user_ids is None:
-            user_ids = [uid]
-        partner_ids = [user.partner_id.id for user in self.pool.get('res.users').browse(cr, uid, user_ids, context=context)]
-        return self.message_subscribe(cr, uid, ids, partner_ids, subtype_ids=subtype_ids, context=context)
+            user_ids = [self.env.uid]
+        partner_ids = [user.partner_id.id for user in self.env['res.users'].browse(user_ids)]
+        return self.message_subscribe(partner_ids, subtype_ids=subtype_ids)
 
-    def message_subscribe(self, cr, uid, ids, partner_ids, subtype_ids=None, context=None):
+    @api.multi
+    def message_subscribe(self, partner_ids, subtype_ids=None):
         """ Add partners to the records followers. """
-        if context is None:
-            context = {}
         # not necessary for computation, but saves an access right check
         if not partner_ids:
             return True
 
-        mail_followers_obj = self.pool.get('mail.followers')
-        subtype_obj = self.pool.get('mail.message.subtype')
-
-        user_pid = self.pool.get('res.users').browse(cr, uid, uid, context=context).partner_id.id
+        user_pid = self.env.user.partner_id.id
         if set(partner_ids) == set([user_pid]):
             try:
-                self.check_access_rights(cr, uid, 'read')
-                self.check_access_rule(cr, uid, ids, 'read')
+                self.check_access_rights('read')
+                self.check_access_rule('read')
             except (osv.except_osv, orm.except_orm):
                 return False
         else:
-            self.check_access_rights(cr, uid, 'write')
-            self.check_access_rule(cr, uid, ids, 'write')
+            self.check_access_rights('write')
+            self.check_access_rule('write')
 
+        Followers = self.sudo().env['mail.followers']
         existing_pids_dict = {}
-        fol_ids = mail_followers_obj.search(cr, SUPERUSER_ID, ['&', '&', ('res_model', '=', self._name), ('res_id', 'in', ids), ('partner_id', 'in', partner_ids)])
-        for fol in mail_followers_obj.browse(cr, SUPERUSER_ID, fol_ids, context=context):
+        followers = Followers.search(['&', '&', ('res_model', '=', self._name), ('res_id', 'in', self.ids), ('partner_id', 'in', partner_ids)])
+        for fol in followers:
             existing_pids_dict.setdefault(fol.res_id, set()).add(fol.partner_id.id)
 
         # subtype_ids specified: update already subscribed partners
-        if subtype_ids and fol_ids:
-            mail_followers_obj.write(cr, SUPERUSER_ID, fol_ids, {'subtype_ids': [(6, 0, subtype_ids)]}, context=context)
+        if subtype_ids and followers:
+            followers.write({'subtype_ids': [(6, 0, subtype_ids)]})
         # subtype_ids not specified: do not update already subscribed partner, fetch default subtypes for new partners
         if subtype_ids is None:
-            subtype_ids = subtype_obj.search(
-                cr, uid, [
-                    ('default', '=', True), '|', ('res_model', '=', self._name), ('res_model', '=', False)], context=context)
+            subtypes = self.env['mail.message.subtype'].search([('default', '=', True), '|', ('res_model', '=', self._name), ('res_model', '=', False)])
+            subtype_ids = subtypes.ids
 
-        for id in ids:
+        for id in self.ids:
             existing_pids = existing_pids_dict.get(id, set())
             new_pids = set(partner_ids) - existing_pids
 
             # subscribe new followers
             for new_pid in new_pids:
-                mail_followers_obj.create(
-                    cr, SUPERUSER_ID, {
-                        'res_model': self._name,
-                        'res_id': id,
-                        'partner_id': new_pid,
-                        'subtype_ids': [(6, 0, subtype_ids)],
-                    }, context=context)
+                Followers.create({
+                    'res_model': self._name,
+                    'res_id': id,
+                    'partner_id': new_pid,
+                    'subtype_ids': [(6, 0, subtype_ids)],
+                })
 
         return True
 
-    def message_unsubscribe_users(self, cr, uid, ids, user_ids=None, context=None):
+    @api.multi
+    def message_unsubscribe_users(self, user_ids=None):
         """ Wrapper on message_subscribe, using users. If user_ids is not
             provided, unsubscribe uid instead. """
         if user_ids is None:
-            user_ids = [uid]
-        partner_ids = [user.partner_id.id for user in self.pool.get('res.users').browse(cr, uid, user_ids, context=context)]
-        return self.message_unsubscribe(cr, uid, ids, partner_ids, context=context)
+            user_ids = [self.env.uid]
+        partner_ids = [user.partner_id.id for user in self.env['res.users'].browse(user_ids)]
+        return self.message_unsubscribe(partner_ids)
 
-    def message_unsubscribe(self, cr, uid, ids, partner_ids, context=None):
+    @api.multi
+    def message_unsubscribe(self, partner_ids):
         """ Remove partners from the records followers. """
         # not necessary for computation, but saves an access right check
         if not partner_ids:
             return True
-        user_pid = self.pool.get('res.users').read(cr, uid, uid, ['partner_id'], context=context)['partner_id'][0]
+        user_pid = self.env.user.partner_id
         if set(partner_ids) == set([user_pid]):
-            self.check_access_rights(cr, uid, 'read')
-            self.check_access_rule(cr, uid, ids, 'read')
+            self.check_access_rights('read')
+            self.check_access_rule('read')
         else:
-            self.check_access_rights(cr, uid, 'write')
-            self.check_access_rule(cr, uid, ids, 'write')
-        fol_obj = self.pool['mail.followers']
+            self.check_access_rights('write')
+            self.check_access_rule('write')
+        fol_obj = self.sudo().env['mail.followers']
         fol_ids = fol_obj.search(
-            cr, SUPERUSER_ID, [
-                ('res_model', '=', self._name),
-                ('res_id', 'in', ids),
-                ('partner_id', 'in', partner_ids)
-            ], context=context)
-        return fol_obj.unlink(cr, SUPERUSER_ID, fol_ids, context=context)
+            [('res_model', '=', self._name),
+             ('res_id', 'in', self.ids),
+             ('partner_id', 'in', partner_ids)])
+        return fol_ids.unlink()
 
     def _message_get_auto_subscribe_fields(self, cr, uid, updated_fields, auto_follow_fields=None, context=None):
         """ Returns the list of relational fields linking to res.users that should
