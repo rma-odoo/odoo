@@ -293,7 +293,7 @@
                 }
                 m.message = self.escape_keep_url(m.message);
                 m.message = self.smiley(m.message);
-                m.create_date = Date.parse(m.create_date).setTimezone("UTC").toString("yyyy-dd-MM HH:mm:ss");
+                m.create_date = Date.parse(m.create_date).setTimezone("UTC").toString("yyyy-MM-dd HH:mm:ss");
                 return m;
             });
            	this.set("messages", _.sortBy(this.get("messages").concat(messages), function(m){ return m.id; }));
