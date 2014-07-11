@@ -1727,62 +1727,78 @@
 <t t-name="ExportView">
     <a id="exportview" href="javascript: void(0)" style="text-decoration: none;color: #3D3D3D;">Export</a>
 </t>
-<table t-name="ExportTreeView" class="oe_export"
-       style="background-color: #F3F3F3;">
-    <tr>
-        <td colspan="3">
-            This wizard will export all data that matches the current search criteria to a CSV file.
-            You can export all data or only the fields that can be reimported after modification.
-        </td>
-    </tr>
-    <tr>
-        <td colspan="3">
-            <label for="import_compat">Export Type:</label>
-            <select id="import_compat" name="import_compat">
-                <option value="yes">Import-Compatible Export</option>
-                <option value="">Export all Data</option>
-            </select>
-
-            <label for="export_format">Export Formats</label>
-            <select id="export_format" name="export_format"></select>
-        </td>
-    </tr>
-
-    <tr>
-        <th>Available fields</th>
-        <th/>
-        <th>
-            Fields to export
-            <a style="color: blue; text-decoration: none;" href="#" id="export_new_list">Save fields list</a>
-            <div id="savenewlist"></div>
-            <div id="ExistsExportList"></div>
-        </th>
-    </tr>
-    <tr style="height: 400px;">
-        <td class="oe_export_fields_selector_left">
-            <div id="left_field_panel">
-            </div>
-        </td>
-        <td class="oe_export_fields_selector_center">
-            <!-- TODO: replace ids by 'oe_*' classes -->
-            <button class="oe_button" id="add_field">Add</button>
-            <button class="oe_button" id="remove_field">Remove</button>
-            <button class="oe_button" id="remove_all_field">Remove All</button>
-        </td>
-        <td class="oe_export_fields_selector_right">
-            <select name="fields_list" id="fields_list"
-                    multiple="multiple"></select>
-        </td>
-    </tr>
-</table>
-<t t-name="ExportTreeView-Domain">
-    <t t-if="! record.ids_to_export">
-        <p><strong>Please pay attention that all records matching your search filter will be exported. Not only the selected ids.</strong></p>
-    </t>
-    <t t-if="record.ids_to_export">
-        <p><strong>Please note that only the selected ids will be exported.</strong></p>
-    </t>
-</t>
+<div t-name="ExportTreeView" class="oe_export" style="background-color: #FFFFFF;" >
+    <div class="oe_view_manager oe_view_manager_current ">
+        <div class="oe_view_manager_header oe_padding">
+            <strong><span style="font-size: 25px;">Export Data of <span class="oe_model_name"></span></span></strong><br></br>
+            <button type="button" class="oe_button oe_export_file oe_highlight">Export to File</button>
+            <span class="oe_fade">or</span>
+            <a id="oe_export_cancel" href="#">Cancel</a>
+        </div>
+    </div>
+    <div class="well">
+        <span>
+            This form will export all data that matches the current search criteria to a CSV/Excel file. You can export all data or only the fields that can be reimported after modification.<br></br>
+            <strong>
+                Please pay attention that all records matching your search filter will be exported. Not only the selected ids.
+            </strong>
+        </span>
+    </div>
+    <div>
+        <div class="col-md-3" style="margin-right: -50px;">
+            <div style="margin-top: 4px; margin-left: 13px; font-size:15px;" class="checkbox" title="Data will export in Import-Compatible mode. It can easily import with out any trouble."><label><input type="checkbox" id="import_compat" value="yes">Import-Compatible Export</input></label></div>
+        </div>
+        <div class="col-md-9">
+            <form class="form">
+                <div class="col-md-3 export_format">
+                    <label style="font-size:15px; padding-top:2px;" for="export_format">Export Formats </label>
+                    <div class="form-inline">
+                        <select style="width:120px;" class="form-control input-sm" id="export_format" name="export_format"></select>
+                    </div>
+                </div>
+                <div id="ExistsExportList"></div>
+                <div id="savenewlist"></div>
+            </form>
+        </div>
+    </div>
+    <div class="col-md-12" style="margin-bottom:50px;">
+        <div class="col-md-5 oe_export_fields_selector_left">
+            <div class="text-left"><h3>Available fields</h3></div>
+                <div id="left_field_panel"></div>
+        </div>
+        <div class="col-md-1 oe_export_fields_selector_center" style="padding-top: 50px;">
+            <br><a><img class="oe_image_field" style="padding:15px;  margin-top: -25px;" src="/web/static/src/img/add.png" id="add_field" title="Add Selected Field to Export List"></img></a></br>
+            <br><a><img class="oe_image_field" style="padding:15px;  margin-top: -25px;" src="/web/static/src/img/remove.png" id="remove_field" title="Remove Selected Field from Export List"></img></a></br>
+            <br><a><img class="oe_image_field" style="padding:15px;  margin-top: -25px;" src="/web/static/src/img/removeall.png" id="remove_all_field" title="Clear All Fields From List"></img></a></br>
+            <br><a><img class="oe_image_field" style="padding:15px;  margin-top: -25px;" src="/web/static/src/img/sort.png" id="sort_list" title="Sort All Fields"></img></a></br>
+        </div>
+        <div class="col-md-5 oe_export_fields_selector_right">
+            <div class="text-left"><h3>Fields to export   </h3></div>
+            <select name="fields_list" id="fields_list" multiple="multiple" style="font-size: 16px;"></select>
+        </div>
+    </div>
+</div>
+<div class="col-md-3" t-name="ExportNewList">
+    <div>
+        <label style="font-size:15px;">Save as</label>
+        <form class="form-inline">
+            <input class="form-control input-sm" style="width:120px;" type="text" id="savelist_name"/>
+            <a><img  style="width:20px;" id="add_export_list" src="/web/static/src/img/save.png"  title="Save List"></img></a>
+        </form>
+    </div>
+</div>
+<div class="col-md-3" id="Exists.ExportList" t-name="Exists.ExportList">
+    <label style="font-size:15px;">Available Exports List</label>
+    <form class="form-inline">
+        <select style="width:140px;" class="form-control input-sm"  id="saved_export_list">
+            <option></option>
+            <t t-foreach="existing_exports" t-as="export">
+                <option t-att-value="export.id"><t t-esc="export.name"/></option>
+            </t>
+        </select>
+        <a><img style="width:15px;" id="delete_export_list" src="/web/static/src/img/remove.png"  title="Delete List" hidden="true"></img></a>
+    </form>
+</div>
 <table t-name="ExportTreeView-Secondary"
        id="field-tree-structure" class="oe_export_fields_selector_export"
        cellspacing="0" cellpadding="0">
@@ -1793,7 +1809,7 @@
     t-foreach="fields" t-as="field"
     t-att-id="'treerow-' + field.id" class="oe_export_row">
     <td>
-        <table class="tree_grid" border="0">
+        <table class="tree_grid" style="font-size:18px;" border="0">
             <tr class="oe_export_row">
                 <t t-foreach="(field.id).split('/')" t-as="level" >
                     <t t-if="(field.id).split('/')[0] != level">
@@ -1816,25 +1832,6 @@
         </table>
     </td>
 </tr>
-<t t-name="ExportNewList">
-    <tr>
-        <th><label>Save as:</label></th>
-        <td><input size="10" type="text" id="savelist_name"/></td>
-        <td><button class="oe_button oe_export_button_export" id="add_export_list">Ok</button></td>
-    </tr>
-</t>
-<t t-name="Exists.ExportList">
-    <label for="saved_export_list">Saved exports:</label>
-
-    <select id="saved_export_list">
-        <option></option>
-        <t t-foreach="existing_exports" t-as="export">
-            <option t-att-value="export.id"><t t-esc="export.name"/></option>
-        </t>
-    </select>
-    <button class="oe_button oe_export_button_export" id="delete_export_list" type="button">Delete</button>
-</t>
-
 <t t-name="ImportView">
     <a id="importview" href="javascript: void(0)" style="text-decoration: none;color: #3D3D3D;">Import</a>
 </t>

@@ -1530,7 +1530,20 @@ instance.web.View = instance.web.Widget.extend({
     do_search: function(view) {
     },
     on_sidebar_export: function() {
-        new instance.web.DataExport(this, this.dataset).open();
+        var self= this;
+        self.do_action({
+            type: 'ir.actions.client',
+            tag: 'export',
+            flags: {new_window: true},
+            params: {
+                model: self.dataset.model,
+                dataset: self.dataset,
+                domain: self.get_active_domain(),
+                selected_ids: self.get_selected_ids(),
+                context: self.getParent().action.context,
+                view: self.ViewManager.action.name,
+            }
+        });
     },
     sidebar_eval_context: function () {
         return $.when({});

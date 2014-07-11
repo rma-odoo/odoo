@@ -12,6 +12,10 @@
     height: 22px;
 }
 
+.openerp .oe_image_field{
+    width: 55px;
+ }
+ 
 .openerp tr.ui-selected td {
     background-color: #CCCCCC;
 }
@@ -29,7 +33,7 @@
 }
 
 .openerp .oe_export_fields_selector_left {
-    width: 50%;
+    width: 400px;
 }
 
 .openerp div#left_field_panel {
@@ -45,12 +49,9 @@
 .openerp .oe_export_fields_selector_center {
     text-align: center;
 }
-.openerp .oe_export_fields_selector_center button {
-    white-space: nowrap;
-}
 
 .openerp .oe_export_fields_selector_right {
-    width: 45%;
+    width: 370px;
     height: 400px;
 }
 
