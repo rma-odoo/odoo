@@ -1,5 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <template>
+    <!-- <t t-name="twitter_wall_config_alert">
+        <div class="modal hide fade">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+            <h3>Modal header</h3>
+          </div>
+          <div class="modal-body">
+            <p>One fine body…</p>
+          </div>
+          <div class="modal-footer">
+            <a href="#" class="btn">Close</a>
+            <a href="#" class="btn btn-primary">Save changes</a>
+          </div>
+        </div>
+    </t> -->
     <t t-name="twitter_tweets_list_mode" name="res">
         <div class="col-md-12 oe_tweets">
             <div class="col-md-1 oe_padding">

@@ -12,6 +12,7 @@ from Oauth import oauth
 from streaming import StreamListener, Stream
 
 from openerp.addons.website_twitter_wall.controllers.main import CACHE
+stream_obj={}
 # Temprory working this fix for linux OS, need to do more analysis after backend and frontend development.
 # Remove dependency of tweepy lib in future.
 class WallManager(object):
@@ -21,10 +22,10 @@ class WallManager(object):
         self.ids = ids
     
     def start(self):
-        def func(user_id):
-            return stream.filter(follow=user_id)
+        def func(user_ids):
+            return stream.filter(follow=user_ids)
         
-        if (self.wall.state != 'not_streaming'): 
+        if (self.wall.state != 'not_streaming'):
             return False
         if (self.check_api_token()):
             listner = WallListener(self.registry, self.wall.id, self.wall.name)
@@ -34,11 +35,17 @@ class WallManager(object):
                 auth.set_access_token(self.wall.website_id.twitter_access_token, self.wall.website_id.twitter_access_token_secret)
 #                 import pdb
 #                 pdb.set_trace()
+#                 auth.get_user_id('ajaybpatel')
                 stream = Stream(auth, listner)
-#                 screen_names = [screen_name.name for screen_name in self.wall.screen_name]
+                if self.wall.id not in stream_obj:
+                    stream_obj.update({self.wall.id : []})
+                stream_obj[self.wall.id].append(stream)
+                user_ids = [auth.get_user_id(screen_name.name) for screen_name in self.wall.screen_name]
                 #get authorized user's user_id
-                user_id = [auth.get_user_id()]
-                thread.start_new_thread(func, (user_id, ))
+#                 user_id = [auth.get_user_id()]
+                user_ids.append(auth.get_authorise_user_id())
+                print "user",user_ids
+                thread.start_new_thread(func, (user_ids, ))
                 return True
         else:
             _logger.error('Contact System Administration for Configure Twitter API KEY and ACCESS TOKEN.')
@@ -67,21 +74,21 @@ class WallListener(StreamListener):
         self.wall_id = wall_id
         self.registry = registry
         self.wall_name = wall_name
-        self.screen_name = []
+#         self.screen_name = []
         
     def on_connect(self):
         wall_obj = self.registry.get('website.twitter.wall')
-        with self.registry.cursor() as cr:
-            self.screen_name = [str(screen_name['name']) for screen_name in wall_obj.browse(cr, openerp.SUPERUSER_ID, self.wall_id, context=None)['screen_name']]
+#         with self.registry.cursor() as cr:
+#             self.screen_name = [str(screen_name['name']) for screen_name in wall_obj.browse(cr, openerp.SUPERUSER_ID, self.wall_id, context=None)['screen_name']]
         _logger.info('StreamListener Connect to Twitter API for wall: %s - %s ', self.wall_name, self.wall_id)
         return True
 
     def on_data(self, data):
+        print data
         wall_obj = self.registry.get('website.twitter.wall')
         with self.registry.cursor() as cr:
             stream_state = wall_obj.browse(cr, openerp.SUPERUSER_ID, self.wall_id, context=None)['state']
             if stream_state != 'streaming':
-                self.on_disconnect(None)
                 return False
             tweet = self._process_tweet(json.loads(data))
             if tweet:wall_obj._set_tweets(cr, openerp.SUPERUSER_ID, self.wall_id, tweet, context=None)
@@ -106,22 +113,20 @@ class WallListener(StreamListener):
     
     def _process_tweet(self, tweet):
         if not tweet.has_key('user'):return None
-        if tweet.get('user').get('screen_name') in self.screen_name:
+#         if tweet.get('user').get('screen_name') in self.screen_name:
 #             print '@',tweet.get('user').get('screen_name')
-            wall_obj = self.registry.get('website.twitter.wall')
-            with self.registry.cursor() as cr:
-                walls = wall_obj.search_read(cr, openerp.SUPERUSER_ID, [('id', '=', self.wall_id)], ["re_tweet"])
-                for wall in walls:
-                    re_tweet = wall["re_tweet"]
-#             print "re_twete",re_tweet
-#             print "count",tweet.get('retweet_count')
-#             print "/n/n",tweet.has_key('retweeted_status'),"/n/n"
-            if not re_tweet:
-                if tweet.has_key('retweeted_status'):return None
+        wall_obj = self.registry.get('website.twitter.wall')
+        with self.registry.cursor() as cr:
+            walls = wall_obj.search_read(cr, openerp.SUPERUSER_ID, [('id', '=', self.wall_id)], ["re_tweet"])
+            for wall in walls:
+                re_tweet = wall["re_tweet"]
+        print "re_twete",re_tweet
+        if not re_tweet:
+            if tweet.has_key('retweeted_status'):return None
 #                 if tweet.get('retweet_count') != 0:
-            if tweet.has_key('retweeted_status'):
-                tweet = tweet.get('retweeted_status')
-            return tweet
+        if tweet.has_key('retweeted_status'):
+            tweet = tweet.get('retweeted_status')
+        return tweet
 #             tweets = {
 #                 'name': tweet.get('user').get('name'),
 #                 'screen_name': tweet.get('user').get('screen_name'),

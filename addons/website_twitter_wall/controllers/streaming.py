@@ -100,7 +100,7 @@ class StreamListener(object):
 
 
 class Stream(object):
-
+    
     host = 'stream.twitter.com'
 
     def __init__(self, auth, listener, **options):
@@ -184,6 +184,8 @@ class Stream(object):
 
         # cleanup
         self.running = False
+        if not self.running:
+            self.listener.on_disconnect(None)
         if conn:
             conn.close()
 
@@ -199,7 +201,6 @@ class Stream(object):
     def _read_loop(self, resp):
 
         while self.running and not resp.isclosed():
-
             # Note: keep-alive newlines might be inserted before each length value.
             # read until we get a digit...
             c = '\n'
@@ -299,5 +300,6 @@ class Stream(object):
     def disconnect(self):
         if self.running is False:
             return
+        self.listener.on_disconnect(None)
         self.running = False
 

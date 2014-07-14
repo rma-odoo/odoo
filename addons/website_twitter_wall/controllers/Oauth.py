@@ -32,6 +32,7 @@ class oauth(object):
         return str(int(time.time()))
     
     def _generate_header(self, URL, signature_method, oauth_version, callback_url = None, request_token=None, oauth_verifier = None, params=None, method='POST'):
+        self.parameters = {}
         if params:
             self.parameters.update(params)
         if callback_url: self.parameters['oauth_callback'] = callback_url
@@ -70,8 +71,7 @@ class oauth(object):
         # Add the oauth parameters.
         if self.parameters:
             for k, v in self.parameters.iteritems():
-                if k[:6] == 'oauth_':
-                    auth_header += '&%s=%s' % (quote(k, ''), quote(v, ''))
+                auth_header += '&%s=%s' % (quote(k, ''), quote(v, ''))
         return auth_header
 
     def to_parameter_string(self):
@@ -136,7 +136,18 @@ class oauth(object):
         self.Oauth_Token = Oauth_Token
         self.Oauth_Token_Secret = Oauth_Token_Secret
         
-    def get_user_id(self):
+    def get_user_id(self, screen_name):
+        print "get_user_id of",screen_name
+        params={}
+        params['screen_name']=screen_name
+        params['include_entities']='true'
+        url = "https://api.twitter.com/1.1/users/show.json"
+        HEADER = self._generate_header(url, 'HMAC-SHA1', '1.0', params= params, method='GET')
+        HTTP_REQUEST = Request(url + '?' + HEADER)
+        request_response = urlopen(HTTP_REQUEST).read()
+        return json.loads(request_response)['id_str']
+    
+    def get_authorise_user_id(self):
         url="https://api.twitter.com/1.1/account/verify_credentials.json"
         HEADER = self._generate_header(url, 'HMAC-SHA1', '1.0', method='GET')
         HTTP_REQUEST = Request(url + '?' + HEADER)

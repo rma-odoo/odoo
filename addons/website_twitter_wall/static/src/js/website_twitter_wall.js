@@ -1,4 +1,8 @@
 $(document).ready(function() {
+    console.log($("#APIConf"))
+    if($("#APIConf") != null)
+        $("#APIConf").modal();
+    
     $(".upload_bg_image").change(function(ev){
         var type =  $(this).attr("data-type");
         var id = $(this).attr("data-id");
@@ -33,7 +37,6 @@ $(document).ready(function() {
         var twitter_wall = new openerp.website.approve_tweet($("#approve_tweet_wall"), parseInt($el.attr("wall_id")));
         twitter_wall.start();
     }
-
 });
 
 var website = openerp.website;
@@ -119,6 +122,7 @@ openerp.website.moderate_tweet = openerp.Class.extend({
         var $start_stop_button = self.$el.find(".btn-group button");
         $start_stop_button.click(function(){
             var value = $(this).attr("value");
+            console.log(self.wall_id)
             openerp.jsonRpc("/tweet_moderate/streaming", 'call', {'wall_id' : self.wall_id, 'state' : value}).done(function(state) {
                 $start_stop_button.removeClass('stop_streaming start_streaming');
                 if(state == 'startstreaming'){

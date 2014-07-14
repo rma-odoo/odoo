@@ -7,14 +7,25 @@ from openerp import SUPERUSER_ID
 from datetime import datetime
 from Oauth import oauth
 from openerp.addons.web.controllers.main import login_redirect, ensure_db
+from gtk import TRUE
 CACHE = {}
 class website_twitter_wall(http.Controller):
+    @http.route(['/create_twitter_wall'], type='http', auth="public", website=True)
+    def create_twitter_wall(self, wall_name= None, screen_name=None, include_retweet=False, wall_description=None, **kw):
+        if screen_name: screen_name_id = request.registry.get('website.twitter.screen.name').create(request.cr, SUPERUSER_ID, {'name':screen_name}, request.context)
+        values = {
+            'name': wall_name,
+            'note': wall_description,
+            're_tweet':include_retweet,
+        }
+        wall_id = request.registry.get('website.twitter.wall').create(request.cr, SUPERUSER_ID, values, request.context)
+        if screen_name: request.cr.execute("insert into rel_wall_screen_name values('%s','%s')" % (wall_id, screen_name_id))
+        return http.local_redirect("/twitter_walls",query=request.params)
+    
     @http.route(['/twitter_walls',
                 '/twitter_wall/<model("website.twitter.wall"):wall>'], type='http', auth="public", website=True)
     def twitter_wall(self, wall=None, **kw):
         wall_obj = request.registry.get('website.twitter.wall')
-        wall_ids = wall_obj.search(request.cr, SUPERUSER_ID, [], context=request.context)
-        wall_list = wall_obj.browse(request.cr, SUPERUSER_ID, wall_ids, context=request.context)
         if wall:
             for walls in wall_obj.browse(request.cr, SUPERUSER_ID, [wall.id], context=request.context):
                 vals = {
@@ -25,23 +36,29 @@ class website_twitter_wall(http.Controller):
                         'view_mode' : wall.view_mode
                 }
             return request.website.render("website_twitter_wall.twitter_wall", vals)
-
+        
+        wall_ids = wall_obj.search(request.cr, SUPERUSER_ID, [], context=request.context)
+        wall_list = wall_obj.browse(request.cr, SUPERUSER_ID, wall_ids, context=request.context)
         tweet_state = {}
         for wall in wall_list:
             wall_state = wall_obj._get_pending(request.cr, SUPERUSER_ID, [wall.id], '', '',context=request.context)
             tweet_state[wall.id] = [wall_state[wall.id]['pending'], wall_state[wall.id]['published'], wall_state[wall.id]['unpublished']]
         values = {
             'walls': wall_list,
-            'status': tweet_state
+            'status': tweet_state,
+            'api_conf': True if(wall.website_id.twitter_api_key and wall.website_id.twitter_api_secret) else False
         }
         return request.website.render("website_twitter_wall.twitter_walls", values)
 
-class website_twitter_wall(http.Controller):
+    @http.route(['/twitter_wall/<model("website.twitter.wall"):wall>/delete'], type='http', auth="public", website=True)
+    def delete_twitter_wall(self, wall, **kw):
+        request.registry.get('website.twitter.wall').unlink(request.cr, SUPERUSER_ID, [wall.id], request.context)
+        return http.local_redirect("/twitter_walls",query=request.params)
+    
     @http.route(['/twitter_wall/<model("website.twitter.wall"):wall>/approved'], type='http', auth="public", website=True)
     def twitter_wall_approve(self, wall, **kw):
         vals = { 'wall' : wall}
         return request.website.render("website_twitter_wall.twitter_wall_approve", vals)
-
 
     @http.route('/twitter_wall_tweet_data_admin', type='json', auth="public", website=True)
     def tweet_data_moderate(self, wall_id, published_date, state, fetch_all = True, limit = None, new_tweet_id = None, last_tweet_id = None):

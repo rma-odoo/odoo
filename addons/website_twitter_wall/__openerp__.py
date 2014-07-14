@@ -19,5 +19,4 @@ Display best tweets from hashtag
     'demo': [],
     'qweb': [],
     'installable': True,
-    'application': True,
 }
