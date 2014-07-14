@@ -528,6 +528,7 @@
             });
         },
         switch_display: function() {
+            this.calc_box();
             var fct =  _.bind(function(place) {
                 this.set("right_offset", place + this.$el.outerWidth());
             }, this);
