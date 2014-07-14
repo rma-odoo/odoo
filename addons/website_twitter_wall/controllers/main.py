@@ -46,10 +46,18 @@ class website_twitter_wall(http.Controller):
         values = {
             'walls': wall_list,
             'status': tweet_state,
-            'api_conf': True if(wall.website_id.twitter_api_key and wall.website_id.twitter_api_secret) else False
+            'api_conf': True if(wall.website_id.twitter_api_key and wall.website_id.twitter_api_secret) else False,
+            'api_token_conf': True if(wall.website_id.twitter_access_token and wall.website_id.twitter_access_token_secret) else False
         }
         return request.website.render("website_twitter_wall.twitter_walls", values)
-
+    
+    @http.route(['/twitter_wall/<model("website.twitter.wall"):wall>/authenticate'], type='http', auth="public", website=True)
+    def authenticate_twitter_wall(self, wall, **kw):
+        auth = oauth(wall.website_id.twitter_api_key, wall.website_id.twitter_api_secret)
+        base_url = request.registry.get('ir.config_parameter').get_param(request.cr, openerp.SUPERUSER_ID, 'web.base.url')
+        auth._request_token(base_url, request.cr.dbname, 1)
+        return http.local_redirect("/twitter_walls",query=request.params)
+    
     @http.route(['/twitter_wall/<model("website.twitter.wall"):wall>/delete'], type='http', auth="public", website=True)
     def delete_twitter_wall(self, wall, **kw):
         request.registry.get('website.twitter.wall').unlink(request.cr, SUPERUSER_ID, [wall.id], request.context)

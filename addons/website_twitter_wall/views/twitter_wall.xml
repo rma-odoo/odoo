@@ -53,6 +53,21 @@
                         <div class="container-fluid">
                             <div class="row" t-if="walls">
                                 <t t-foreach="walls" t-as="wall">
+                                    <div class="modal fade" id="APIConf" t-if="not api_token_conf">
+                                      <div class="modal-dialog">
+                                        <div class="modal-content">
+                                          <div class="modal-header alert alert-warning">
+                                            <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">x</span></button>
+                                            <h4 class="modal-title" id="myModalLabel">Authorize Required!</h4>
+                                          </div>
+                                          <div class="modal-body">
+                                            <strong>Warning!</strong> Authorize the account for start streaming.
+                                            <a t-attf-href="/twitter_wall/#{ slug(wall) }/authenticate">Click Here</a>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
                                     <!-- <t t-set="class1"
                                         t-value="'published_True' if wall.website_published else 'published_False' " /> -->
                                     <div class="wall_box" name="tweets_for_admin" t-att-wall_id="wall.id">
