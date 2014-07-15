@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<templates id="template" xml:space="preserve">
+    <t t-name="PlannerManager">
+       <li class="oe_topbar_item oe_planner_systray">
+            <span class="fa fa-question-circle pull-left" style="color:white;"/>
+            <div class="progress" style="margin-top:2px;">
+                <div class="progress-bar" t-attf-style="width :0%;">
+                </div>
+            </div>
+        </li>
+    </t>
+
+    <t t-name="PlannerFooter">
+        <br/>
+        <t t-if="!start and !end"><button t-attf-id='input_element_btn_#{current_page_id}' t-attf-data-progress='#{current_page_id}'
+            class='fa fa-square-o btn btn-primary mark_as_done'> Mark As Done</button></t>
+        <t t-if="!end"><a data-toggle='collapse' class='pull-right btn btn-primary fa fa-arrow-circle-right' t-attf-data-parent='#{current_page_id}' t-attf-href='##{next_page_id}'> Next Step:<t t-esc="next_page_name"/></a></t>
+    </t>
+
+    <t t-name="PlannerDialog">
+        <div>
+            <div class="modal fade" id="PlannerModal" tabindex="-1" role="dialog" aria-labelledby="PlannerModalLabel" aria-hidden="true">
+                <div class="modal-dialog planner-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">x</span><span class="sr-only">Close</span></button>
+                            <div class="row">
+                                <div class="col-md-2">
+                                    <span class="fa fa-question-circle fa-2x pull-left"/>
+                                    <div class="progress" style="margin-top:3px;">
+                                        <div class="progress-bar" t-attf-style="width :0%; color:black">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-body">
+                            <div class="content"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

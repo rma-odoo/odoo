@@ -1,0 +1,15 @@
+#oe_main_menu_navbar.navbar .oe_planner_systray {
+  width: 100px;
+  height: 10px;
+  margin: 10px 20px 0 0;
+}
+#oe_main_menu_navbar.navbar .oe_planner_systray div.progress {
+  height: 10px;
+  cursor: pointer;
+}
+
+.planner-dialog {
+  width: 90%;
+  margin-left: auto;
+  margin-right: auto;
+}
