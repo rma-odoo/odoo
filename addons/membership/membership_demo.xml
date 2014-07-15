@@ -5,8 +5,7 @@
 <!-- Demo Data for Memberships  -->
     <record id="membership_0" model="product.product">
         <field name="membership">True</field>
-        <field eval="time.strftime('%Y-01-01')" name="membership_date_from"/>
-        <field eval="time.strftime('%Y-12-31')" name="membership_date_to"/>
+        <field name="membership_duration">24</field>
         <field name="name">Gold Membership</field>
         <field name="list_price">180</field>
         <field name="categ_id" ref="product.product_category_1"/>
@@ -15,8 +14,7 @@
     </record>
     <record id="membership_1" model="product.product">
         <field name="membership">True</field>
-        <field eval="time.strftime('%Y-01-01')" name="membership_date_from"/>
-        <field eval="time.strftime('%Y-12-31')" name="membership_date_to"/>
+        <field name="membership_duration">12</field>
         <field name="name">Silver Membership</field>
         <field name="categ_id" ref="product.product_category_1"/>
         <field name="list_price">80</field>
@@ -25,8 +23,7 @@
     </record>
     <record id="membership_2" model="product.product">
         <field name="membership">True</field>
-        <field eval="time.strftime('%Y-01-01')" name="membership_date_from"/>
-        <field eval="time.strftime('%Y-12-31')" name="membership_date_to"/>
+        <field name="membership_duration">6</field>
         <field name="name">Basic Membership</field>
         <field name="categ_id" ref="product.product_category_1"/>
         <field name="list_price">40</field>
