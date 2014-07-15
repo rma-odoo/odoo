@@ -48,6 +48,7 @@ class report_timesheet_task_user(osv.osv):
         'month':fields.selection([('01','January'), ('02','February'), ('03','March'), ('04','April'), ('05','May'), ('06','June'),
                                   ('07','July'), ('08','August'), ('09','September'), ('10','October'), ('11','November'), ('12','December')],'Month', readonly=True),
         'user_id': fields.many2one('res.users', 'User',readonly=True),
+        'date': fields.date('Date', readonly=True),
         'timesheet_hrs': fields.function(get_hrs_timesheet, string="Timesheet Hours"),
         'task_hrs' : fields.float('Task Hours'),
     }
@@ -61,6 +62,7 @@ class report_timesheet_task_user(osv.osv):
                r.id as user_id,
                to_char(to_date(months.name, 'YYYY/MM/DD'),'YYYY') as year,
                to_char(to_date(months.name, 'YYYY/MM/DD'),'MM') as month,
+               to_char(to_date(months.name, 'YYYY/MM/DD'),'DD') as date,
                (select sum(hours) from project_task_work where user_id = r.id and date between to_date(months.name, 'YYYY/MM/DD') and (to_date(months.name, 'YYYY/MM/DD') + interval '1 month' -
             interval '1 day') ) as task_hrs
         from res_users r,

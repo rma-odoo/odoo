@@ -43,12 +43,10 @@
                 <field name="job_id"/>
                 <field name="department_id"/>
                 <field name="user_id"/>
+                <filter string="Hired Employee" name="Hired" domain="[('emp_id', '!=', False)]"/>
                 <filter string="This Year" name="year" domain="[('date_create','&lt;=', time.strftime('%%Y-12-31')),('date_create','&gt;=',time.strftime('%%Y-01-01'))]"/>
                 <separator/>
                 <filter string="Unassigned" domain="[('user_id', '=', False)]"/>
-                <filter string="My" domain="[('user_id', '=', uid)]"/>
-                <separator/>
-                <filter string="New" domain="[('sequence', '=', 1)]"/>
                 <separator/>
                 <group expand="0" string="Extended Filters">
                     <field name="priority"/>
@@ -66,11 +64,6 @@
                    <filter string="Degree" name="degree" context="{'group_by':'type_id'}"/>
                    <filter string="Last Stage" help="Match this group by with a specific stage filter in order to analyse the recruitment process" context="{'group_by':'last_stage_id'}"/>
                    <filter string="Stage" context="{'group_by':'stage_id'}" />
-                   <filter string="Last Stage Update" context="{'group_by':'date_last_stage_update'}" />
-                   <filter string="Creation Date (day)" context="{'group_by':'date_create:day'}" help="Creation Date"/>
-                   <filter string="Creation Date (week)" context="{'group_by':'date_create:week'}" help="Creation Date"/>
-                   <filter string="Creation Date (month)" context="{'group_by':'date_create:month'}" help="Creation Date"/>
-                   <filter string="Creation Date (year)" context="{'group_by':'date_create:year'}" help="Creation Date"/>
                 </group>
             </search>
         </field>

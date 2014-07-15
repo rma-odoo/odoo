@@ -24,7 +24,7 @@
             <search string="Expenses Analysis">
                 <filter string="Waiting" icon="terp-gtk-media-pause" domain="[('state', '=' ,'confirm')]" help = "Confirm Expenses"/>
                 <filter string="Approved" icon="terp-check" domain="[('state','=','accepted')]" help = "Approved Expenses"/>
-                <filter string="Done" icon="terp-dolar" domain="[('state','=', 'done')]" help = "Done Expenses"/>
+                <filter string="Done" name="done" icon="terp-dolar" domain="[('state','=', 'done')]" help = "Done Expenses"/>
                 <field name="employee_id"/>
                 <field name="department_id"/>
                 <group expand="0" string="Extended Filters...">
@@ -36,11 +36,11 @@
                     <field name="date_valid"/>
                 </group>
                 <group expand="1" string="Group By">
-                    <filter string="Employee" name="employee" icon="terp-personal" context="{'group_by':'employee_id'}"/>
+                    <filter string="Employee" icon="terp-personal" context="{'group_by':'employee_id'}"/>
                     <filter string="Validation User" name="User" icon="terp-personal" context="{'group_by':'user_id'}"/>
                     <filter string="Department" icon="terp-personal+" context="{'group_by':'department_id'}"/>
                     <filter string="Product" icon="terp-accessories-archiver" context="{'group_by':'product_id'}"/>
-                    <filter string="Analytic account" icon="terp-folder-green" context="{'group_by':'analytic_account'}" groups="analytic.group_analytic_accounting"/>
+                    <filter string="Analytic account" name="analytic_account" icon="terp-folder-green" context="{'group_by':'analytic_account'}" groups="analytic.group_analytic_accounting"/>
                     <filter string="Status" icon="terp-stock_effects-object-colorize" context="{'group_by':'state'}"/>
                     <filter string="Company" icon="terp-go-home" context="{'group_by':'company_id'}" groups="base.group_multi_company"/>
                     <filter string="Day" icon="terp-go-today" context="{'group_by':'day'}" help="Creation Date"/>
@@ -56,7 +56,7 @@
         <field name="res_model">hr.expense.report</field>
         <field name="view_type">form</field>
         <field name="view_mode">graph</field>
-        <field name="context">{'search_default_year':1,'search_default_month':1,'search_default_employee':1,'group_by_no_leaf':1,'group_by':[]}</field>
+        <field name="context">{'search_default_analytic_account':1,'search_default_year':1,'search_default_done':1,'search_default_employee':1,'group_by_no_leaf':1,'group_by':[]}</field>
         <field name="search_view_id" ref="view_hr_expense_report_search"/>
     </record>
 

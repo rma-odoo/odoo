@@ -10,9 +10,9 @@
                     <field name="state" type="row"/>
                 </field>
                 <field name="cost" position="after">
-                    <field name="total_diff" type="measure"/>
-                    <field name="total_timesheet" type="measure"/>
-                    <field name="total_attendance" type="measure"/>
+                    <field name="total_diff"/>
+                    <field name="total_timesheet"/>
+                    <field name="total_attendance"/>
                 </field>
             </field>
         </record>

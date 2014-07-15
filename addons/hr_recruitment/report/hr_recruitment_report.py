@@ -52,6 +52,7 @@ class hr_recruitment_report(osv.Model):
         'delay_close': fields.float('Avg. Delay to Close', digits=(16,2), readonly=True, group_operator="avg",
                                        help="Number of Days to close the project issue"),
         'last_stage_id': fields.many2one ('hr.recruitment.stage', 'Last Stage'),
+        'emp_id': fields.many2one('hr.employee'),
     }
     
     def init(self, cr):
@@ -76,6 +77,7 @@ class hr_recruitment_report(osv.Model):
                      s.priority,
                      s.stage_id,
                      s.last_stage_id,
+                     s.emp_id,
                      sum(salary_proposed) as salary_prop,
                      (sum(salary_proposed)/count(*)) as salary_prop_avg,
                      sum(salary_expected) as salary_exp,
@@ -99,7 +101,8 @@ class hr_recruitment_report(osv.Model):
                      s.type_id,
                      s.priority,
                      s.job_id,
-                     s.department_id
+                     s.department_id,
+                     s.emp_id
             )
         """)
 
