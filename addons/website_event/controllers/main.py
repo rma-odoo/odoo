@@ -22,12 +22,13 @@
 import time
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
+from collections import OrderedDict
 
 import werkzeug.urls
 from werkzeug.exceptions import NotFound
 
 from openerp import http
-from openerp import tools
+from openerp import tools, SUPERUSER_ID
 from openerp.http import request
 from openerp.tools.translate import _
 from openerp.addons.website.models.website import slug
@@ -240,3 +241,71 @@ class website_event(http.Controller):
                  "event": event,
                  "url": event.website_url})
         return request.website.render("website_event.country_events_list",result)
+
+    def _prepare_ticket_json(self, post):
+        '''
+            returns the data {'ticket_id': ('quantity', [{attendee data}, {attendee data}, ...])}
+            For eg.:
+                post = {'phone-5-1-2': u'919898989898', 'email-5-1-2': u'vipattende1@eventoptenerp.com', 'event_ticket_id-4-1-1': u'4', 'name-4-1-1': u'StandardAttendee1', 'email-5-2-2': u'vipattende2@eventoptenerp.com', 'phone-4-1-1': u'919898989898', 'name-5-1-2': u'VIPAttendee1', 'event_ticket_id-5-2-2': u'5', 'name-5-2-2': u'VIPAttendee2', 'phone-5-2-2': u'919898989898', 'email-4-1-1': u'standardattende1@eventoptenerp.com', 'event_ticket_id-5-1-2': u'5'}
+                return {'5': ('2', [{'phone': u'919898989898', 'email': u'vipattende1@eventoptenerp.com', 'id': '1', 'event_ticket_id': u'5', 'name': u'VIPAttendee1'}, {'email': u'vipattende2@eventoptenerp.com', 'phone': u'919898989898', 'id': '2', 'event_ticket_id': u'5', 'name': u'VIPAttendee2'}]), '4': ('1', [{'phone': u'919898989898', 'email': u'standardattende1@eventoptenerp.com', 'id': '1', 'event_ticket_id': u'4', 'name': u'StandardAttendee1'}])}
+        '''
+        tickets = {}
+        for key in post:
+            field_name, ticket_id, sequence, qty = tuple(key.split('-'))
+            if ticket_id not in tickets:
+                tickets[ticket_id] = (qty, [])
+            attendee_list = tickets[ticket_id][1]
+            if not attendee_list:
+                attendee = { 'id': sequence }
+                attendee_list.append(attendee)
+            flag = False
+            for attendee in attendee_list:
+                if attendee['id'] == sequence:
+                    flag = True
+                    attendee[field_name] = post[key]
+            if not flag:
+                attendee = { 'id': sequence, field_name: post[key] }
+                attendee_list.append(attendee)
+            tickets[ticket_id]= (qty, attendee_list)
+        return tickets
+
+    def _check_website_event_sale_default_template_status(self):
+        '''
+            For checking the status of 'event_attendee_registration' template enabled/disabled. Kept by default disabled bcz if module website_event_sale is not installed than take it as disabled.
+        '''
+        return 'disabled'
+
+    @http.route(['/event/generate/attendeeform'], type='json', auth="public", methods=['POST'], website=True)
+    def attendee_form(self, event_id, **post):
+        sale = False
+        for key, value in post['post'].items():
+            quantity = int(value or "0")
+            if not quantity:
+                continue
+            sale = True
+        if not sale:
+            return request.redirect("/event/%s" % event_id)
+        flag = self._check_website_event_sale_default_template_status()
+        return request.website._render("website_event.event_attendee_registration", {
+                'post': OrderedDict(sorted(post['post'].items())),
+                'event_id': event_id,
+                'flag': flag,
+                })
+
+    @http.route(['/event/register/attendee'], type='http', auth="public", methods=['POST'], website=True)
+    def register_attendee(self, event_id, **post):
+        cr, uid, context = request.cr, request.uid, request.context
+        attendees_data = []
+        attendee_obj = request.registry.get('event.registration')
+        tickets = self._prepare_ticket_json(post)
+        for ticket_id, item in tickets.items():
+            quantity, attendee_list = item
+            for attendee in attendee_list:
+                attendee['event_id'] = event_id
+                attendee_id = attendee_obj.create(cr, SUPERUSER_ID, attendee, context=context)
+                attendees_data.append(attendee_obj.browse(cr, uid, attendee_id, context=context))
+            return request.website.render("website_event.registration_complete", {
+                'uid': uid,
+                'attendees': attendees_data,
+                'event': request.registry.get('event.event').browse(cr, uid, int(event_id), context=context),
+            })

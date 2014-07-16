@@ -28,24 +28,23 @@ from openerp.tools.translate import _
 
 class website_event(website_event):
 
+    def _check_website_event_sale_default_template_status(self):
+        super(website_event, self)._check_website_event_sale_default_template_status()
+        view_ref = request.registry.get('ir.model.data').get_object_reference(request.cr, request.uid, 'website_event_sale', 'registration_template')[1]
+        flag = request.registry.get('ir.ui.view').browse(request.cr, request.uid, view_ref).application
+        return flag
+
     @http.route(['/event/cart/update'], type='http', auth="public", methods=['POST'], website=True)
     def cart_update(self, event_id, **post):
         cr, uid, context = request.cr, request.uid, request.context
+        sale_order = request.website.sale_get_order(force_create=1)
+        tickets = website_event._prepare_ticket_json(self, post)
+        order_obj = request.registry.get('sale.order')
         ticket_obj = request.registry.get('event.event.ticket')
-
-        sale = False
-        for key, value in post.items():
-            quantity = int(value or "0")
-            if not quantity:
-                continue
-            sale = True
-            ticket_id = key.split("-")[0] == 'ticket' and int(key.split("-")[1]) or None
-            ticket = ticket_obj.browse(cr, SUPERUSER_ID, ticket_id, context=context)
-            request.website.sale_get_order(force_create=1)._cart_update(
-                product_id=ticket.product_id.id, add_qty=quantity, context=dict(context, event_ticket_id=ticket.id))
-
-        if not sale:
-            return request.redirect("/event/%s" % event_id)
+        for ticket_id, item in tickets.items():
+            quantity, attendee_list = item
+            ticket = ticket_obj.browse(cr, SUPERUSER_ID, int(ticket_id), context=context)
+            order_obj._cart_update(cr, uid, [sale_order.id], product_id=ticket.product_id.id, add_qty=int(quantity), context=dict(context, event_ticket_id=ticket.id, attendee_list=attendee_list))
         return request.redirect("/shop/checkout")
 
     def _add_event(self, event_name="New Event", context={}, **kwargs):
@@ -61,6 +60,3 @@ class website_event(website_event):
         except ValueError:
             pass
         return super(website_event, self)._add_event(event_name, context, **kwargs)
-
-
-

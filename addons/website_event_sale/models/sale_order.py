@@ -11,26 +11,27 @@ class sale_order(osv.Model):
         line_ids = super(sale_order, self)._cart_find_product_line(cr, uid, ids, product_id, line_id, context=context)
         if line_id:
             return line_ids
+        event_ticket_id = context.get('event_ticket_id', False)
         for so in self.browse(cr, uid, ids, context=context):
-            domain = [('id', 'in', line_ids)]
-            if context.get("event_ticket_id"):
-                domain += [('event_ticket_id', '=', context.get("event_ticket_id"))]
+            if event_ticket_id:
+                domain = [('order_id', '=', so.id), ('event_ticket_id', '=', event_ticket_id)]
+            else:
+                domain = [('id', 'in', line_ids)]
             return self.pool.get('sale.order.line').search(cr, SUPERUSER_ID, domain, context=context)
 
     def _website_product_id_change(self, cr, uid, ids, order_id, product_id, line_id=None, context=None):
         values = super(sale_order,self)._website_product_id_change(cr, uid, ids, order_id, product_id, line_id=line_id, context=None)
-
-        event_ticket_id = None
-        if context.get("event_ticket_id"):
-            event_ticket_id = context.get("event_ticket_id")
-        elif line_id:
-            line = self.pool.get('sale.order.line').browse(cr, SUPERUSER_ID, line_id, context=context)
-            if line.event_ticket_id:
-                event_ticket_id = line.event_ticket_id.id
-        else:
-            product = self.pool.get('product.product').browse(cr, uid, product_id, context=context)
-            if product.event_ticket_ids:
-                event_ticket_id = product.event_ticket_ids[0].id
+        event_ticket_id = context.get('event_ticket_id', False)
+        attendee_list = context.get('attendee_list', [])
+        if not event_ticket_id:
+            if line_id:
+                line = self.pool.get('sale.order.line').browse(cr, SUPERUSER_ID, line_id, context=context)
+                if line.event_ticket_id:
+                    event_ticket_id = line.event_ticket_id.id
+            else:
+                product = self.pool.get('product.product').browse(cr, uid, product_id, context=context)
+                if product.event_ticket_ids:
+                    event_ticket_id = product.event_ticket_ids[0].id
 
         if event_ticket_id:
             ticket = self.pool.get('event.event.ticket').browse(cr, uid, event_ticket_id, context=context)
@@ -42,5 +43,19 @@ class sale_order(osv.Model):
             values['event_ticket_id'] = ticket.id
             values['price_unit'] = ticket.price
             values['name'] = "%s: %s" % (ticket.event_id.name, ticket.name)
+            event_attendee_ids = []
+            attendee_obj = self.pool.get('sale.order.event.attendee')
+            for attendee in attendee_list:
+                if line_id:
+                    attendee_ids = attendee_obj.search(cr, uid, [
+                            ('sale_order_line_id', '=', line_id),
+                            ('name', '=', attendee.get('name')),
+                            ('email', '=', attendee.get('email')),
+                            ('phone', '=' ,attendee.get('phone'))
+                    ])
+                    if attendee_ids:
+                        continue
+                event_attendee_ids.append((0, 0, {'name': attendee.get('name'), 'email': attendee.get('email'), 'phone': attendee.get('phone')}))
+            values['event_attendee_ids'] = event_attendee_ids
 
         return values

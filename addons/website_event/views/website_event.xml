@@ -5,6 +5,7 @@
 <template id="event_script" inherit_id="website.assets_frontend" name="Country Events Snippet Script">
     <xpath expr="/t" position="inside">
         <script type="text/javascript" src="/website_event/static/src/js/website_geolocation.js"></script>
+        <script type="text/javascript" src="/website_event/static/src/js/website_event.js"></script>
     </xpath>
 </template>
 
@@ -279,9 +280,47 @@
     </t>
 </template>
 
+<template id="free_registration_template">
+    <form id="attendeeform" t-attf-action="/event/generate/attendeeform?event_id=#{ event.id }" method="post">
+        <table itemprop="offers" class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Ticket Type</th>
+                    <th style="min-width: 100px">End of Subscription</th>
+                    <th style="min-width: 100px">Price</th>
+                    <th></th>
+                    <th>Quantity</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Event Subscription</td>
+                    <td>Unlimited</td>
+                    <td>Free</td>
+                    <td></td>
+                    <td>
+                        <select t-if="event.seats_available" name="ticket-0-Event Subscription-0" class="form-control">
+                            <t t-foreach="range(0, event.seats_available > 9 and 10 or event.seats_available+1)" t-as="nb">
+                                <option t-esc="nb"/>
+                            </t>
+                        </select>
+                        <span t-if="not event.seats_available">Sold Out</span>
+                    </td>
+                 </tr>
+            </tbody>
+        </table>
+        <t t-if="event.seats_available">
+            <button type="submit" t-if="event.seats_available" class="btn btn-primary btn-lg pull-right a-submit" t-attf-id="#{event.id}">Register Now</button>
+        </t>
+    </form>
+</template>
+
 <template id="event_description_full">
     <t t-call="website_event.event_details">
         <div class="col-md-8">
+            <t t-call="website_event.free_registration_template"/>
+            <div class="clearfix"/>
+            <hr/>
             <div itemprop="description" t-field="event.description"></div>
             <div class="clearfix"/>
             <ul class="media-list" id="comment">
@@ -355,6 +394,77 @@
                         </strong></p>
                     </div>
                 </div>
+            </div>
+        </div>
+    </t>
+</template>
+
+<template id="event_attendee_registration" name="Event Attendees">
+    <div id="modal_attendees_registration" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog modal-lg">
+            <form id="attendee_registration" t-attf-action="/event{{'/cart/update?event_id=' if flag=='enabled' else '/register/attendee?event_id=' }}#{ event_id }" method="post">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+                        <h4 class="modal-title" id="myModalLabel"><strong>Attendees</strong></h4>
+                    </div>
+                    <div class="modal-body">
+                        <div class="container">
+                            <t t-foreach="post" t-as="ticket">
+                                <t t-set="split_ticket" t-value="ticket.split('-')"></t>
+                                <t t-set="quantity" t-value="post[ticket]"/>
+                                <t t-if="int(quantity) > 0">
+                                    <t t-foreach="range(1, int(quantity)+1)" t-as="attendee">
+                                        <div>
+                                            <h4><strong>Ticket #<t t-raw="attendee"/>: <t t-esc="split_ticket[2]"/> ( <t t-if="int(split_ticket[1]) != 0"><t t-esc="split_ticket[3]"/><t t-esc="website.pricelist_id.currency_id.symbol"/></t><t t-if="int(split_ticket[1]) == 0">Free</t> )</strong></h4><hr/>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-4"><strong>Name:</strong></div>
+                                            <div class="col-md-4"><strong>Phone:</strong></div>
+                                            <div class="col-md-4"><strong>Email:</strong></div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-4"><input class='form-control input-sm' type='text' t-attf-name="name-#{split_ticket[1]}-#{attendee}-#{quantity}"/></div>
+                                            <div class="col-md-4"><input class='form-control input-sm' type='tel' t-attf-name="phone-#{split_ticket[1]}-#{attendee}-#{quantity}"/></div>
+                                            <div class="col-md-4"><input class='form-control input-sm' type='email' t-attf-name="email-#{split_ticket[1]}-#{attendee}-#{quantity}"/></div>
+                                            <input t-if="int(split_ticket[1]) != 0" class='hidden' type='text' t-attf-name="event_ticket_id-#{split_ticket[1]}-#{attendee}-#{quantity}" t-attf-value="#{ split_ticket[1] }"/>
+                                        </div><hr/>
+                                    </t>
+                                </t>
+                            </t>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <div class="pull-left">
+                            <button type="submit" class="btn btn-primary">Continue</button> or 
+                            <a class="js_goto_event"> Cancel Registration</a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</template>
+
+<template id="registration_complete" name="Registration Completed">
+    <t t-call="website.layout">
+        <div class="container">
+            <h1 class="mb32">Thank you for your registration.
+                <p><small>Your registration is waiting confirmation.</small></p>
+            </h1>
+            <div class="col-md-12">
+                <div class="text-center">
+                    <h2 t-esc="event.name"/>
+                    <h4>( <i class="fa fa-clock-o"/> <span itemprop="startDate" t-field="event.date_begin" t-field-options='{"hide_seconds":"True"}'> </span> <i>to</i> <span itemprop="endDate" t-field="event.date_end" t-field-options='{"hide_seconds":"True"}'> </span> )</h4>
+                </div>
+                <t t-foreach="attendees" t-as="attendee">
+                    <div class="col-md-3 col-md-offset-1 well mt16">
+                        Reg. ID:   <t t-esc="attendee.id"/><br/>
+                        <i class="fa fa-user"></i> <t t-if='attendee.name'><t t-esc="attendee.name"/></t><t t-if='not attendee.name'>N/A</t><br/>
+                        <i class="fa fa-envelope"></i> <t t-if='attendee.email'><t t-esc="attendee.email"/></t><t t-if='not attendee.email'>N/A</t><br/>
+                        <i class="fa fa-phone"></i> <t t-if='attendee.phone'><t t-esc="attendee.phone"/></t><t t-if='not attendee.phone'>N/A</t>
+                    </div>
+                </t>
             </div>
         </div>
     </t>
