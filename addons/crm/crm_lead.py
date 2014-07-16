@@ -679,6 +679,8 @@ class crm_lead(format_address, osv.osv):
                 continue
             vals = self._convert_opportunity_data(cr, uid, lead, customer, section_id, context=context)
             self.write(cr, uid, [lead.id], vals, context=context)
+            if lead.partner_id and lead.contact_name:
+                self._lead_create_contact(cr, uid, lead, lead.contact_name, False, lead.partner_id.id, context=context)
 
         if user_ids or section_id:
             self.allocate_salesman(cr, uid, ids, user_ids, section_id, context=context)
@@ -719,6 +721,8 @@ class crm_lead(format_address, osv.osv):
             partner_id = self._lead_create_contact(cr, uid, lead, lead.partner_name, True, context=context)
         elif not lead.partner_name and lead.contact_name:
             partner_id = self._lead_create_contact(cr, uid, lead, lead.contact_name, False, context=context)
+        elif not lead.partner_name and not lead.contact_name and context.get('contact_name'):
+            partner_id = self._lead_create_contact(cr, uid, lead, context.get('contact_name'), False, context=context)
         elif lead.email_from and self.pool.get('res.partner')._parse_partner_name(lead.email_from, context=context)[0]:
             contact_name = self.pool.get('res.partner')._parse_partner_name(lead.email_from, context=context)[0]
             partner_id = self._lead_create_contact(cr, uid, lead, contact_name, False, context=context)
@@ -748,7 +752,7 @@ class crm_lead(format_address, osv.osv):
                 partner_ids[lead.id] = lead.partner_id.id
                 continue
             if not partner_id and action == 'create':
-                partner_id = self._create_lead_partner(cr, uid, lead, context)
+                partner_id = self._create_lead_partner(cr, uid, lead, context=context)
                 self.pool['res.partner'].write(cr, uid, partner_id, {'section_id': lead.section_id and lead.section_id.id or False})
             if partner_id:
                 lead.write({'partner_id': partner_id}, context=context)
@@ -1031,5 +1035,17 @@ class crm_lead(format_address, osv.osv):
             country_id=self.pool.get('res.country.state').browse(cr, uid, state_id, context).country_id.id
             return {'value':{'country_id':country_id}}
         return {}
+    
+    def fields_view_get(self, cr, uid, view_id=None, view_type=False, context=None, toolbar=False, submenu=False):
+        if context is None:
+            context = {}
+        stage_type = context.get("stage_type", False)
+        res = super(crm_lead,self).fields_view_get(cr, uid, view_id=view_id, view_type=view_type, context=context, toolbar=toolbar, submenu=submenu)
+        if stage_type and stage_type == "lead":
+            toolbar = res.get("toolbar", False)
+            if toolbar: 
+                toolbar["action"] = []
+                res.update({"toolbar": toolbar})
+        return res
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
