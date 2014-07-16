@@ -19,6 +19,7 @@ from threading import Thread
 import openerp.modules.registry
 from openerp.osv import fields, osv
 from openerp.tools.translate import _
+from openerp.addons.website_twitter_wall.controllers.oauth import oauth
 
 from urllib2 import urlopen, Request, HTTPError, quote
 
@@ -275,7 +276,6 @@ class WallManager(object):
                 stream_obj[self.wall.id].append(stream)
                 user_ids = [auth.get_user_id(screen_name.name) for screen_name in self.wall.screen_name]
                 user_ids.append(auth.get_authorise_user_id())
-                print "user",user_ids
                 thread.start_new_thread(func, (user_ids, ))
                 return True
         else:

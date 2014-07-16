@@ -31,7 +31,7 @@ stream_obj={}
 
 class oauth(object):
     
-    def setup(self, API_key, API_secret):
+    def __init__(self, API_key, API_secret):
         # Server Links
         self.REQUEST_URL = "https://api.twitter.com/oauth/request_token";
         self.AUTHORIZE_URL = "https://api.twitter.com/oauth/authorize";
@@ -149,7 +149,6 @@ class oauth(object):
         self.Oauth_Token_Secret = Oauth_Token_Secret
         
     def get_user_id(self, screen_name):
-        print "get_user_id of",screen_name
         params={}
         params['screen_name']=screen_name
         params['include_entities']='true'

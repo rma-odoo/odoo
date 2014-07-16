@@ -27,18 +27,23 @@
                 </t>
                 
                 <div class="container">
-                    <div class="modal fade" id="APIConf" t-if="not api_conf">
-                      <div class="modal-dialog">
-                        <div class="modal-content">
-                          <div class="modal-header alert alert-danger">
+                    <div class="modal fade" id="APIConf" t-if="not api_conf or not api_token_conf">
+                      <div class="modal-dialog modal-content">
+                        <div t-att-class="not api_conf and 'modal-header alert alert-danger' or 'modal-header alert alert-warning'">
                             <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">x</span></button>
-                            <h4 class="modal-title" id="myModalLabel">Error Configuration!</h4>
+                            <h4 class="modal-title" t-esc="not api_conf and 'Error Configuration!' or 'Authorize Required!'"/>
                           </div>
                           <div class="modal-body">
-                            <strong>Error!</strong> Contact System Administration for Configure Twitter API KEY and ACCESS TOKEN.
-                            <a class="lnk_configure" href="/web#action=website.action_website_configuration">Click Here</a>
+                             <t t-if="not api_conf">
+                                <strong>Error!</strong> Contact System Administration for Configure Twitter API KEY and ACCESS TOKEN.
+                                <a href="/web#action=website.action_website_configuration">Click Here</a>
+                                <br/>
+                             </t>
+                             <t t-if="not api_token_conf">
+                                <strong>Warning!</strong> Authorize the account for start streaming.
+                                <a t-attf-href="/twitter_wall/authenticate">Click Here</a>
+                             </t>
                           </div>
-                        </div>
                       </div>
                     </div>
                     
@@ -48,24 +53,9 @@
 
                     <div class="row">
                         <div class="container-fluid">
-                            <div class="row" t-if="walls">
+                            <div class="row" t-if="walls" name="tweets_for_admin">
                                 <t t-foreach="walls" t-as="wall">
-                                    <div class="modal fade" id="APIConf" t-if="not api_token_conf">
-                                      <div class="modal-dialog">
-                                        <div class="modal-content">
-                                          <div class="modal-header alert alert-warning">
-                                            <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">x</span></button>
-                                            <h4 class="modal-title" id="myModalLabel">Authorize Required!</h4>
-                                          </div>
-                                          <div class="modal-body">
-                                            <strong>Warning!</strong> Authorize the account for start streaming.
-                                            <a t-attf-href="/twitter_wall/#{ slug(wall) }/authenticate">Click Here</a>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-
-                                    <div class="wall_box" name="tweets_for_admin" t-att-wall_id="wall.id">
+                                    <div class="wall_box" t-att-wall_id="wall.id">
                                         <div class="row-fulid">
                                             <div class="col-md-1 pull-right oe_auto_hide">
                                                 <div class="dropdown">
@@ -73,12 +63,24 @@
                                                   <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
                                                     <li><a href="#">Edit</a></li>
                                                       <li><a t-attf-href="/twitter_wall/#{ slug(wall) }/delete">Delete</a></li>
-                                                      <li><a t-attf-href="/twitter_wall/#{ slug(wall) }/approved">Display Tweet<span class="badge badgespace"><t t-esc="status[wall.id][0]"/></span></a></li>
+                                                      <li><a t-attf-href="/twitter_wall/#{ slug(wall) }/archieve">Display Tweet</a></li>
                                                   </ul>
                                                 </div>
                                                 
                                             </div>
-                                         
+                                            <div class="btn-group" data-toggle="buttons">
+                                                <t t-set="list_mode" t-value="'active' if wall.view_mode == 'list_mode' else ''" />
+                                                <label t-attf-class="control-label btn btn-sm btn-default navbar-btn #{list_mode}" t-att-wall_id="wall.id">
+                                                    <input type="radio" name="view_mode" value="list_mode" />
+                                                    <strong>List Mode</strong>
+                                                </label>
+                                                <t t-set="box_mode" t-value="'active' if wall.view_mode == 'box_mode' else ''" />
+                                                <label id="box_id" t-attf-class="control-label btn btn-sm btn-default navbar-btn #{box_mode}" t-att-wall_id="wall.id">
+                                                    <input type="radio" name="view_mode" value="box_mode" />
+                                                    <strong>Box Mode</strong>
+                                                </label>
+                                            </div>
+
                                             <div class="btn-group pull-right">
                                                 <t t-if="wall.state == 'not_streaming'">
                                                     <button type="submit"
@@ -121,7 +123,7 @@
         </template>
 
         <!-- Page that display archieved walls -->
-        <template id="twitter_wall_approve" name="Archieved Wall">
+        <template id="twitter_wall_archieve" name="Archieved Wall">
             <t t-call="website.layout">
                 <t t-set="head">
                     <script type="text/javascript">
@@ -133,7 +135,7 @@
                     <script type="text/javascript"
                         src="/website_twitter_wall/static/src/js/website_twitter_wall.js"></script>
                 </t>
-                <div name="tweets_for_approve" t-att-wall_id="wall.id">
+                <div name="tweets_for_archieve" t-att-wall_id="wall.id">
                     <div class="container">
                         <div class="row">
                             <div class="col-sm-10" id="approve_tweet_wall" t-att-view_mode="wall.view_mode">
@@ -143,9 +145,7 @@
                                 <div class="pos_fix">
                                     <h3>
                                         Tweet us :<br />
-                                        <t t-foreach="wall.tags" t-as="tag">
-                                            <label class="label label-danger"><t t-esc="tag.name" /></label>
-                                        </t>
+                                        <label class="label label-danger"># opendays</label>
                                     </h3> &amp;nbsp;
                                     Twitter wall powered by Odoo.
                                 </div>

@@ -1,5 +1,4 @@
 $(document).ready(function() {
-    console.log($("#APIConf"))
     if($("#APIConf") != null)
         $("#APIConf").modal();
     
@@ -24,96 +23,30 @@ $(document).ready(function() {
     });
     
     if($("div[name='tweets_for_admin']").length){
-        var $el = $("div[name='tweets_for_admin']");
-        var twitter_wall = new openerp.website.moderate_tweet($el, parseInt($el.attr("wall_id")));
+        var $el = $("div[name='tweets_for_admin']").find(".wall_box");
+        var twitter_wall = new openerp.website.twitter_walls($el);
         twitter_wall.start();
     }
     if($("div[name='tweets_for_client']").length){
         var twitter_wall = new openerp.website.tweet_wall($("#tweet_wall_div"), parseInt($("[wall_id]").attr("wall_id")));
         twitter_wall.start();
     }
-    if($("div[name='tweets_for_approve']").length){
-        var $el = $("div[name='tweets_for_approve']");
+    if($("div[name='tweets_for_archieve']").length){
+        var $el = $("div[name='tweets_for_archieve']");
         var twitter_wall = new openerp.website.approve_tweet($("#approve_tweet_wall"), parseInt($el.attr("wall_id")));
         twitter_wall.start();
     }
 });
 
 var website = openerp.website;
-openerp.website.moderate_tweet = openerp.Class.extend({
-    template: 'twitter_moderate_tweets',
-    init: function($el, wall_id, interval_time){
+openerp.website.twitter_walls = openerp.Class.extend({
+    init: function($el){
         this.$el = $el;
-        this.wall_id = parseInt(wall_id);
-        this.pending = [];
-        this.shown_tweet = {};
-        this.limit = 20;
-        this.new_tweet_id;
-        this.check_new_tweet_id;
-        this.check_new_tweet_duration = interval_time || 5000;
     },
     start: function(){
         var self = this;
-        this.get_data_all();
         this.bind_streaming();
         this.bind_view_mode();
-        this.bind_state();
-        this.bind_bottom();
-        this.bind_new_tweets();
-        
-        this.$el.find("table[name='published'],table[name='unpublished']").hide();
-        this.$el.find("table[name='pending']").show();
-        this.$el.find("ul#status li#pending").addClass("active");
-        
-        this.check_new_tweet_id =  setInterval(function(){
-            // if(self.pending.length < self.limit){
-            if(self.$el.find(".btn-group button").attr("value") == "stopstreaming"){
-                return self.check_new_tweet();
-            }
-            // }
-        }, this.check_new_tweet_duration);
-        
-        //For upload image
-        $('.upload_img').click(function() {
-            $("input[type=file]").click();
-        });
-    },
-    //Bind for new tweets when encounter
-    bind_new_tweets: function(){
-        var self = this;
-        this.$el.find(".stream-item").click(function(ev){
-            self.$el.find("table[name='pending'] tbody tr.alert-success").removeClass('alert-success');
-            // self.new_tweet_id = self.pending[0]['id'];
-            // self.pending.splice(0, self.limit);
-            var temp = self.pending.splice(0, self.limit);
-            temp.forEach(function(entry) {
-                self.shown_tweet[entry['tweet_id']] = entry;
-            });
-            // self.shown_tweet = self.shown_tweet.concat(temp);
-            self.process_tweet(temp, 'pending', 'alert-success');
-            if(self.pending.length == 0) $(this).addClass('sr-only');
-            self.$el.find(".stream-item").find('span strong').text(self.pending.length + " new tweet");
-            // self.pending = [];
-        });
-    },
-    
-    //Binding States of Twitter pending, accept and reject
-    bind_state: function(){
-        var self = this;
-        this.$el.find('ul#status li a').click(function (e) {
-            e.preventDefault();
-            $(this).tab('show');
-            var state = $(this).parent().attr("id");
-            self.$el.find("table#tweet_table").hide();
-            self.$el.find("table[name='"+state+"']").show();
-            self.$el.find(".load_more_tweet").html('<strong class="glyphicon glyphicon-chevron-down"></strong>');
-            if(state == 'published' || state == 'unpublished'){
-                self.$el.find("table[name='published'] tbody tr td button[value='published']").hide();
-                self.$el.find("table[name='published'] tbody tr td button[value='unpublished']").show();
-                self.$el.find("table[name='unpublished'] tbody tr td button[value='unpublished']").hide();
-                self.$el.find("table[name='unpublished'] tbody tr td button[value='published']").show();
-            }
-        });
     },
     
     //For Start and Stop Streaming
@@ -122,8 +55,8 @@ openerp.website.moderate_tweet = openerp.Class.extend({
         var $start_stop_button = self.$el.find(".btn-group button");
         $start_stop_button.click(function(){
             var value = $(this).attr("value");
-            console.log(self.wall_id)
-            openerp.jsonRpc("/tweet_moderate/streaming", 'call', {'wall_id' : self.wall_id, 'state' : value}).done(function(state) {
+            var wall_id = parseInt($(this).attr("wall_id"));
+            openerp.jsonRpc("/tweet_moderate/streaming", 'call', {'wall_id' : wall_id, 'state' : value}).done(function(state) {
                 $start_stop_button.removeClass('stop_streaming start_streaming');
                 if(state == 'startstreaming'){
                     $start_stop_button.html("<i class=\"fa fa-refresh\"></i>")
@@ -145,98 +78,10 @@ openerp.website.moderate_tweet = openerp.Class.extend({
         var $view_mode = self.$el.find("div.btn-group label");
         $view_mode.click(function(){
             var value = $(this).find("input").attr("value");
-            openerp.jsonRpc("/tweet_moderate/view_mode", 'call', {'wall_id' : self.wall_id, 'view_mode' : value}).done(function() {
+            var wall_id = parseInt($(this).attr("wall_id"));
+            openerp.jsonRpc("/tweet_moderate/view_mode", 'call', {'wall_id' : wall_id, 'view_mode' : value}).done(function() {
             }).fail(function(){self.error();});
         });
-    },
-    
-    bind_bottom: function(){
-        var self = this;
-        self.$el.find(".load_more_tweet").click(function(ev){
-            var state_item = self.$el.find("#status .active").attr('id');
-            var last_tweet_id = self.$el.find("table[name='"+ state_item +"'] tbody tr:last").attr("data-id");
-            self.fetch_tweets({'state' : state_item,'last_tweet_id' : last_tweet_id}).done(function(data) {
-                    if (data.length){
-                        self.process_tweet(data, state_item, '','last')
-                        return;
-                    }
-                    self.$el.find(".load_more_tweet strong").removeClass("glyphicon-refresh glyphicon-chevron-down");
-                    self.$el.find(".load_more_tweet strong").text("No more Tweets");
-                }).fail(function(){self.error();});
-        }); 
-    },
-    
-    check_new_tweet: function(){
-        var self = this;
-        // return this.fetch_tweets({'new_tweet_id' : self.new_tweet_id}).done(function(data) {
-        return this.fetch_tweets().done(function(data) {
-                    if (data.length){
-                        self.pending = self.pending.concat(data);
-                        self.$el.find(".stream-item").removeClass('sr-only');
-                        self.$el.find(".stream-item").find('span strong').text(self.pending.length + " new tweet");
-                    }
-            }).fail(function(){self.error()});
-    },
-    
-    get_data_all: function(){
-        var self = this;
-        state = ["pending", "published", "unpublished"];
-        state.forEach(function(state_item){
-            self.fetch_tweets({'state':state_item}).done(function(data) {
-                    if (data.length){
-                        data.forEach(function(entry) {
-                            self.shown_tweet[entry['tweet_id']] = entry;
-                        });
-                        // if (state_item == 'pending') self.new_tweet_id = data[0].id;
-                        self.process_tweet(data.reverse(), state_item);
-                    }
-            }).fail(function(){self.error();});
-        });
-    },
-    
-    fetch_tweets: function(arg){
-        var self = this;
-        var args = {
-                        'wall_id' : self.wall_id, 
-                        'published_date' : false, 
-                        'state' : 'pending',
-                        'fetch_all' : true, 
-                        'limit' : self.limit
-                    };
-        return openerp.jsonRpc("/twitter_wall_tweet_data_admin", 'call', $.extend(args, arg));
-    },
-    
-    //For Binding tweet element like upload, accept, reject button.
-    bind_tweet: function(tweet_id){
-        var self = this;
-        var $tweet = this.$el.find("[data-id=" + tweet_id + "]");
-        
-        //For upload image
-        // $tweet.find(".upload_img").click(function(ev){
-             // self.$el.find("input[type=file]").attr("data-id", tweet_id).click();
-        // });
-        
-        //For Accept and Reject Tweets
-        $tweet.find(".rowremove").click(function(ev){
-            openerp.jsonRpc("/tweet_moderate/state", 'call', {'tweet' : self.shown_tweet[tweet_id], 'status' : $(this).attr("value")}).done(function(state) {
-                $tweet.removeClass('alert-success');
-                self.$el.find("table[name='"+state+"'] tbody tr:first").after($tweet.detach());
-            }).fail(function(){self.error();});
-        });
-    },
-    
-    process_tweet: function(tweets, state, color_class, append){
-        var self = this;
-        tweets.forEach(function(item){
-            var tweet_xml = openerp.qweb.render("twitter_moderate_tweets", {'tweet' : item, 'color_class': color_class || ''});
-            self.append_tweet(tweet_xml, item.tweet_id, state, append);
-        });
-    },
-    
-    append_tweet:function(tweet_xml, tweet_id, state, append){
-        var append = append || 'first';
-        this.$el.find("table[name='"+state+"'] tbody tr:"+ append).after(tweet_xml);
-        this.bind_tweet(tweet_id);
     },
     
     error: function(){
@@ -264,7 +109,7 @@ openerp.website.approve_tweet = openerp.Class.extend({
     
     get_data: function(){
         var self = this;
-        return openerp.jsonRpc("/twitter_wall_approved_tweet", 'call', {'wall_id' : self.wall_id, 'state' : 'published', 'limit' : self.limit, 'last_tweet': self.last_tweet_id}).done(function(tweets) {
+        return openerp.jsonRpc("/twitter_wall_tweet_data", 'call', {'wall_id' : self.wall_id, 'limit' : self.limit, 'last_tweet': self.last_tweet_id}).done(function(tweets) {
             if (tweets.length){
                 tweets.forEach(function(tweet){
                     str = tweet['tweet'];
@@ -336,7 +181,7 @@ openerp.website.tweet_wall = openerp.Class.extend({
         if(!this.last_publish_date){
             this.last_publish_date = this.get_current_UTCDate();
         }
-        return openerp.jsonRpc("/twitter_wall_tweet_data", 'call', {'wall_id' : self.wall_id, 'published_date' : self.last_publish_date, 'state' : 'published','fetch_all' : false}).done(function(data) {
+        return openerp.jsonRpc("/twitter_wall_tweet_data", 'call', {'wall_id' : self.wall_id, 'published_date' : self.last_publish_date, 'fetch_all' : false}).done(function(data) {
                     if (data.length){
                         self.last_publish_date = data[data.length - 1].published_date;
                         self.show_tweet = self.show_tweet.concat(data);

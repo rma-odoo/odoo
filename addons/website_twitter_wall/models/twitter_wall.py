@@ -20,7 +20,7 @@
 ##############################################################################
 
 import datetime
-import twitter_stream
+from twitter_stream import WallManager, stream_obj
 
 from openerp.osv import osv
 from openerp.osv import fields
