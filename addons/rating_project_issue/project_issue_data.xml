@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+
+        <record id="issue_rating_request" model="email.template">
+            <field name="name">Issue Rating Request</field>
+            <field name="email_from">${object.user_id.email or ''}</field>
+            <field name="subject">${object.name}</field>
+            <field name="model_id" ref="rating_project_issue.model_project_issue"/>
+            <field name="email_to" >${object.partner_id.email}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html"><![CDATA[
+<body>
+    <div style="max-width:600px; height:auto; margin-left:30px;">
+        <div style="margin-left:50px;align=center;" >
+            Dear ${object.partner_id.name},
+        </div><br>
+        <div style="margin-left:50px;align=center;" width="60%">
+            We hope that the services provided have met your expectations.
+            <br>If you have any more questions or comments, don't hesitate to reply to this e-mail.
+            <br><br>Please, help us to improve ourself by rating the service we provide.
+        </div><br>
+        <table style="margin-left:50px;" width="70%">
+            <tr>
+                <td>
+                    <a href="/rating/project.issue/${object.id}/great">
+                        <img alt="Great"  src="rating/static/src/img/great.png" title="It was great"/>
+                    </a>
+                </td>
+                <td>
+                    <a href="/rating/project.issue/${object.id}/okay">
+                        <img alt="Okay" src="rating/static/src/img/okay.png" title="It was okay"/>
+                    </a>
+                </td>
+                <td>
+                    <a href="/rating/project.issue/${object.id}/bad">
+                        <img alt="Bad" src="rating/static/src/img/bad.png" title="It wasn't good"/>
+                    </a>
+                </td>
+            </tr>
+        </table><br>
+        <h4 style="margin-left:50px;font-weight:normal;">Thank you </h4>
+        <h4 style="margin-left:50px;font-weight:normal;">${object.user_id.signature|safe or ''} </h4>
+    </div>
+</body>]]>
+            </field>
+        </record>
+        <record id="project.project_tt_deployment" model="project.task.type">
+            <field name="template_issue_id" ref="issue_rating_request"/>
+        </record>
+    </data>
+</openerp>
