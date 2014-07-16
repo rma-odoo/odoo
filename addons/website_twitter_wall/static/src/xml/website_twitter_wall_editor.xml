@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
+
     <t t-extend="website.editorbar">
         <t t-jquery="ul.oe_content_menu" t-operation="append">
             <li><a id="create-new-twitter-wall" href="#" data-action="new_twitter_wall">New Twitter Wall</a></li>
@@ -7,8 +8,6 @@
     </t>
     
     <t t-name="create_twitter_wall">
-        <!-- <script type="text/javascript" src="/website_twitter_wall/static/src/js/tag-it.min.js"></script>
-        <link rel="stylesheet" type="text/css" href="/website_twitter_wall/static/src/css/tag-it.css"/> -->
         <div class="modal fade" role="dialog">
             <div class="modal-dialog">
                 <div class="modal-content">
@@ -32,12 +31,7 @@
                                 <div class="form-group">
                                     <label for="screen_name" class="col-xs-6 col-sm-3 control-label">Screen Name:</label>
                                     <div class="col-xs-6 col-sm-6">
-                                         <!-- <div class="input-group"> -->
-                                            <input type="text" name="screen_name" class="form-control" placeholder="@ScreenName" multiple="multiple"/>
-                                            <!-- <span class="input-group-btn">
-                                                <button data-action="add" class="btn btn-default" type="button">Add</button>
-                                            </span> -->
-                                         <!-- </div> -->
+                                        <input type="text" name="screen_name" class="form-control" placeholder="@ScreenName" multiple="multiple"/>
                                     </div>
                                 </div>
                             </div>
@@ -71,5 +65,4 @@
             </div>
         </div>
     </t>
-
 </templates>

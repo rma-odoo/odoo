@@ -19,12 +19,11 @@
 #
 ##############################################################################
 
+import datetime
+import twitter_stream
 
 from openerp.osv import osv
 from openerp.osv import fields
-from openerp.addons.website_twitter_wall.controllers.TwitterStream import WallManager, stream_obj
-import datetime
-
 
 class twitter_wall_settings(osv.osv_memory):
 
@@ -58,13 +57,6 @@ class TwitterClient(osv.osv):
         'twitter_access_token_secret': fields.char('Twitter Access Token secret', help="Twitter Access Token Secret"),
     }
 
-
-class TwitterTweetTag(osv.osv):
-    _name = "website.twitter.tweet.tag"
-    _columns = {
-        'name': fields.char('Twitter HashTag', size=30),
-    }
-
 class TwitterScreenName(osv.osv):
     _name = "website.twitter.screen.name"
     _columns = {
@@ -74,50 +66,23 @@ class TwitterScreenName(osv.osv):
 class TwitterWall(osv.osv):
     _name = "website.twitter.wall"
 
-    def _get_pending(self, cr, uid, ids, field, args, context = None):
-        tweet_obj = self.pool['website.twitter.wall.tweet']
-        res = {}
-        for obj in tweet_obj.browse(cr, uid, ids, context=context):
-            res[obj.id] = {
-                'pending' : tweet_obj.search_count(cr, uid, [('wall_id','=', obj.id),('state', '=', 'pending')], context=context),
-                'published' : tweet_obj.search_count(cr, uid, [('wall_id','=', obj.id),('state', '=', 'published')], context=context),
-                'unpublished' : tweet_obj.search_count(cr, uid, [('wall_id','=', obj.id),('state', '=', 'unpublished')], context=context)
-            }
-        return res
-
-    def _website_url(self, cr, uid, ids, field_name, arg, context=None):
-        res = dict.fromkeys(ids, '')
-        for wall_id in self.browse(cr, uid, ids, context=context):
-            res[wall_id.id] = "/tweet_moderate/%s" % (wall_id.id,)
-        return res
-
     _columns = {
         'name': fields.char('Wall Name'),
         'note': fields.text('Description'),
-        'tags': fields.many2many('website.twitter.tweet.tag', 'rel_wall_tag', 'wall_id', 'tag_id', 'Search tags'),
         'screen_name': fields.many2many('website.twitter.screen.name', 'rel_wall_screen_name', 'wall_id', 'screen_name_id', 'Screen Name'),
-#         'screen_name': fields.text('Screen Name'),
         'tweet_ids': fields.one2many('website.twitter.wall.tweet', 'wall_id', 'Tweets'),
         'website_id': fields.many2one('website', 'Website'),
-        'color': fields.integer('Color Index'),
-        'active': fields.boolean('Avtive'),
+
         're_tweet': fields.boolean('Include Re-Tweet ?'),
         'state': fields.selection([('not_streaming', 'Draft'), ('streaming', 'In Progress')], string="State"),
-#        'view_id': fields.many2one('ir.ui.view', 'Display Type', domain=[('model','=',)]),
         'website_published': fields.boolean('Visible in Website'),
-        'back_image': fields.binary('Background Image'),
+
         'user_id': fields.many2one('res.users', 'Created User'),
-        'pending': fields.function(_get_pending, type="integer", string='Pending Tweets', multi='status'),
-        'published': fields.function(_get_pending, type="integer", string='Published Tweets', multi='status'),
-        'unpublished': fields.function(_get_pending, type="integer", string='Unpublished Tweets', multi='status'),
         'view_mode' : fields.char('View Mode', size=30, required=True),
-        'website_url': fields.function(_website_url, string="Website url", type="char")
     }
 
-
     _defaults = {
-        'website_id': 1,# Todo: chnage 1 with first website ref
-        'active': True,
+        'website_id': 1,
         'state': 'not_streaming',
         'website_published': True,
         'view_mode' : 'list_mode',
@@ -140,22 +105,12 @@ class TwitterWall(osv.osv):
         tweet_media = self.pool.get('website.twitter.tweet.media')
         tweet_val = tweet._process_tweet(cr, uid, ids, vals, context)
         tweet_id = tweet.create(cr, uid, tweet_val, context)
+
         if vals.get('entities') and vals.get('entities').has_key('media'):
             tweet_med = tweet_media._process_media_tweet(cr, uid, vals, tweet_id, context)
             for tweet_data in tweet_med:
-#         tweet_media_ids = vals['tweet_media_ids']
-#         del vals['tweet_media_ids']
-#         tweet_id = tweet.create(cr, uid, vals, context)
-#         if tweet_media_ids:
-#             tweet_media = self.pool.get('website.twitter.tweet.media')
-#             for tweet_data in tweet_media_ids:
-#                 tweet_data['wall_tweet_id'] = tweet_id
                 tweet_media.create(cr, uid, tweet_data, context)
         return tweet_id
-
-    def open_wall_moderate(self, cr, uid, id, context=None):
-        final_url="/tweet_moderate/"+str(id[0])
-        return {'type': 'ir.actions.act_url', 'url':final_url, 'target': 'self',}
 
     def unlink(self, cr, uid, ids, context=None):
         twitter_obj = self.pool.get('website.twitter.wall.tweet')
@@ -164,10 +119,9 @@ class TwitterWall(osv.osv):
             twitter_obj.unlink(cr, uid, tweet_ids, context=context)
         return super(TwitterWall, self).unlink(cr, uid, ids, context=context)
 
-
 class WebsiteTwitterTweetMedia(osv.osv):
-
     _name = "website.twitter.tweet.media"
+
     _columns = {
         'media_id': fields.char('ID',size=256),
         'media_indices_first': fields.integer('First Indice'),
@@ -200,11 +154,12 @@ class WebsiteTwitterTweetMedia(osv.osv):
             vals.append(values)
         return vals
 
-
 class WebsiteTwitterTweet(osv.osv):
-
     _name = "website.twitter.wall.tweet"
+
     _columns = {
+        'wall_id': fields.many2one('website.twitter.wall', 'Wall'),
+
         'name': fields.char('Author'),
         'screen_name':fields.char('Screen Name'),
         'tweet': fields.text('Tweet'),
@@ -215,25 +170,12 @@ class WebsiteTwitterTweet(osv.osv):
         'tweet_media_ids': fields.one2many('website.twitter.tweet.media','wall_tweet_id','Image Media'),
         'user_image_url': fields.char('Image URL', size=256),
         'background_image_url': fields.char('Background Image URL', size=256),
-
-        'active': fields.boolean('Active'),
-        'state': fields.selection([('pending', 'Pending'), ('published', 'Accept'), ('unpublished', 'Reject')], string="State"),
-        'wall_id': fields.many2one('website.twitter.wall', 'Wall')
+        'active': fields.boolean('Active')
      }
 
     _defaults = {
-        'active': True,
-        'state': 'pending'
+        'active': True
     }
-
-    def accept_tweet(self, cr, uid, ids, context=None):
-        self.write(cr, uid, ids, {'state': 'published','published_date': datetime.datetime.now()}, context=context)
-        return
-
-    def reject_tweet(self, cr, uid, ids, context=None):
-        self.write(cr, uid, ids, {'state': 'unpublished','published_date':None}, context=context)
-        return
-        # Todo: reject tweet and remove form the wall
 
     def _process_tweet(self, cr, uid, ids, tweet, context=None):
         vals = {

@@ -1,15 +1,37 @@
-from urllib2 import urlopen, Request, HTTPError, quote
-from hashlib import sha1
-import base64
 import json
+import thread
+
 import random
 import hmac
 import time
+
+import ssl
+import base64
+import httplib
+
 import lxml.html
+from hashlib import sha1
+
+from time import sleep
+from socket import timeout
+from threading import Thread
+
+import openerp.modules.registry
+from openerp.osv import fields, osv
+from openerp.tools.translate import _
+
+from urllib2 import urlopen, Request, HTTPError, quote
+
+import logging
+_logger = logging.getLogger(__name__)
+
+STREAM_VERSION = '1.1'
+
+stream_obj={}
 
 class oauth(object):
     
-    def __init__(self, API_key, API_secret):
+    def setup(self, API_key, API_secret):
         # Server Links
         self.REQUEST_URL = "https://api.twitter.com/oauth/request_token";
         self.AUTHORIZE_URL = "https://api.twitter.com/oauth/authorize";
@@ -52,7 +74,6 @@ class oauth(object):
     def _build_signature(self, URL, method):
         BASE_STRING = method + '&' + quote(URL, '') + '&' + quote(self.to_parameter_string(), '')
         SIGNING_KEY = quote(self.API_secret, '') + '&' + (quote(self.Oauth_Token_Secret, '') if self.Oauth_Token_Secret else '')
-#         print("DEBUG : SIGNING KEY " + SIGNING_KEY + " BASE STRING " + BASE_STRING + "\n")
         return base64.standard_b64encode(hmac.new(SIGNING_KEY.encode(), BASE_STRING.encode(), sha1).digest()).decode('ascii')
     
     def to_header(self, realm=''):
@@ -84,11 +105,6 @@ class oauth(object):
         key_values = [(quote(str(k), ''), quote(str(v), '')) for k,v in params.items()]
         key_values.sort()
         return '&'.join(['%s=%s' % (k, v) for k, v in key_values])
-        
-#     def _header_to_parameter(self, HEADER):
-#         PARAMETER_STRING = HEADER.replace(", ", "&")
-#         PARAMETER_STRING = PARAMETER_STRING.replace("\"", "")
-#         return PARAMETER_STRING
     
     def _string_to_dict(self, request_response):
         return dict(item.split("=") for item in request_response.split("&"))
@@ -118,10 +134,6 @@ class oauth(object):
         else:
             res = webbrowser.open(url, new=0, autoraise=True)
         return True
-#         return """<html><head><script>
-#                     window.location = "%s";
-#                 </script></head></html>
-#                 """ % (url,)
     
     def _access_token(self, request_token, oauth_verifier):
         HEADER = self._generate_header(self.ACCESS_URL, 'HMAC-SHA1', '1.0', request_token = request_token, oauth_verifier = oauth_verifier)

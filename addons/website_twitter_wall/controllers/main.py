@@ -5,11 +5,11 @@ from openerp.addons.web.http import request
 from openerp.addons.website.controllers.main import Website as controllers
 from openerp import SUPERUSER_ID
 from datetime import datetime
-from Oauth import oauth
+import oauth
 from openerp.addons.web.controllers.main import login_redirect, ensure_db
-from gtk import TRUE
-CACHE = {}
+
 class website_twitter_wall(http.Controller):
+    
     @http.route(['/create_twitter_wall'], type='http', auth="public", website=True)
     def create_twitter_wall(self, wall_name= None, screen_name=None, include_retweet=False, wall_description=None, **kw):
         if screen_name: screen_name_id = request.registry.get('website.twitter.screen.name').create(request.cr, SUPERUSER_ID, {'name':screen_name}, request.context)
@@ -29,23 +29,18 @@ class website_twitter_wall(http.Controller):
         if wall:
             for walls in wall_obj.browse(request.cr, SUPERUSER_ID, [wall.id], context=request.context):
                 vals = {
-                        'wall_id' : wall.id,
-                        'back_image' : wall.back_image, 
-                        'hashtag' : walls.tags,
-                        'uid':request.session.uid or False,
-                        'view_mode' : wall.view_mode
+                    'wall_id' : wall.id,
+                    'back_image' : wall.back_image, 
+                    'hashtag' : walls.tags,
+                    'uid':request.session.uid or False,
+                    'view_mode' : wall.view_mode
                 }
             return request.website.render("website_twitter_wall.twitter_wall", vals)
         
         wall_ids = wall_obj.search(request.cr, SUPERUSER_ID, [], context=request.context)
         wall_list = wall_obj.browse(request.cr, SUPERUSER_ID, wall_ids, context=request.context)
-        tweet_state = {}
-        for wall in wall_list:
-            wall_state = wall_obj._get_pending(request.cr, SUPERUSER_ID, [wall.id], '', '',context=request.context)
-            tweet_state[wall.id] = [wall_state[wall.id]['pending'], wall_state[wall.id]['published'], wall_state[wall.id]['unpublished']]
         values = {
             'walls': wall_list,
-            'status': tweet_state,
             'api_conf': True if(wall.website_id.twitter_api_key and wall.website_id.twitter_api_secret) else False,
             'api_token_conf': True if(wall.website_id.twitter_access_token and wall.website_id.twitter_access_token_secret) else False
         }
@@ -53,7 +48,7 @@ class website_twitter_wall(http.Controller):
     
     @http.route(['/twitter_wall/<model("website.twitter.wall"):wall>/authenticate'], type='http', auth="public", website=True)
     def authenticate_twitter_wall(self, wall, **kw):
-        auth = oauth(wall.website_id.twitter_api_key, wall.website_id.twitter_api_secret)
+        auth = oauth.setup(wall.website_id.twitter_api_key, wall.website_id.twitter_api_secret)
         base_url = request.registry.get('ir.config_parameter').get_param(request.cr, openerp.SUPERUSER_ID, 'web.base.url')
         auth._request_token(base_url, request.cr.dbname, 1)
         return http.local_redirect("/twitter_walls",query=request.params)
@@ -63,22 +58,19 @@ class website_twitter_wall(http.Controller):
         request.registry.get('website.twitter.wall').unlink(request.cr, SUPERUSER_ID, [wall.id], request.context)
         return http.local_redirect("/twitter_walls",query=request.params)
     
-    @http.route(['/twitter_wall/<model("website.twitter.wall"):wall>/approved'], type='http', auth="public", website=True)
+    @http.route(['/twitter_wall/<model("website.twitter.wall"):wall>/archieve'], type='http', auth="public", website=True)
     def twitter_wall_approve(self, wall, **kw):
         vals = { 'wall' : wall}
         return request.website.render("website_twitter_wall.twitter_wall_approve", vals)
 
-    @http.route('/twitter_wall_tweet_data_admin', type='json', auth="public", website=True)
-    def tweet_data_moderate(self, wall_id, published_date, state, fetch_all = True, limit = None, new_tweet_id = None, last_tweet_id = None):
-        return CACHE.pop(wall_id, [])
-
+    #TODO: convert tweet_data and approved_tweet_data in to one single method
     @http.route('/twitter_wall_tweet_data', type='json', auth="public", website=True)
-    def tweet_data(self, wall_id, published_date, state, fetch_all = False):
+    def tweet_data(self, wall_id, published_date, limit=None, fetch_all = False):
         search_filter = []
         if not fetch_all:
-            search_filter = [('wall_id', '=', wall_id), ('published_date', '>', published_date), ('state', '=', state)]
+            search_filter = [('wall_id', '=', wall_id), ('published_date', '>', published_date)]
         website_twitter_tweet = request.registry.get('website.twitter.wall.tweet')
-        tweets = website_twitter_tweet.search_read(request.cr, SUPERUSER_ID, search_filter, context=request.context)
+        tweets = website_twitter_tweet.search_read(request.cr, SUPERUSER_ID, search_filter, [], 0, limit, context=request.context)
         for image in request.registry.get('website.twitter.wall').search_read(request.cr, SUPERUSER_ID, [('id', '=', wall_id)], ['back_image'], context=request.context):
             back_image = image['back_image']
         data = []
@@ -95,14 +87,14 @@ class website_twitter_wall(http.Controller):
             data.append(tweet)
         return data
 
+    #TODO: convert tweet_data and approved_tweet_data in to one single method
     @http.route('/twitter_wall_approved_tweet', type='json', auth="public", website=True)
-    def approved_tweet_data(self, wall_id, state, limit=None, last_tweet=None):
-        search_filter = [('wall_id', '=', wall_id), ('state', '=', state)]
+    def approved_tweet_data(self, wall_id, limit=None, last_tweet=None):
+        search_filter = [('wall_id', '=', wall_id)]
         if last_tweet:
             search_filter.append(('id', '<', last_tweet))
         website_twitter_tweet = request.registry.get('website.twitter.wall.tweet')
         tweets = website_twitter_tweet.search_read(request.cr, SUPERUSER_ID, search_filter, [], 0, limit, order="id desc", context=request.context)
-
         data = []
         for tweet in tweets:
             #fetch date from tweet and show in this format
@@ -116,28 +108,6 @@ class website_twitter_wall(http.Controller):
             data.append(tweet)
         return data
 
-    @http.route('/tweet_moderate/<model("website.twitter.wall"):wall>',type='http', auth='public', website=True)
-    def twitter_moderate(self, wall=None, filters='pending', state=None, tweet_id=None, **kw):
-        (registry, cr, context) = (request.registry, request.cr, request.context)
-        if not request.session.uid: return
-        state = request.registry.get('website.twitter.wall.tweet').fields_get(cr, SUPERUSER_ID, ['state'], context=None)
-        values = {
-            'wall': wall,
-            'states': state['state']['selection']
-        }
-        return request.website.render('website_twitter_wall.tweet_modetate', values)
-
-    @http.route('/tweet_moderate/state', type='json')
-    def twitter_moderate_state(self, tweet, status):
-        registry, cr, context = request.registry, request.cr, request.context
-        wall_obj = registry.get('website.twitter.wall')
-        tweet_id = wall_obj._set_tweets(cr, SUPERUSER_ID, tweet['wall_id'], tweet, context=context)
-
-        tweet_obj = registry.get('website.twitter.wall.tweet')
-        if status == 'published': tweet_obj.accept_tweet(cr, SUPERUSER_ID, tweet_id, context=context)
-        if status == 'unpublished': tweet_obj.reject_tweet(cr, SUPERUSER_ID, tweet_id, context=context)
-        return status
-
     @http.route('/tweet_moderate/streaming', type='json')
     def twitter_moderate_streaming(self, wall_id, state):
         registry, cr, context = request.registry, request.cr, request.context
@@ -147,40 +117,22 @@ class website_twitter_wall(http.Controller):
         if state == 'stopstreaming': wall_obj.stop_incoming_tweets(cr, SUPERUSER_ID, [wall_id], context=context)
         return state
 
-    @http.route('/tweet_moderate/view_mode', type='json')
-    def twitter_moderate_view_mode(self, wall_id, view_mode):
-        registry, cr, context = request.registry, request.cr, request.context
-        wall_obj = registry.get('website.twitter.wall')
-        wall_obj.write(request.cr, SUPERUSER_ID, [wall_id], { 'view_mode': view_mode }, request.context)
-
-    @http.route(['/twitter_wall/upload_image'], type='http', auth="public", website=True)
-    def upload_image(self, id=None, upload=None, **kw):
-        image_data = base64.b64encode(upload.read())
-        image_upload_obj = request.registry.get('website.twitter.wall')
-        image_upload_obj.write(request.cr, SUPERUSER_ID, int(id), { 'back_image': image_data }, request.context)
-        return image_data
-    
     @http.route('/twitter_callback', type='http', auth="none")
     def twitter_callback(self, **kw):
         if not request.session.uid:
             request.params['redirect']='/twitter_callback?'+request.httprequest.query_string
             return login_redirect()
         
-#         oauth_credintial = base64.standard_b64decode(request.params['oauth_credintial'])
-#         oauth_credintial = dict(item.split("=") for item in oauth_credintial.split("&"))
-#         print "oauth_credintial---------------->",oauth_credintial
-#         website_id = int(oauth_credintial['website_id'])
         website_id = int(request.params['website_id'])
-#         registry = openerp.modules.registry.RegistryManager.get(oauth_credintial['db'])
-#         with registry.cursor() as cr:
         website_ids = request.registry.get("website").search(request.cr, openerp.SUPERUSER_ID, [('id','=',website_id)])
         website = request.registry.get("website").browse(request.cr, openerp.SUPERUSER_ID, website_ids, context=request.context)
+
         for web in website:
             access_token_response = oauth._access_token(oauth(web.twitter_api_key,web.twitter_api_secret), request.params['oauth_token'], request.params['oauth_verifier'])
             vals= {
-                   'twitter_access_token' : access_token_response['oauth_token'],
-                   'twitter_access_token_secret' : access_token_response['oauth_token_secret']
-                   }
+               'twitter_access_token' : access_token_response['oauth_token'],
+               'twitter_access_token_secret' : access_token_response['oauth_token_secret']
+            }
             request.registry.get("website").write(request.cr, openerp.SUPERUSER_ID, website_id, vals, context=request.context)
 
         return http.local_redirect("/twitter_walls",query=request.params)
