@@ -343,12 +343,14 @@ instance.web.RedirectWarningHandler = instance.web.Dialog.extend(instance.web.Ex
             size: 'medium',
             title: "Odoo " + (_.str.capitalize(error.type) || "Warning"),
             buttons: [
-                {text: _t("Ok"), click: function() { self.$el.parents('.modal').modal('hide');  self.destroy();}},
-                {text: error.data.arguments[2],
-                 oe_link_class: 'oe_link',
-                 click: function() {
-                    window.location.href='#action='+error.data.arguments[1];
+                {text: _t("Ok"), click: function() { self.$el.parents('.modal').modal('hide'); self.destroy();}},
+                {text: error.data.arguments[2], oe_link_class: 'oe_link', click: function() {
                     self.destroy();
+                    if(_.isObject(error.data.arguments[1])) {
+                        openerp.webclient.action_manager.do_action(error.data.arguments[1])
+                    } else {
+                        window.location.href='#action='+error.data.arguments[1];
+                    }
                 }}
             ],
         }, QWeb.render('CrashManager.warning', {error: error})).open();
