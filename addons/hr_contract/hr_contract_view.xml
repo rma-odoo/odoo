@@ -33,7 +33,7 @@
                         <field name="manager"/>
                     </xpath>
                     <xpath expr="//group[@name='active_group']" position="before">
-                        <group string="Contract">
+                        <group string="Current Contract">
                             <field name="medic_exam" string="Medical Exam"/>
                             <field name="vehicle"/>
                             <field name="vehicle_distance"/>
@@ -76,7 +76,7 @@
             <field name="name">hr.contract.view.form</field>
             <field name="model">hr.contract</field>
             <field name="arch" type="xml">
-                <form string="Contract">
+                <form string="Current Contract">
                     <sheet>
                     <div class="oe_title">
                         <label for="name" class="oe_edit_only"/>
@@ -183,6 +183,7 @@
             <field name="arch" type="xml">
                 <search string="Search Contract Type">
                     <field name="name" string="Contract Type"/>
+		    <field name="sequence" widget="handle" string="Sequence"/>
                </search>
             </field>
         </record>
