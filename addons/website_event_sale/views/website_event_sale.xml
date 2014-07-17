@@ -26,26 +26,23 @@
 </template>
 
 <template id="event_description_full" inherit_id="website_event.event_description_full" optional="enabled" name="Event's Ticket form">
-    <xpath expr="//div[@t-field='event.description']" position="before">
-        <form t-attf-action="/event/cart/update?event_id=#{ event.id }" method="post" t-if="event.event_ticket_ids">
-            <table itemprop="offers" class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Ticket Type</th>
-                        <th style="min-width: 100px">Sales End</th>
-                        <th style="min-width: 100px">Price</th>
-                        <th></th>
-                        <th>Quantity</th>
-                    </tr>
-                </thead>
-                <tbody>
+    <xpath expr="//tbody[@id='event_ticket_type']" position="replace">
+           <form t-attf-action="/event/cart/update?event_id=#{ event.id }" method="post" t-if="event.event_ticket_ids">
                     <t t-foreach="event.event_ticket_ids" t-as="ticket">
                       <tr itemscope="itemscope" itemtype="http://data-vocabulary.org/Offer" t-if="not ticket.is_expired">
                         <td itemscope="itemscope" itemtype="http://data-vocabulary.org/Product">                  
                             <div itemprop="name" t-field="ticket.name"/>
                             <div><small itemprop="description" t-field="ticket.product_id.description_sale"/></div>
                         </td>
-                        <td><span itemprop="priceValidUntil" t-field="ticket.deadline"/></td>
+                        <td>
+                            <t t-if="ticket.deadline">
+                            <span itemprop="priceValidUntil" t-field="ticket.deadline"/>
+                            </t>
+                            <t t-if="not ticket.deadline">
+                                <span>Unlimited</span>
+                            </t>
+                        
+                        </td>
                         <td>
                             <t t-if="ticket.price or editable"><span t-field="ticket.price" t-field-options='{
                                    "widget": "monetary",
@@ -70,14 +67,21 @@
                             <span t-if="not ticket.seats_available">Sold Out</span>
                         </td>
                       </tr>
-                    </t>
-                </tbody>
-            </table>
-            <button type="submit" class="btn btn-primary btn-lg pull-right" t-if="event.seats_available">Order Now</button>
-            <div class="clearfix"/>
-            <hr/>
-        </form>
-    </xpath>
+                      </t>
+                      <tr>
+                        <td colspan="5">
+                            <button type="submit" class="btn btn-primary btn-lg pull-right" t-if="event.seats_available">Order Now</button>    
+                        </td>
+                      </tr>
+                </form>
+                <form t-if="not event.event_ticket_ids">
+                    <tr>
+                        <td colspan="5">
+                            <span> There is no Ticket available for this event</span>
+                        </td>
+                    </tr>
+                </form>    
+            </xpath>
 </template>
 
 </data>

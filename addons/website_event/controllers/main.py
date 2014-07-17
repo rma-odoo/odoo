@@ -34,7 +34,7 @@ from openerp.addons.website.models.website import slug
 
 class website_event(http.Controller):
     @http.route(['/event', '/event/page/<int:page>'], type='http', auth="public", website=True)
-    def events(self, page=1, **searches):
+    def events(self, page=1 , **searches):
         cr, uid, context = request.cr, request.uid, request.context
         event_obj = request.registry['event.event']
         type_obj = request.registry['event.type']
@@ -155,7 +155,7 @@ class website_event(http.Controller):
             'countries': countries,
             'pager': pager,
             'searches': searches,
-            'search_path': "?%s" % werkzeug.url_encode(searches),
+            'search_path': "?%s" % werkzeug.url_encode(searches),            
         }
 
         return request.website.render("website_event.index", values)
@@ -196,6 +196,23 @@ class website_event(http.Controller):
             'range': range,
         }
         return request.website.render("website_event.event_description_full", values)
+
+    @http.route(['/event/subscribe'], type='http', auth='public', methods=['POST'], website=True)
+    def event_subscribe(self, event_id , **post):
+        register_obj = request.registry.get('event.registration')
+        user_obj = request.registry.get('res.users').browse(request.cr, request.uid, request.uid, context= request.context)
+        user_info_obj = request.registry.get('res.partner').browse(request.cr, request.uid, user_obj.partner_id.id, context= request.context)
+        for key,values in post.items():
+            nb_register = int(values)
+        val = {
+                'event_id': event_id,
+                'email': user_info_obj.email,
+                'name':user_info_obj.name,
+                'user_id': request.uid,
+                'nb_register': nb_register,
+        }
+        register_obj.create(request.cr, request.uid,val, context=request.context)     
+        return request.redirect("/event")        
 
     @http.route('/event/add_event', type='http', auth="user", methods=['POST'], website=True)
     def add_event(self, event_name="New Event", **kwargs):
