@@ -924,7 +924,7 @@ def start(preload=None, stop=False):
     elif config['workers']:
         server = PreforkServer(openerp.service.wsgi_server.application)
     else:
-        server = ThreadedServer(openerp.service.wsgi_server.application)
+        server = ThreadedServer(openerp.service.wsgi_server.debug_application())
 
     if config['auto_reload']:
         autoreload = AutoReload(server)
