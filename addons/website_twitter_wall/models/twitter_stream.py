@@ -3,14 +3,14 @@ import thread
 
 import random
 import hmac
-import time
+# import time
 
 import ssl
-import base64
+# import base64
 import httplib
 
-import lxml.html
-from hashlib import sha1
+# import lxml.html
+# from hashlib import sha1
 
 from time import sleep
 from socket import timeout

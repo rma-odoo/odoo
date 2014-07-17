@@ -1,5 +1,5 @@
 import json
-import thread
+# import thread
 
 import random
 import hmac
@@ -7,17 +7,17 @@ import time
 
 import ssl
 import base64
-import httplib
+# import httplib
 
-import lxml.html
+# import lxml.html
 from hashlib import sha1
 
-from time import sleep
-from socket import timeout
-from threading import Thread
+# from time import sleep
+# from socket import timeout
+# from threading import Thread
 
-import openerp.modules.registry
-from openerp.osv import fields, osv
+# import openerp.modules.registry
+# from openerp.osv import fields, osv
 from openerp.tools.translate import _
 
 from urllib2 import urlopen, Request, HTTPError, quote

@@ -56,15 +56,16 @@ openerp.website.twitter_walls = openerp.Class.extend({
         $start_stop_button.click(function(){
             var value = $(this).attr("value");
             var wall_id = parseInt($(this).attr("wall_id"));
+            $button = $(this); 
             openerp.jsonRpc("/tweet_moderate/streaming", 'call', {'wall_id' : wall_id, 'state' : value}).done(function(state) {
-                $start_stop_button.removeClass('stop_streaming start_streaming');
+                $button.removeClass('stop_streaming start_streaming');
                 if(state == 'startstreaming'){
-                    $start_stop_button.html("<i class=\"fa fa-refresh\"></i>")
+                    $button.html("<i class=\"fa fa-refresh\"></i>")
                                  .attr("value", "stopstreaming")
                                  .addClass('stop_streaming btn-danger').removeClass('btn-success');
                     return;
                 }
-                $start_stop_button.html("<i class=\"fa fa-refresh\"></i>")
+                $button.html("<i class=\"fa fa-refresh\"></i>")
                                 .attr("value", "startstreaming")
                                 .addClass('start_streaming btn-success').removeClass('btn-danger');
                 
