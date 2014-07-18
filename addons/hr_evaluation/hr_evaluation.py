@@ -25,7 +25,6 @@ from dateutil import parser
 import time
 
 from openerp import fields, api, tools, models
-#from openerp.osv import osv, orm
 from openerp.tools.translate import _
 from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT as DF
 
