@@ -26,7 +26,16 @@
                             <label string="%%"
                                 attrs="{'invisible': [('advance_payment_method', '!=', 'percentage')]}" class="oe_inline"/>
                         </div>
+                        <field name="total" readonly="1" />
+                        <field name="invoiced" readonly="1"/>
+                        <group class="oe_subtotal_footer" col="2" colspan="2">
+                            <div class="oe_subtotal_footer_separator oe_inline">
+                                <label for="tobe_invoice"/>
+                            </div>
+                             <field name="tobe_invoice" class="oe_subtotal_footer_separator oe_inline" nolabel="1" readonly="1"/>
+                        </group>
                     </group>
+                    
                     <div>
                         <b><label string="After clicking 'Show Lines to Invoice', select lines to invoice and create the invoice from the 'More' dropdown menu." attrs="{'invisible': [('advance_payment_method', '!=', 'lines')]}"/></b>
                     </div>

@@ -42,6 +42,12 @@ class sale_advance_payment_inv(osv.osv_memory):
                 You may have to create it and set it as a default value on this field."""),
         'amount': fields.float('Advance Amount', digits_compute= dp.get_precision('Account'),
             help="The amount to be invoiced in advance."),
+        'total': fields.float('Order Total Amount', digits_compute= dp.get_precision('Account'),
+            help="Order total amount."),
+        'invoiced': fields.float('Invoiced Amount', digits_compute= dp.get_precision('Account'),
+            help="The amount already invoiced as an advance."),
+        'tobe_invoice': fields.float('To be Invoiced Amount', digits_compute= dp.get_precision('Account'),
+            help="The amount to be invoiced."),
     }
 
     def _get_advance_product(self, cr, uid, context=None):
@@ -52,10 +58,46 @@ class sale_advance_payment_inv(osv.osv_memory):
             return False
         return product.id
 
+    def _get_total_amount(self, cr, uid, context=None):
+        """ Fetched total amount of Sale order """
+
+        order = self.pool['sale.order'].browse(cr, uid,
+                                context.get('active_id'),
+                                context=context)
+        return order.amount_total
+
+    def _get_invoiced_amount(self, cr, uid, context=None):
+        """ Fetched total invoiced amount 
+            based on invoices created for sale order """
+
+        order = self.pool['sale.order'].browse(cr, uid,
+                                context.get('active_id'),
+                                context=context)
+        invoiced = 0.0
+        for invoice in order.invoice_ids:
+            if invoice.state not in ('cancel'):
+                invoiced += invoice.amount_total
+        return invoiced
+
+    def _get_tobe_invoiced_amount(self, cr, uid, context=None):
+        """ Calculate and return total amount 
+            remaining to invoice, the invoiced amount
+            will be deducted from total amount """
+
+        #Fetched total invoice amount for current sale order
+        invoiced_amount = self._get_invoiced_amount(cr, uid, context=context)
+        order = self.pool['sale.order'].browse(cr, uid,
+                                context.get('active_id'),
+                                context=context)
+        return order.amount_total - invoiced_amount
+
     _defaults = {
         'advance_payment_method': 'all',
         'qtty': 1.0,
         'product_id': _get_advance_product,
+        'total': _get_total_amount,
+        'invoiced': _get_invoiced_amount,
+        'tobe_invoice': _get_tobe_invoiced_amount
     }
 
     def onchange_method(self, cr, uid, ids, advance_payment_method, product_id, context=None):
