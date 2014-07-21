@@ -32,6 +32,18 @@ class MailMailStats(osv.Model):
     _rec_name = 'message_id'
     _order = 'message_id'
 
+    def first_click(self, cr, uid, ids, name, args, context=None):
+        click_obj = self.pool.get('website.alias.click')
+        res = {}
+        for alais in self.browse(cr, uid, ids, context=context):
+            res[alais.id] = alais.alais_click_ids and alais.alais_click_ids[0].create_date or False
+        return res 
+
+    def click_alais(self, cr, uid, ids, context=None):
+        for click in self.browse(cr, uid, ids, context=context):
+            return self.pool.get('mail.mail.statistics').search(cr, uid, [('id', '=', click.mail_stat_id.id)], context=context)
+        return []
+
     _columns = {
         'mail_mail_id': fields.many2one('mail.mail', 'Mail ID', ondelete='set null'),
         'message_id': fields.char('Message-ID'),
@@ -56,6 +68,11 @@ class MailMailStats(osv.Model):
         'opened': fields.datetime('Opened', help='Date when the email has been opened the first time'),
         'replied': fields.datetime('Replied', help='Date when this email has been replied for the first time.'),
         'bounced': fields.datetime('Bounced', help='Date when this email has bounced.'),
+        #website_url field
+        'alais_click_ids': fields.one2many('website.alias.click','mail_stat_id', 'Alais click'),
+        'first_click': fields.function(first_click,'First Click', type='date',
+                    store = {'mail.mail.statistics': (lambda self, cr, uid, ids, ctx: ids, ['alais_click_ids'], 10),
+                             'website.alias.click': (click_alais, ['mail_stat_id'], 10)}),
     }
 
     _defaults = {
@@ -87,3 +104,16 @@ class MailMailStats(osv.Model):
         stat_ids = self._get_ids(cr, uid, ids, mail_mail_ids, mail_message_ids, [('bounced', '=', False)], context)
         self.write(cr, uid, stat_ids, {'bounced': fields.datetime.now()}, context=context)
         return stat_ids
+
+
+class website_alias(osv.Model):
+    _inherit = "website.alias"
+    _columns = {
+        'mail_stat_id': fields.many2one('mail.mail.statistics'),
+    }
+
+class website_alias_click(osv.Model):
+    _inherit = "website.alias.click"
+    _columns = {
+        'mail_stat_id': fields.many2one('mail.mail.statistics'),
+    }

@@ -117,6 +117,7 @@ class MassMailingStage(osv.Model):
 
 class MassMailingCampaign(osv.Model):
     """Model of mass mailing campaigns. """
+    _inherit = 'crm.tracking.mixin'
     _name = "mail.mass_mailing.campaign"
     _description = 'Mass Mailing Campaign'
 
@@ -224,9 +225,19 @@ class MassMailingCampaign(osv.Model):
         stage_ids = self.pool['mail.mass_mailing.stage'].search(cr, uid, [], limit=1, context=context)
         return stage_ids and stage_ids[0] or False
 
+    def get_souce_id(self, cr, uid, context=None):
+        souce_id = self.pool.get('ir.model.data').get_object_reference(cr, uid, 'mass_mailing', 'mass_mail_list_1')
+        return souce_id and souce_id[1] or False
+
+    def get_medium_id(self, cr, uid, context=None):
+        medium_id = self.pool.get('ir.model.data').get_object_reference(cr, uid, 'crm', 'crm_medium_email')
+        return medium_id and medium_id[1] or False
+
     _defaults = {
         'user_id': lambda self, cr, uid, ctx=None: uid,
         'stage_id': lambda self, *args: self._get_default_stage_id(*args),
+        'source_id': lambda self, *args: self.get_souce_id(*args),
+        'medium_id' : lambda self, *args: self.get_medium_id(*args),
     }
 
     def get_recipients(self, cr, uid, ids, model=None, context=None):
