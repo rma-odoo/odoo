@@ -686,7 +686,7 @@
         </record>
         
         <!-- because of the needaction badge, groups needs to be specified -->
-        <menuitem id="menu_bank_reconcile_bank_statements" name="Reconciliation on Bank Statements" parent="account.periodical_processing_reconciliation" groups="group_account_user" action="action_bank_reconcile" sequence="20"/>
+        <menuitem id="menu_bank_reconcile_bank_statements" name="Reconciliation on Bank Statements" parent="account.menu_finance_bank_and_cash" groups="group_account_user" action="action_bank_reconcile" sequence="20"/>
 
         <record id="view_account_statement_operation_template_form" model="ir.ui.view">
             <field name="name">account.statement.operation.template.form</field>

@@ -3,11 +3,11 @@
     <data>
 
     <record id="account_coda_import_view" model="ir.ui.view">
-      <field name="name">Import CODA File</field>
+      <field name="name">Import statement</field>
       <field name="model">account.coda.import</field>
       <field name="priority">1</field>
       <field name="arch" type="xml">
-        <form string="Import CODA File">
+        <form string="Import statement">
             <group col="2">
                 <field name="coda_data" filename="coda_fname"/>
             </group>
@@ -21,7 +21,7 @@
     </record>
 
     <record id="action_account_coda_import" model="ir.actions.act_window">
-      <field name="name">Import CODA File</field>
+      <field name="name">Import statement</field>
       <field name="type">ir.actions.act_window</field>
       <field name="res_model">account.coda.import</field>
       <field name="view_type">form</field>
