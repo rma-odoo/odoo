@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- vim:fdn=3:
+-->
+<openerp>
+    <data>
+        <template id="website.portal" name="Portal" page="True">
+            <t t-call="website.layout">
+                <t t-call-assets="web.assets_backend"/>
+                <link rel='stylesheet' href='/website_portal/static/src/css/website_portal.css'/>
+                <script type="text/javascript">
+                    $(function() {
+                    var s = new openerp.init();
+                    <t t-if="init">
+                        <t t-raw="init"/>
+                    </t>
+                    <t t-if="not init">
+                        var wc = new s.web.WebClient();
+                        wc.setElement($(".openerp_webclient_container"));
+                        wc.start();
+                    </t>
+                    });
+                </script>
+                <div id="wrap">
+                    <div class="oe_structure">
+                        <div class="openerp openerp_webclient_container">
+                            <table class="oe_webclient">
+                                <tr>
+                                    <td class="col-md-2">
+                                        <div class="oe_application_menu_placeholder">
+                                            <div>
+                                                <t t-call="portal.menu_secondary"/>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="oe_application"></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </template>
+
+        <template id="portal.menu_secondary">
+            <div>
+                <div>
+                    <div class="oe_secondary_menus_container">
+                        <t t-foreach="menu_data['children']" t-as="menu">
+                            <div class="oe_secondary_menu" t-att-data-menu-parent="menu['id']">
+                                <t t-foreach="menu['children']" t-as="menu">
+                                    <div class="oe_secondary_menu_section">
+                                        <t t-esc="menu['name']"/>
+                                    </div>
+                                    <t t-call="web.menu_secondary_submenu"/>
+                                </t>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <template id="portal.empty">
+            <t t-call="website.layout">
+                <div id="wrap">
+                    <div class="oe_structure"/>
+                    <div class="container">
+                        <div class="h3">Portal menu not found. check access rights and try again.</div>
+                    </div>
+                </div>
+            </t>
+        </template>
+    </data>
+</openerp>
