@@ -51,7 +51,9 @@ instance.web.DataExport = instance.web.Dialog.extend({
         this.$el.find('#import_compat').change(function() {
             self.$el.find('#fields_list').empty();
             self.$el.find('#field-tree-structure').remove();
+            self.$el.find('#export_format').empty();
             var import_comp = self.$el.find("#import_compat").val();
+            self.rpc('/web/export/formats', {import_compat: import_comp,}).done(self.do_setup_export_formats);
             self.rpc("/web/export/get_fields", {
                 model: self.dataset.model,
                 import_compat: !!import_comp,
@@ -76,7 +78,6 @@ instance.web.DataExport = instance.web.Dialog.extend({
         return $.when(
             got_fields,
             got_domain,
-            this.rpc('/web/export/formats', {}).done(this.do_setup_export_formats),
             this.show_exports_list());
     },
     do_setup_export_formats: function (formats) {
