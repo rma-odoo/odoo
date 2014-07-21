@@ -1,5 +1,6 @@
 $(document).ready(function () {
-
+    
+    CKEDITOR.basePath = '/web/static/lib/ckeditor/'; // set base path of CKEDITOR for configuration files 
     $('.karma_required').on('click', function (ev) {
         var karma = $(ev.currentTarget).data('karma');
         if (karma) {
@@ -70,6 +71,7 @@ $(document).ready(function () {
                 }
             } else {
                 if (data) {
+                    $('.oe_answer_true').addClass('oe_answer_false').removeClass("oe_answer_true");
                     $link.addClass("oe_answer_true").removeClass('oe_answer_false');
                 } else {
                     $link.removeClass("oe_answer_true").addClass('oe_answer_false');

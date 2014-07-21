@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from openerp.osv import osv, fields
+from openerp import models, fields, api
 
-class Users(osv.Model):
+class Users(models.Model):
     _inherit = 'res.users'
 
     def __init__(self, pool, cr):
@@ -12,40 +12,36 @@ class Users(osv.Model):
                 ['country_id', 'city', 'website', 'website_description', 'website_published']))
         return init_res
 
-    def _get_user_badge_level(self, cr, uid, ids, name, args, context=None):
+    @api.one
+    @api.depends('badge_ids')
+    def _get_user_badge_level(self):
         """Return total badge per level of users"""
-        result = dict.fromkeys(ids, False)
-        badge_user_obj = self.pool['gamification.badge.user']
-        for id in ids:
-            result[id] = {
-                'gold_badge': badge_user_obj.search(cr, uid, [('badge_id.level', '=', 'gold'), ('user_id', '=', id)], context=context, count=True),
-                'silver_badge': badge_user_obj.search(cr, uid, [('badge_id.level', '=', 'silver'), ('user_id', '=', id)], context=context, count=True),
-                'bronze_badge': badge_user_obj.search(cr, uid, [('badge_id.level', '=', 'bronze'), ('user_id', '=', id)], context=context, count=True),
-            }
-        return result
+        self.gold_badge, self.silver_badge, self.bronze_badge = 0, 0, 0
+        for badge in self.badge_ids:
+            if badge.badge_id.level == 'gold':
+                self.gold_badge += 1
+            elif badge.badge_id.level == 'silver':
+                self.silver_badge += 1
+            elif badge.badge_id.level == 'bronze':
+                self.bronze_badge += 1
 
-    _columns = {
-        'create_date': fields.datetime('Create Date', select=True, readonly=True),
-        'karma': fields.integer('Karma'),
-        'badge_ids': fields.one2many('gamification.badge.user', 'user_id', 'Badges'),
-        'gold_badge': fields.function(_get_user_badge_level, string="Number of gold badges", type='integer', multi='badge_level'),
-        'silver_badge': fields.function(_get_user_badge_level, string="Number of silver badges", type='integer', multi='badge_level'),
-        'bronze_badge': fields.function(_get_user_badge_level, string="Number of bronze badges", type='integer', multi='badge_level'),
-    }
 
-    _defaults = {
-        'karma': 0,
-    }
+    create_date = fields.Datetime(string='Create Date', readonly=True, copy=False, select=True)
+    karma = fields.Integer(string='Karma', default=0)
+    badge_ids = fields.One2many('gamification.badge.user', 'user_id', string='Badges', copy=False)
+    gold_badge = fields.Integer(string='Number of gold badges', compute="_get_user_badge_level")
+    silver_badge = fields.Integer(string='Number of silver badges', compute="_get_user_badge_level")
+    bronze_badge = fields.Integer(string='Number of bronze badges', compute="_get_user_badge_level")
 
-    def add_karma(self, cr, uid, ids, karma, context=None):
-        for user in self.browse(cr, uid, ids, context=context):
-            self.write(cr, uid, [user.id], {'karma': user.karma + karma}, context=context)
+    def add_karma(self, karma):
+        self.karma += karma
         return True
 
-    def get_serialised_gamification_summary(self, cr, uid, excluded_categories=None, context=None):
+    @api.model
+    def get_serialised_gamification_summary(self, excluded_categories=None):
         if isinstance(excluded_categories, list):
             if 'forum' not in excluded_categories:
                 excluded_categories.append('forum')
         else:
             excluded_categories = ['forum']
-        return super(Users, self).get_serialised_gamification_summary(cr, uid, excluded_categories=excluded_categories, context=context)
+        return super(Users, self).get_serialised_gamification_summary()
