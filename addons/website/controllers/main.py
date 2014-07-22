@@ -159,6 +159,10 @@ class Website(openerp.addons.web.controllers.main.Home):
     @http.route(['/website/snippets'], type='json', auth="public", website=True)
     def snippets(self):
         return request.website._render('website.snippets')
+        
+    @http.route('/website/scan_languages', type='json', auth="public", website=True)
+    def scan_languages(self):
+        return openerp.tools.scan_languages()
 
     @http.route('/website/reset_templates', type='http', auth='user', methods=['POST'], website=True)
     def reset_template(self, templates, redirect='/'):

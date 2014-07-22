@@ -1,6 +1,6 @@
 (function () {
     'use strict';
-
+    
     var website = openerp.website;
     website.add_template_file('/website/static/src/xml/website.seo.xml');
 
@@ -29,6 +29,7 @@
         },
         init: function (parent, options) {
             this.root = options.root;
+            this.language = options.language;
             this.keyword = options.keyword;
             this.htmlPage = options.page;
             this._super(parent);
@@ -47,7 +48,7 @@
             return this.analyze().description;
         },
         select: function () {
-            this.trigger('selected', this.keyword);
+            this.trigger('selected', this.keyword, this.language);
         },
     });
 
@@ -55,6 +56,7 @@
         template: 'website.seo_suggestion_list',
         init: function (parent, options) {
             this.root = options.root;
+            this.language = options.language;
             this.htmlPage = options.page;
             this._super(parent);
         },
@@ -76,17 +78,30 @@
                     if (keyword) {
                         var suggestion = new website.seo.Suggestion(self, {
                             root: self.root,
+                            language: self.language,
                             keyword: keyword,
                             page: self.htmlPage,
                         });
-                        suggestion.on('selected', self, function (word) {
-                            self.trigger('selected', word);
+                        suggestion.on('selected', self, function (word, language) {
+                            self.trigger('selected', word, language);
                         });
                         suggestion.appendTo(self.$el);
                     }
                 });
             }
-            $.getJSON("http://suggest.hp.af.cm/suggest/"+encodeURIComponent(this.root + " "), addSuggestions);
+            var language = this.language ? this.language.split("_") : ["",""];
+            $.ajax({
+                type: "GET",
+                url: "http://google.com/complete/search?output=jsonp&client=youtube&hl="+language[0]+"&q=" +this.root+"&gl="+language[1],
+                dataType: "jsonp",            
+                success: function (xml) {
+                    var suggest_data = [];
+                    _.each(xml[1],function(data){
+                        suggest_data.push(data[0]);
+                    });
+                    addSuggestions(suggest_data);
+                }
+            });
         },
     });
 
@@ -99,6 +114,7 @@
         init: function (parent, options) {
             this.keyword = options.word;
             this.htmlPage = options.page;
+            this.language = options.language;
             this._super(parent);
         },
         start: function () {
@@ -106,10 +122,11 @@
             this.htmlPage.on('description-changed', this, this.updateLabel);
             this.suggestionList = new website.seo.SuggestionList(this, {
                 root: this.keyword,
+                language: this.language,
                 page: this.htmlPage,
             });
-            this.suggestionList.on('selected', this, function (word) {
-                this.trigger('selected', word);
+            this.suggestionList.on('selected', this, function (word, language) {
+                this.trigger('selected', word, language);
             });
             this.suggestionList.appendTo(this.$('.js_seo_keyword_suggestion'));
         },
@@ -143,9 +160,12 @@
         start: function () {
             var self = this;
             var existingKeywords = self.htmlPage.keywords();
+            var existinglang = self.htmlPage.language();
+            var data = _.object(existingKeywords,existinglang);
+            data = _.pairs(data);
             if (existingKeywords.length > 0) {
-                _.each(existingKeywords, function (word) {
-                    self.add.call(self, word);
+                _.each(data, function (data) {
+                    self.add.call(self, data[0], data[1]);
                 });
             } else {
                 var companyName = self.htmlPage.company().toLowerCase();
@@ -161,27 +181,42 @@
             });
             return result;
         },
+        language: function () {
+            var result = [];
+            this.$('.js_seo_lang').each(function () {
+                result.push($(this).data('language'));
+            });
+            return result;
+        },
         isFull: function () {
             return this.keywords().length >= this.maxKeywords;
         },
-        exists: function (word) {
-            return _.contains(this.keywords(), word);
+        exists: function (word, language) {
+            var keywordList = this.keywords();
+            var languageList = this.language();
+            for(var index in keywordList){
+                if(word == keywordList[index] && language == languageList[index]){
+                    return false;
+                }
+            }
+            return true;
         },
-        add: function (candidate) {
+        add: function (candidate, language) {
             var self = this;
             // TODO Refine
             var word = candidate ? candidate.replace(/[,;.:<>]+/g, " ").replace(/ +/g, " ").trim().toLowerCase() : "";
-            if (word && !self.isFull() && !self.exists(word)) {
+            if (word && !self.isFull() && self.exists(word, language)) {
                 var keyword = new website.seo.Keyword(self, {
                     word: word,
+                    language: language,
                     page: this.htmlPage,
                 });
                 keyword.on('removed', self, function () {
                    self.trigger('list-not-full');
                    self.trigger('removed', word);
                 });
-                keyword.on('selected', self, function (word) {
-                    self.trigger('selected', word);
+                keyword.on('selected', self, function (word, language) {
+                    self.trigger('selected', word, language);
                 });
                 keyword.appendTo(self.$el);
             }
@@ -267,10 +302,19 @@
             var parsed = ($keywords.length > 0) && $keywords.attr('content') && $keywords.attr('content').split(",");
             return (parsed && parsed[0]) ? parsed: [];
         },
+        language: function () {
+            var $lang = $('meta[name=language]');
+            var parsed = ($lang.length > 0) && $lang.attr('content') && $lang.attr('content').split(",");
+            return (parsed && parsed[0]) ? parsed: [];
+        },
         changeKeywords: function (keywords) {
             // TODO create tag if missing
             $('meta[name=keywords]').attr('content', keywords.join(","));
             this.trigger('keywords-changed', keywords);
+        },
+        changeLanguage: function (language) {
+            $('meta[name=language]').attr('content', language.join(","));
+            this.trigger('language-changed', language);
         },
         headers: function (tag) {
             return $('#wrap '+tag).map(function () {
@@ -330,6 +374,7 @@
         canEditTitle: false,
         canEditDescription: false,
         canEditKeywords: false,
+        canEditLanguage: false,
         maxTitleSize: 65,
         maxDescriptionSize: 150,
         start: function () {
@@ -360,13 +405,34 @@
                 $modal.find('button[data-action=add]')
                     .prop('disabled', false).removeClass('disabled');
             });
-            self.keywordList.on('selected', self, function (word) {
-                self.keywordList.add(word);
+            self.keywordList.on('selected', self, function (word, language) {
+                self.keywordList.add(word, language);
             });
             self.keywordList.appendTo($modal.find('.js_seo_keywords_list'));
             self.disableUnsavableFields();
             self.renderPreview();
             $modal.modal();
+            self.getLanguages();
+        },
+        getLanguages: function(){
+            var self = this;
+            openerp.jsonRpc("/website/scan_languages","call",{}).then(function(result){
+                var default_lang = website.get_context().lang;
+                _.each(result, function(data){
+                    if(default_lang == data[0]){
+                        self.$('#language-box')
+                        .append($('<option selected></option>')
+                        .attr('value',data[0])
+                        .text(data[1]));
+                    }
+                    else {
+                    self.$('#language-box')
+                        .append($('<option></option>')
+                        .attr('value',data[0])
+                        .text(data[1]));
+                    }
+                });
+            });
         },
         disableUnsavableFields: function () {
             var self = this;
@@ -375,6 +441,7 @@
                 self.canEditTitle = data && ('website_meta_title' in data);
                 self.canEditDescription = data && ('website_meta_description' in data);
                 self.canEditKeywords = data && ('website_meta_keywords' in data);
+                self.canEditLanguage = data && ('website_meta_language' in data);
                 if (!self.canEditTitle) {
                     $modal.find('input[name=seo_page_title]').attr('disabled', true);
                 }
@@ -419,9 +486,12 @@
         },
         addKeyword: function (word) {
             var $input = this.$('input[name=seo_page_keywords]');
+            var $language = this.$('select[name=seo_page_language]');
             var keyword = _.isString(word) ? word : $input.val();
-            this.keywordList.add(keyword);
+            var language = _.isString(word) ? word : $language.val().toLowerCase();
+            this.keywordList.add(keyword,language);
             $input.val("");
+            this.getLanguages();
         },
         update: function () {
             var self = this;
@@ -434,6 +504,9 @@
             }
             if (self.canEditKeywords) {
                 data.website_meta_keywords = self.keywordList.keywords().join(", ");
+            }
+            if(self.canEditLanguage){
+                data.website_meta_language = self.keywordList.language().join(",");
             }
             self.saveMetaData(data).then(function () {
                self.$el.modal('hide');
@@ -459,9 +532,9 @@
                 // return $.Deferred().reject(new Error("No main_object was found."));
                 def.resolve(null);
             } else {
-                var fields = ['website_meta_title', 'website_meta_description', 'website_meta_keywords'];
+                var fields = ['website_meta_title', 'website_meta_description', 'website_meta_keywords', 'website_meta_language'];
                 var model = website.session.model(obj.model);
-                model.call('read', [[obj.id], fields, website.get_context()]).then(function (data) {
+                model.call('read', [[obj.id], fields, {'website_id':website.get_context().website_id}]).then(function (data) {
                     if (data.length) {
                         var meta = data[0];
                         meta.model = obj.model;
@@ -481,7 +554,7 @@
                 return $.Deferred().reject();
             } else {
                 var model = website.session.model(obj.model);
-                return model.call('write', [[obj.id], data, website.get_context()]);
+                return model.call('write', [[obj.id], data, {'website_id':website.get_context().website_id}]);
             }
         },
         titleChanged: function () {
@@ -512,6 +585,7 @@
         },
         destroy: function () {
             this.htmlPage.changeKeywords(this.keywordList.keywords());
+            this.htmlPage.changeLanguage(this.keywordList.language());
             this._super();
         },
     });

@@ -18,6 +18,7 @@ class view(osv.osv):
         'website_meta_title': fields.char("Website meta title", size=70, translate=True),
         'website_meta_description': fields.text("Website meta description", size=160, translate=True),
         'website_meta_keywords': fields.char("Website meta keywords", translate=True),
+        'website_meta_language': fields.char("website meta language"),
     }
     _defaults = {
         'page': False,

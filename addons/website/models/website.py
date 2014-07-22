@@ -801,6 +801,7 @@ class website_seo_metadata(osv.Model):
         'website_meta_title': fields.char("Website meta title", translate=True),
         'website_meta_description': fields.text("Website meta description", translate=True),
         'website_meta_keywords': fields.char("Website meta keywords", translate=True),
+        'website_meta_language': fields.char("website meta language"),
     }
 
 # vim:et:
