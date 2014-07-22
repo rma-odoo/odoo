@@ -119,7 +119,7 @@ instance.web_kanban.KanbanView = instance.web.View.extend({
     */
     extract_aggregates: function(node) {
         for (var j = 0, jj = this.group_operators.length; j < jj;  j++) {
-            if (node.attrs[this.group_operators[j]]) {
+            if (node.attrs[this.group_operators[j]] && !node.attrs.invisible) {
                 this.aggregates[node.attrs.name] = node.attrs[this.group_operators[j]];
                 break;
             }

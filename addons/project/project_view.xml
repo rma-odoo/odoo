@@ -135,27 +135,10 @@
                         </group>
                     </group>
                     <notebook>
-                        <page string="Team" name="team">
-                            <field colspan="4" name="members" widget="many2many_kanban" context="{'default_groups_ref': ['base.group_user', 'base.group_partner_manager', 'project.group_project_user']}">
-                                <kanban quick_create="false" create="true" delete="true">
-                                    <field name="name"/>
-                                    <templates>
-                                        <t t-name="kanban-box">
-                                            <div style="position: relative">
-                                                <a t-if="! read_only_mode" type="delete" style="position: absolute; right: 0; padding: 4px; diplay: inline-block">X</a>
-                                                <div class="oe_module_vignette">
-                                                    <img t-att-src="kanban_image('res.users', 'image_small', record.id.value)" class="oe_avatar oe_kanban_avatar_smallbox"/>
-                                                    <div class="oe_module_desc">
-                                                        <field name="name"/>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </t>
-                                    </templates>
-                                </kanban>
-                            </field>
+                        <page string="Description" name="description">
+                            <field name="description" type="text"/>
                         </page>
-                        <page string="Other Info">
+                        <page string="Communication">
                             <group string="Administration">
                                 <field name="privacy_visibility" widget="radio"/>
                                 <field name="planned_hours" widget="float_time"
@@ -255,7 +238,7 @@
                     <field name="doc_count"/>
                     <templates>
                         <t t-name="kanban-box">
-                            <div t-attf-class="oe_kanban_color_#{kanban_getcolor(record.color.raw_value)} oe_kanban_card oe_kanban_project oe_kanban_global_click">
+                            <div t-attf-class="oe_kanban_color_#{kanban_getcolor(record.color.raw_value)} oe_kanban_card oe_kanban_project oe_kanban_global_click oe_kanban_project_task_spark">
                                 <div class="oe_dropdown_toggle oe_dropdown_kanban" groups="base.group_user">
                                     <span class="oe_e">í</span>
                                     <ul class="oe_dropdown_menu">
@@ -270,8 +253,11 @@
                                         <small><i class="fa fa-envelope-o"></i> <field name="alias_id"/></small>
                                     </div>
                                     <div class="oe_kanban_project_list">
-                                        <a t-if="record.use_tasks.raw_value" name="%(act_project_project_2_project_task_all)d" type="action" style="margin-right: 10px">
-                                            <t t-raw="record.task_ids.raw_value.length"/> Tasks
+                                        <a t-if="record.use_tasks.raw_value" class="oe_sparkline_bar_link" name="%(act_project_project_2_project_task_all)d" type="action" style="margin-right: -5px">
+                                            <t t-raw="record.task_ids.raw_value.length" /> Tasks
+                                            <field name="task_spark" widget="sparkline_bar" options="{'delayIn': '3000'}">
+                                                Created Task of month
+                                            </field>
                                         </a>
                                     </div>
                                     <div class="oe_kanban_project_list">
@@ -411,7 +397,7 @@
                     </group>
                     <notebook>
                         <page string="Description">
-                            <field name="description" placeholder="Add a Description..."/>
+                            <field name="description" type="html"/>
                             <field name="work_ids" groups="project.group_tasks_work_on_tasks">
                                 <tree string="Task Work" editable="top">
                                     <field name="name"/>
@@ -423,9 +409,10 @@
                             <group>
                              <group class="oe_subtotal_footer oe_right" name="project_hours" groups="project.group_time_work_estimation_tasks">
                                 <field name="effective_hours" widget="float_time"/>
-                                <label for="remaining_hours" string="Remaining" groups="project.group_time_work_estimation_tasks"/>
+                                <field name="use_timesheets" invisible="1"/>
+                                <label for="remaining_hours" string="Remaining" groups="project.group_time_work_estimation_tasks" attrs="{'invisible':[('use_timesheets','=', False)]}"/>
                                 <div>
-                                    <field name="remaining_hours" widget="float_time" groups="project.group_time_work_estimation_tasks"/>
+                                    <field name="remaining_hours" widget="float_time" groups="project.group_time_work_estimation_tasks" attrs="{'invisible':[('use_timesheets','=', False)]}"/>
                                 </div>
                                 <field name="total_hours" widget="float_time" class="oe_subtotal_footer_separator"/>
                              </group>
@@ -519,7 +506,7 @@
                             <div class="oe_kanban_content">
                                 <div><b><field name="name"/></b></div>
                                 <div>
-                                    <field name="project_id"/><br/>
+                                    <field name="project_id" invisible="context.get('default_project_id', False)"/><br/>
                                     <t t-if="record.date_deadline.raw_value and record.date_deadline.raw_value lt (new Date())" t-set="red">oe_kanban_text_red</t>
                                     <span t-attf-class="#{red || ''}"><i><field name="date_deadline"/></i></span>
                                 </div>
@@ -602,7 +589,7 @@
             <field name="arch" type="xml">
                 <graph string="Project Tasks" type="bar">
                     <field name="project_id" type="row"/>
-                    <field name="planned_hours" type="measure"/>
+                    <field name="stage_id" type="row"/>
                 </graph>
             </field>
         </record>

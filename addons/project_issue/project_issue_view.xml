@@ -312,9 +312,12 @@
                     <field name="issue_ids" invisible="1"/>
                 </field>
                 <xpath expr="//div[contains(@class, 'oe_kanban_project_list')]" position="inside">
-                    <a t-if="record.use_issues.raw_value" style="margin-right: 10px"
+                    <a t-if="record.use_issues.raw_value" style="margin-right: -30px" class="pull-right"
                         name="%(act_project_project_2_project_issue_all)d" type="action">
                         <t t-raw="record.issue_ids.raw_value.length"/> Issues
+                        <field name="issue_spark" widget="sparkline_bar" options="{'delayIn': '3000'}">
+                            Closed Issue By Month
+                        </field>
                     </a>
                 </xpath>
             </field>
