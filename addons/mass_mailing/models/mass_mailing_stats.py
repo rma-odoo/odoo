@@ -31,14 +31,16 @@ class MailMailStats(osv.Model):
     _description = 'Email Statistics'
     _rec_name = 'message_id'
     _order = 'message_id'
-
+    
+    #need to test
     def first_click(self, cr, uid, ids, name, args, context=None):
         click_obj = self.pool.get('website.alias.click')
         res = {}
         for alais in self.browse(cr, uid, ids, context=context):
             res[alais.id] = alais.alais_click_ids and alais.alais_click_ids[0].create_date or False
-        return res 
+        return res
 
+    #need to test
     def click_alais(self, cr, uid, ids, context=None):
         for click in self.browse(cr, uid, ids, context=context):
             return self.pool.get('mail.mail.statistics').search(cr, uid, [('id', '=', click.mail_stat_id.id)], context=context)

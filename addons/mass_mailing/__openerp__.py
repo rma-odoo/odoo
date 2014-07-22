@@ -32,6 +32,7 @@ professional emails and reuse templates in a few clicks.
     'website': 'http://www.openerp.com',
     'category': 'Marketing',
     'depends': [
+        'crm',
         'mail',
         'email_template',
         'marketing',
