@@ -540,6 +540,13 @@ def Project():
         if ir_values:
             values = dict(values, alias_name=vals['name'])
         self.pool.get('mail.alias').write(cr, uid, [project_rec.alias_id.id], values, context=context)
+
+        contract_obj = self.pool.get('account.analytic.account')
+        updates = contract_obj.on_change_partner_id(cr, uid, project_rec.analytic_account_id.id, project_rec.analytic_account_id.partner_id.id, project_rec.analytic_account_id.name)
+        pricelist_id = updates.get('value').get('pricelist_id')
+        if pricelist_id:
+            self.pool.get('account.analytic.account').write(cr, uid, project_rec.analytic_account_id.id, {'pricelist_id': pricelist_id}, context=context)
+
         return project_id
 
     def write(self, cr, uid, ids, vals, context=None):
