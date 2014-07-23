@@ -61,5 +61,11 @@ class product_template(osv.osv):
             help="This account will be used for invoices instead of the default one to value expenses for the current product."),
     }
 
+    def write(self, cr, uid, ids, vals, context=None):
+        if 'uom_po_id' in vals:
+            product_id = self.pool.get('product.product').search(cr, uid, [('product_tmpl_id','in',ids)])
+            if self.pool.get('account.move.line').search(cr, uid, [('product_id', 'in', product_id)], limit=1):
+                raise osv.except_osv(('Error!'), ("You can not change the unit of measure of a product that has been used in an account journal item already. If you need to change the unit of measure, you may deactivate this product.") % ())
+        return super(product_template, self).write(cr, uid, ids, vals, context)
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

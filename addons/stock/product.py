@@ -388,6 +388,13 @@ class product_template(osv.osv):
         result['domain'] = "[('id','in',[" + ','.join(map(str, route_ids)) + "])]"
         return result
 
+    def write(self, cr, uid, ids, vals, context=None):
+        if 'uom_po_id' in vals:
+            product_id = self.pool.get('product.product').search(cr, uid, [('product_tmpl_id','in',ids)])
+            if self.pool.get('stock.move').search(cr, uid, [('product_id', 'in', product_id)], limit=1):
+                raise osv.except_osv(('Error!'), ("You can not change the unit of measure of a product that has been used in a stock move already. If you need to change the unit of measure, you may deactivate this product.") % ())
+        return super(product_template, self).write(cr, uid, ids, vals, context)
+
 class product_removal_strategy(osv.osv):
     _name = 'product.removal'
     _description = 'Removal Strategy'
