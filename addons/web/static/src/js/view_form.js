@@ -1959,6 +1959,7 @@ instance.web.form.WidgetButton = instance.web.form.FormWidget.extend({
         return this.view.do_execute_action(
             _.extend({}, this.node.attrs, {context: context}),
             this.view.dataset, this.view.datarecord.id, function (reason) {
+                self.force_disabled = false;
                 if (!_.isObject(reason)) {
                     self.view.recursive_reload();
                 }
