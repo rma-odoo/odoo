@@ -598,6 +598,7 @@ class product_template(osv.osv):
                 # This is right cause a field cannot be in more than one currency
                 res[product.id] = self.pool.get('res.currency').compute(cr, uid, price_type_currency_id,
                     context['currency_id'], res[product.id],context=context)
+
         return res
 
     def _get_uom_id(self, cr, uid, *args):

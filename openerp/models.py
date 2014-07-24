@@ -3173,6 +3173,13 @@ class BaseModel(object):
                     'extra': " OR ".join(rule_clause) if rule_clause else "TRUE",
                     'order': self._parent_order or self._order,
                 }
+        empty = self.browse()
+        prefetch = set()
+        todo = set()
+        for field in (self._fields[name] for name in field_names):
+            prefetch.update(self._in_cache_without(field).ids)
+            todo.update(self.env.todo.get(field, empty).ids)
+        records = self.browse(prefetch - todo)
 
         empty = self.browse()
         prefetch = set()
