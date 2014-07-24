@@ -4,7 +4,6 @@
     'summary': "website portal",
     'description': "Display portal in website",
     'author': 'OpenERP SA',
-    'website': "http://www.yourcompany.com",
     'category': 'Website',
     'version': '1.0',
     'depends': ["base", "portal", "website", "web"],

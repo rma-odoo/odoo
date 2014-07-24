@@ -580,11 +580,43 @@ class website_menu(osv.osv):
         'child_id': fields.one2many('website.menu', 'parent_id', string='Child Menus'),
         'parent_left': fields.integer('Parent Left', select=True),
         'parent_right': fields.integer('Parent Right', select=True),
+        'groups_id': fields.many2many('res.groups', 'ir_ui_webmenu_group_rel',
+            'menu_id', 'gid', 'Groups', help="If you have groups, the visibility of this menu will be based on these groups. "\
+                "If this field is empty, OpenERP will compute visibility based on the related object's read access."),
     }
 
     def __defaults_sequence(self, cr, uid, context):
         menu = self.search_read(cr, uid, [(1,"=",1)], ["sequence"], limit=1, order="sequence DESC", context=context)
         return menu and menu[0]["sequence"] or 0
+
+    def _filter_visible_menus(self, cr, uid, ids, context):
+        groups = self.pool.get("res.users").browse(cr, uid, uid, context).groups_id
+        visible = []
+        for menu in self.browse(cr, uid, ids, context=context):
+            if not menu.groups_id or menu.groups_id & groups:
+                visible.append(menu.id)
+        return visible
+
+    def search(self, cr, uid, args, offset=0, limit=None, order=None, context=None, count=False):
+        if context is None:
+            context = {}
+
+        ids = super(website_menu, self).search(cr, uid, args, offset=0,
+            limit=None, order=order, context=context, count=False)
+
+        if not ids:
+            if count:
+                return 0
+            return []
+        result = self._filter_visible_menus(cr, uid, ids, context)
+        if offset:
+            result = result[long(offset):]
+        if limit:
+            result = result[:long(limit)]
+
+        if count:
+            return len(result)
+        return result
 
     _defaults = {
         'url': '',
