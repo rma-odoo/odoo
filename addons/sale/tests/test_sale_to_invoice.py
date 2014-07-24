@@ -103,4 +103,5 @@ class TestSale(TestMail):
             'type': 'receipt',
         })
         assert voucher_id,"Voucher will not created."
-        voucher_obj.signal_proforma_voucher(cr, uid, [voucher_id])
+        voucher = voucher_obj.browse(cr, uid, voucher_id)
+        voucher.signal_workflow('proforma_voucher')
