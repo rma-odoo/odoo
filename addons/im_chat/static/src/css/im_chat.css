@@ -107,3 +107,27 @@
     vertical-align: middle;
     border: 0;
 }
+.oe_im_container{
+    float: right;
+    right: 5px;
+    width: 28px;
+    height: 24px;
+    padding: 3px 3px 3px 3px;
+    text-align: center;
+    border-radius: 20px;
+    box-shadow: 0.2px 0.2px  2px #888888;
+    -moz-box-shadow: 0 0 2px 1px rgba(0, 0, 0, 0.25);
+    -webkit-box-shadow: 0 0 2px 1px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 0 2px 1px rgba(0, 0, 0, 0.25);
+}
+.oe_im_container:hover {
+    border-color: #999;
+    background: -webkit-linear-gradient(top, #FF0000, #a24689);
+    background: -moz-linear-gradient(top, #FF0000, #a24689);
+    background: -ms-linear-gradient(top, #FF0000, #a24689);
+    background: -o-linear-gradient(top, #FF0000, #a24689);
+    -webkit-box-shadow: 0 1px 1px rgba(0,0,0,0.25), inset 0 0 3px #fff;
+    -moz-box-shadow:    0 1px 1px rgba(0,0,0,0.25), inset 0 0 3px #fff;
+    box-shadow:         0 1px 1px rgba(0,0,0,0.25), inset 0 0 3px #fff;
+    color:#FFFFFF;
+}

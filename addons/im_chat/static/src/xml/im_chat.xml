@@ -78,6 +78,9 @@
             <span class="oe_e oe_im_search_icon">ô</span>
             <input class="oe_im_searchbox" t-att-placeholder="_t('Search users...')"/>
             <span class="oe_e oe_im_search_clear">[</span>
+            <div class="oe_im_frame_header oe_im_container">
+                <span class="glyphicon glyphicon-remove oe_close_im"/>
+            </div>
         </div>
         <div class="oe_im_users"></div>
         <div class="oe_im_content"></div>

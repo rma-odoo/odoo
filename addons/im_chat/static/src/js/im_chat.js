@@ -327,6 +327,15 @@
             this.$('.oe_im_chatview_content_bubbles').html($(openerp.qweb.render("im_chat.Conversation_content", {"list": res})));
         },
         keydown: function(e) {
+            if(e && e.which == 27) {
+                if(this.$el.prev().find('.oe_im_chatview_input').length > 0){
+                    this.$el.prev().find('.oe_im_chatview_input').focus();
+                }else{
+                    this.$el.next().find('.oe_im_chatview_input').focus();
+                }
+                event.stopPropagation();
+                this.update_fold_state('closed');
+            }
             if(e && e.which !== 13) {
                 return;
             }
@@ -449,6 +458,7 @@
             "keydown .oe_im_searchbox": "input_change",
             "keyup .oe_im_searchbox": "input_change",
             "change .oe_im_searchbox": "input_change",
+            "click .oe_close_im": "switch_display",
         },
         init: function(parent) {
             this._super(parent);
