@@ -23,6 +23,7 @@
                 <div id="wrap">
                     <div class="oe_structure">
                         <div class="openerp openerp_webclient_container">
+                            <div id="oe_main_menu_navbar" style="display:none"></div>
                             <table class="oe_webclient">
                                 <tr>
                                     <td class="col-md-2">
