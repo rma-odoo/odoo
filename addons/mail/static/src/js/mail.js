@@ -363,12 +363,16 @@ openerp.mail = function (session) {
          */
 
         init: function (parent, datasets, options) {
+            var self = this;
             this._super(parent, datasets, options);
             this.show_compact_message = false;
             this.show_delete_attachment = true;
             this.is_log = false;
             this.recipients = [];
             this.recipient_ids = [];
+            this.followers = [];
+            this.user_is_follower = false;
+            this.ds_model = new session.web.DataSetSearch(this, this.model);
         },
 
         start: function () {
@@ -472,6 +476,7 @@ openerp.mail = function (session) {
             this.$('.oe_compact_inbox').on('click', self.on_toggle_quick_composer);
             this.$('.oe_compose_post').on('click', self.on_toggle_quick_composer);
             this.$('.oe_compose_log').on('click', self.on_toggle_quick_composer);
+            this.$el.find(".oe_invite_click").on('click', self.on_click_add_followers);
             this.$('input.oe_form_binary_file').on('change', _.bind( this.on_attachment_change, this));
             this.$('.oe_cancel').on('click', _.bind( this.on_cancel, this));
             this.$('.oe_post').on('click', self.on_message_post);
@@ -491,6 +496,11 @@ openerp.mail = function (session) {
             this.$(".oe_msg_attachment_list").on('click', '.oe_delete', this.on_attachment_delete);
 
             this.$(".oe_recipients").on('change', 'input', this.on_checked_recipient);
+        },
+
+        on_click_add_followers: function () {
+            var self = this;
+            this.$el.find(".oe_all_follower").parents(".oe_chatter").find(".oe_invite").trigger("click");
         },
 
         on_compose_fullmail: function (default_composition_mode) {
@@ -717,6 +727,10 @@ openerp.mail = function (session) {
             var email_addresses = _.pluck(this.recipients, 'email_address');
             var suggested_partners = $.Deferred();
 
+            this.ds_model.read_ids([this.context.default_res_id],['message_is_follower', 'message_follower_ids']).then(function (results) {
+                self.followers = results[0].message_follower_ids
+                self.user_is_follower = results[0].message_is_follower
+            });
             // if clicked: call for suggested recipients
             if (event.type == 'click') {
                 this.is_log = $input.hasClass('oe_compose_log');
