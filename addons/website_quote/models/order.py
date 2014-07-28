@@ -32,10 +32,10 @@ class sale_quote_template(osv.osv):
     _columns = {
         'name': fields.char('Quotation Template', required=True),
         'website_description': fields.html('Description', translate=True),
-        'quote_line': fields.one2many('sale.quote.line', 'quote_id', 'Quote Template Lines', copy=True),
+        'quote_line': fields.one2many('sale.quote.line', 'quote_id', 'Quotation Template Lines', copy=True),
         'note': fields.text('Terms and conditions'),
         'options': fields.one2many('sale.quote.option', 'template_id', 'Optional Products Lines', copy=True),
-        'number_of_days': fields.integer('Quote Duration', help='Number of days for the validaty date computation of the quotation'),
+        'number_of_days': fields.integer('Quotation Duration', help='Number of days for the validaty date computation of the quotation'),
     }
     def open_template(self, cr, uid, quote_id, context=None):
         return {
@@ -111,12 +111,13 @@ class sale_order(osv.osv):
 
     _columns = {
         'access_token': fields.char('Security Token', required=True, copy=False),
-        'template_id': fields.many2one('sale.quote.template', 'Quote Template'),
+        'template_id': fields.many2one('sale.quote.template', 'Quotation Template'),
         'website_description': fields.html('Description'),
         'options' : fields.one2many('sale.order.option', 'order_id', 'Optional Products Lines'),
         'validity_date': fields.date('Validity Date'),
         'amount_undiscounted': fields.function(_get_total, string='Amount Before Discount', type="float",
-            digits_compute=dp.get_precision('Account'))
+            digits_compute=dp.get_precision('Account')),
+        'quote_viewed': fields.boolean('Quotation Viewed')
     }
 
     def _get_template_id(self, cr, uid, context=None):
@@ -129,10 +130,12 @@ class sale_order(osv.osv):
     _defaults = {
         'access_token': lambda self, cr, uid, ctx={}: str(uuid.uuid4()),
         'template_id' : _get_template_id,
+        'quote_viewed': False
     }
 
     def open_quotation(self, cr, uid, quote_id, context=None):
         quote = self.browse(cr, uid, quote_id[0], context=context)
+        self.write(cr, uid, quote_id[0], {'quote_viewed': True}, context=context)
         return {
             'type': 'ir.actions.act_url',
             'target': 'self',
@@ -197,7 +200,7 @@ class sale_order(osv.osv):
 
 class sale_quote_option(osv.osv):
     _name = "sale.quote.option"
-    _description = "Quote Option"
+    _description = "Quotation Option"
     _columns = {
         'template_id': fields.many2one('sale.quote.template', 'Quotation Template Reference', ondelete='cascade', select=True, required=True),
         'name': fields.text('Description', required=True, translate=True),
