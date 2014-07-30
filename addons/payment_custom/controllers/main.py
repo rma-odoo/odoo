@@ -27,10 +27,6 @@ class CustomController(http.Controller):
         '/payment/custom/feedback',
     ], type='http', auth='public', website=True)
     def custom_payment_feedback(self, **kwargs):
-        _TECHNICAL = []
-        _BLACKLIST = ['id', 'create_uid', 'create_date', 'write_uid', 'write_date', 'user_id', 'active']
-        _REQUIRED = []
-
         values = {}
 
         import pdb; pdb.set_trace()
@@ -38,7 +34,7 @@ class CustomController(http.Controller):
         return_url = kwargs.pop('return_url', '/shop/payment/validate')
 
         for field_name, field_value in kwargs.items():
-            if field_name in request.registry['payment.transaction']._all_columns and field_name not in _BLACKLIST:
+            if field_name.startswith('x_') and field_name in request.registry['payment.transaction']._all_columns:
                 values[field_name] = field_value
 
         if not self.update_transaction(request, dict(values, user_id=False)):
