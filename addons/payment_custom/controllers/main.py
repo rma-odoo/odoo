@@ -29,8 +29,6 @@ class CustomController(http.Controller):
     def custom_payment_feedback(self, **kwargs):
         values = {}
 
-        import pdb; pdb.set_trace()
-
         return_url = kwargs.pop('return_url', '/shop/payment/validate')
 
         for field_name, field_value in kwargs.items():
