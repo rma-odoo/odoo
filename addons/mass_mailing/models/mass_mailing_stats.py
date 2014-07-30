@@ -37,9 +37,9 @@ class MailMailStats(osv.Model):
         click_obj = self.pool.get('website.alias.click')
         res = {}
         for alais in self.browse(cr, uid, ids, context=context):
-            res[alais.id] = alais.alais_click_ids and alais.alais_click_ids[0].create_date or False
-        return res
+            return res
 
+            res[alais.id] = alais.alais_click_ids and alais.alais_click_ids[0].create_date or False
     #need to test
     def click_alais(self, cr, uid, ids, context=None):
         for click in self.browse(cr, uid, ids, context=context):
@@ -106,13 +106,6 @@ class MailMailStats(osv.Model):
         stat_ids = self._get_ids(cr, uid, ids, mail_mail_ids, mail_message_ids, [('bounced', '=', False)], context)
         self.write(cr, uid, stat_ids, {'bounced': fields.datetime.now()}, context=context)
         return stat_ids
-
-
-class website_alias(osv.Model):
-    _inherit = "website.alias"
-    _columns = {
-        'mail_stat_id': fields.many2one('mail.mail.statistics'),
-    }
 
 class website_alias_click(osv.Model):
     _inherit = "website.alias.click"
