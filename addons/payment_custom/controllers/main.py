@@ -13,15 +13,15 @@ class CustomController(http.Controller):
         '/payment/custom/payment_details',
     ], type='http', auth='public', website=True)
     def custom_payment_details(self, **kwargs):
+        if not request.website.sale_get_order():
+            return request.redirect('/shop')
+
         values = {}
         values.update(kwargs=kwargs.items())
         return request.render('payment_custom.payment_details', values)
 
-    def update_transaction(self, request, values):
-        tx = request.website.sale_get_transaction()
-        if not tx:
-            return False
-        return request.registry['payment.transaction'].write(request.cr, SUPERUSER_ID, tx.id, values, context=request.context)
+    def update_transaction(self, request, tx_id, values):
+        return request.registry['payment.transaction'].write(request.cr, SUPERUSER_ID, tx_id, values, context=request.context)
 
     @http.route([
         '/payment/custom/feedback',
@@ -35,7 +35,10 @@ class CustomController(http.Controller):
             if field_name.startswith('x_') and field_name in request.registry['payment.transaction']._all_columns:
                 values[field_name] = field_value
 
-        if not self.update_transaction(request, dict(values, user_id=False)):
+        tx = request.website.sale_get_transaction()
+        if not tx:
             return request.redirect('/shop')
+
+        self.update_transaction(request, tx.id, values)
 
         return request.redirect(return_url)
