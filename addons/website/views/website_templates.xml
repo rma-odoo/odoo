@@ -767,7 +767,7 @@ Sitemap: <t t-esc="url_root"/>sitemap.xml
         <div id="wrap">
             <div class="oe_structure">
 
-                <section data-snippet-id="title">
+                <section>
                     <div class="container">
                         <div class="row">
                             <div class="col-md-12">
@@ -778,7 +778,7 @@ Sitemap: <t t-esc="url_root"/>sitemap.xml
                     </div>
                 </section>
 
-                <section data-snippet-id="text-image">
+                <section>
                     <div class="container">
                         <div class="row">
                             <div class="col-md-6 mt32">

@@ -842,7 +842,7 @@
     </div>
 
     <div data-snippet-id='background'
-        data-selector="section, .carousel, .parallax">
+        data-selector="section, :not(.gallery > .container) > .carousel, .parallax">
         <li class="dropdown-submenu" data-select_class="oe_img_bg">
             <a tabindex="-1" href="#">Background</a>
             <ul class="dropdown-menu">
@@ -897,6 +897,17 @@
             </ul>
         </li>
         <li class="dropdown-submenu">
+            <a tabindex="-2" href="#">Slideshow speed</a>
+            <ul class="dropdown-menu">
+                 <li data-interval="1000"> <a>1s</a> </li>
+                 <li data-interval="2000"> <a>2s</a> </li>
+                 <li data-interval="3000"> <a>3s</a> </li>
+                 <li data-interval="5000"> <a>5s</a> </li>
+                 <li data-interval="10000"> <a>10s</a></li>
+                 <li data-interval="0"   > <a>Disable autoplay</a> </li>
+            </ul>
+        </li>
+        <li class="dropdown-submenu">
             <a tabindex="-2" href="#">Columns</a>
             
             <ul class="dropdown-menu">
@@ -940,7 +951,7 @@
     </div>
 
     <div data-snippet-id='carousel'
-        data-selector=".carousel">
+        data-selector=":not(.gallery > .container) > .carousel">
         <li class="dropdown-submenu">
             <a tabindex="-2" href="#">Slideshow speed</a>
             <ul class="dropdown-menu">
@@ -958,11 +969,11 @@
     </div>
 
     <div data-snippet-id='margin-y'
-        data-selector="section, .row > [class*='col-md-'], .carousel, .parallax, hr">
+        data-selector="section, .row > [class*='col-md-'], :not(.gallery > .container) > .carousel, .parallax, hr">
     </div>
 
     <div data-snippet-id='resize'
-        data-selector="section, .carousel, .parallax"
+        data-selector="section, :not(.gallery > .container) > .carousel, .parallax"
         data-selector-children=".oe_structure, [data-oe-type=html]">
     </div>
 
