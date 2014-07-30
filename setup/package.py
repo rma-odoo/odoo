@@ -57,7 +57,7 @@ class OdooDocker(object):
         self.log_file = open('/tmp/logfile.log', 'w')  # FIXME sle: create temporary file
         self.port = 8069  # FIXME sle: get free port
         self.prompt_re = '(\r\nroot@|bash-).*# '
-        self.timeout = 100
+        self.timeout = 600
 
     def system(self, command):
         self.docker.sendline(command)
@@ -105,8 +105,8 @@ def _prepare_build_dir(o):
 
 def build_tgz(o):
     """.tgz build process"""
-    cmd = ['python2', 'setup.py', '--quiet', 'sdist']
-    system(cmd, o.build_dir)
+    system(['python2', 'setup.py', '--quiet', 'sdist'], o.build_dir)
+    system(['cp', glob('%s/dist/openerp-*.tar.gz' % o.build_dir)[0], '%s/odoo.tar.gz' % o.build_dir])
 
 def build_deb(o):
     """.deb build process"""
@@ -121,15 +121,21 @@ def build_rpm(o):
 #----------------------------------------------------------
 # Docker testing
 #----------------------------------------------------------
-
 def test_tgz(o):
-    with docker('debian:jessie', o.build_dir) as jessie:
-        jessie.system('/usr/bin/apt-get update -qq && /usr/bin/apt-get upgrade -qq -y')
-        jessie.system("apt-get install python-pip adduser")
-        jessie.system('pip install -r %s' % join(o.build_dir, 'requirements.txt'))
-        jessie.system('pip install %s' % glob(join(o.build_dir, 'dist', 'openerp-*.tar.gz'))[0])
-        jessie.system("adduser --quiet --gecos 'openerp' --group openerp")
-        jessie.system('su openerp -s /bin/bash -c "openerp-server -c /etc/openerp/openerp-server.conf"')
+    with docker('debian:stable', o.build_dir) as wheezy:
+        wheezy.system('apt-get update -qq && apt-get upgrade -qq -y')
+        wheezy.system("apt-get install postgresql python-dev postgresql-server-dev-all python-pip build-essential libxml2-dev libxslt1-dev libldap2-dev libsasl2-dev libssl-dev libjpeg-dev -y")
+        wheezy.system("service postgresql start")
+        wheezy.system('su postgres -s /bin/bash -c "pg_dropcluster --stop 9.1 main"')
+        wheezy.system('su postgres -s /bin/bash -c "pg_createcluster --start -e UTF-8 9.1 main"')
+        wheezy.system('pip install -r /opt/release/requirements.txt')
+        wheezy.system('/usr/local/bin/pip install /opt/release/odoo.tar.gz')
+        wheezy.system("useradd --system --no-create-home openerp")
+        wheezy.system('su postgres -s /bin/bash -c "createuser -s openerp"')
+        wheezy.system('su postgres -s /bin/bash -c "createdb mycompany"')
+        wheezy.system('mkdir /var/lib/openerp')
+        wheezy.system('chown openerp:openerp /var/lib/openerp')
+        wheezy.system('su openerp -s /bin/bash -c "odoo.py --addons-path=/usr/local/lib/python2.7/dist-packages/openerp/addons,/usr/local/lib/python2.7/dist-packages/openerp-addons -d mycompany -i base"')
 
 def test_deb(o):
     with docker('debian:stable', o.build_dir) as wheezy:
@@ -198,7 +204,7 @@ def main():
         raise
     finally:
         if not o.no_testing:
-            system("docker rm -f `docker ps -a | grep Exited | awk '{print $1 }'`")
+            system("docker rm -f `docker ps -a | grep Exited | awk '{print $1 }'` 2>>/dev/null")
 
 
 if __name__ == '__main__':
