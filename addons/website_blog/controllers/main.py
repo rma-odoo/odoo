@@ -2,6 +2,7 @@
 
 import datetime
 import werkzeug
+import json
 
 from openerp import tools
 from openerp.addons.web import http
@@ -212,16 +213,24 @@ class WebsiteBlog(http.Controller):
         if not next_post_id:
             next_post_id = blog_post_obj.search(cr, uid, [('id', '!=', blog.id)], order='ranking desc', limit=1, context=context)
         next_post = next_post_id and blog_post_obj.browse(cr, uid, next_post_id[0], context=context) or False
-
+        
+        blogpost_cover_info = json.loads(blog_post.cover_info)
+        if next_post:
+            nextpost_cover_info = json.loads(next_post.cover_info)
+        else:
+            nextpost_cover_info = {}   
+        
         values = {
             'tags': tags,
             'tag': tag,
             'blog': blog,
             'blog_post': blog_post,
+            'blogpost_cover_info': blogpost_cover_info,
             'main_object': blog_post,
             'nav_list': self.nav_list(),
             'enable_editor': enable_editor,
             'next_post': next_post,
+            'nextpost_cover_info': nextpost_cover_info,                        
             'date': date_begin,
             'post_url': post_url,
             'blog_url': blog_url,
@@ -305,8 +314,8 @@ class WebsiteBlog(http.Controller):
         create_context = dict(context, mail_create_nosubscribe=True)
         new_blog_post_id = request.registry['blog.post'].create(cr, uid, {
             'blog_id': blog_id,
-            'name': _("Blog Post Title"),
-            'subtitle': _("Subtitle"),
+            'name': _(""),
+            'subtitle': _(""),
             'content': '',
             'website_published': False,
         }, context=create_context)
@@ -351,10 +360,10 @@ class WebsiteBlog(http.Controller):
         return ret
 
     @http.route('/blogpost/change_background', type='json', auth="public", website=True)
-    def change_bg(self, post_id=0, image=None, **post):
+    def change_bg(self, post_id=0, cover_info={}, **post):
         if not post_id:
             return False
-        return request.registry['blog.post'].write(request.cr, request.uid, [int(post_id)], {'background_image': image}, request.context)
+        return request.registry['blog.post'].write(request.cr, request.uid, [int(post_id)], {'cover_info':cover_info}, request.context)
 
     @http.route('/blog/get_user/', type='json', auth="public", website=True)
     def get_user(self, **post):

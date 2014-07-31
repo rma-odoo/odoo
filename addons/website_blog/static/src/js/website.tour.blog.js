@@ -27,12 +27,6 @@
                 popover:   { fixed: true },
             },
             {
-                element:   '.modal:has(#editor_new_blog) button.btn-primary',
-                placement: 'right',
-                title:     _t("Create Blog Post"),
-                content:   _t("Click <em>Continue</em> to create the blog post."),
-            },
-            {
                 waitFor:   'body:has(button[data-action=save]:visible):has(.js_blog)',
                 title:     _t("Blog Post Created"),
                 content:   _t("This is your new blog post. Let's edit it."),
@@ -40,15 +34,52 @@
             },
             {
                 element:   'h1[data-oe-expression="blog_post.name"]',
-                placement: 'bottom',
-                sampleText: 'New Blog',
+                placement: 'top',
                 title:     _t("Set a Title"),
                 content:   _t("Click on this area and set a catchy title for your blog post."),
+            },    
+            {
+                waitNot:   'h1#blog_post_name:empty()',
+                element:   'h1[data-oe-expression="blog_post.name"]',
+                placement: 'top',
+                title:     _t("Change Title, subtitle"),
+                content:   _t("Write a title, the subtitle is optional."),
+                popover:   { next: _t("Continue") },
+                
+            },                    
+            {
+                element:   '.oe_cover_menu',
+                placement: 'bottom',
+                title:     _t("Customize Cover"),
+                content:   _t("Change and customize your blog post cover"),
+                popover:   { fixed: true },
             },
             {
-                waitNot:   '#wrap h1[data-oe-model="blog.post"]:contains("Blog Post Title")',
-                element:   'button[data-action=snippet]',
+                element:   '#change_cover',
                 placement: 'left',
+                title:     _t("Change Cover"),
+                content:   _t("Select this menu item to chnage blog cover."),
+                popover:   { fixed: true },
+            }, 
+            {
+                element:   '.modal:has(.modal-dialog.select-media) button[data-dismiss=modal]',
+                placement: 'right',
+                title:     _t("Select Cover"),
+                content:   _t("Select the appropriate cover and click on save."),
+                popover:   { next: _t("Continue") },
+            },
+            {
+                waitNot:   '.modal:has(.modal-dialog.select-media) button[data-dismiss=modal]',
+                element:   '#blog_content',
+                placement: 'top',
+                title:     _t("Content"),
+                content:   _t("Start writing your story here. Click on save in the upper left corner when you are done."),
+            },            
+            {
+                
+                waitNot:   '#blog_content .container.readable:empty()',
+                element:   'button[data-action=snippet]',
+                placement: 'right',
                 title:     _t("Layout Your Blog Post"),
                 content:   _t("Use well designed building blocks to structure the content of your blog. Click 'Insert Blocks' to add new content."),
                 popover:   { fixed: true },
@@ -89,11 +120,44 @@
                 popover:   { fixed: true },
             },
             {
-                waitFor:   'button[data-action=edit]:visible',
+                waitNot:   'button[data-action=edit]:visible',
+                element:   'a[data-action=show-mobile-preview]',
+                placement: 'bottom',
+                title:     _t("Mobile Preview"),
+                content:   _t("Click on the mobile icon to preview how your blog post will be displayed on a mobile device."),
+                popover:   { fixed: true },
+            },  
+            {
+                element:   '.modal:has(#mobile-viewport) button[data-dismiss=modal]',
+                placement: 'right',
+                title:     _t("Check Mobile Preview"),
+                content:   _t("Scroll to check rendering and then close the mobile preview."),
+                popover:   { next: _t("Continue") },
+            },
+
+            {
+                waitNot:   '.modal:has(#mobile-viewport) button[data-dismiss=modal]',
+                element:   'a[data-action=promote-current-page]',
+                placement: 'bottom',
+                title:     _t("Promote this page"),
+                content:   _t("Get this page efficiently referenced in Google to attract more visitors."),
+                popover:   { fixed: true },
+                
+            }, 
+            {
+                element:   '.modal.oe_seo_configuration',
+                placement: 'right',
+                title:     _t("Promote information"),
+                content:   _t("Fill the appropriate information and click on save"),
+                popover:   { next: _t("Continue") },
+            },
+                               
+            {
+                waitFor:   '.modal.oe_seo_configuration[aria-hidden="true"]',
                 element:   'button.btn-danger.js_publish_btn',
                 placement: 'top',
-                title:     _t("Publish Your Post"),
-                content:   _t("Your blog post is not yet published. You can update this draft version and publish it once you are ready."),
+                title:     _t("Publishing status"),
+                content:   _t(" Click on this button to send your blog post online."),
             },
             {
                 waitFor:   '.js_publish_management button.js_publish_btn.btn-success:visible',

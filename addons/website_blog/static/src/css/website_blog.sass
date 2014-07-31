@@ -29,15 +29,10 @@ div#blog_angle_down
         text-decoration: none
 
 .cover
-    -webkit-background-size: cover
-    -moz-background-size: cover
-    -o-background-size: cover
-    background-size: cover
-    background-position: center
-    background-repeat: no-repeat
-    background-color: #000
-    color: #fff
-    position: relative
+    background: black;
+    color: white;
+    position: relative;
+    padding: 0;
     .blog_title
         position: absolute
         text-align: center
@@ -50,7 +45,9 @@ div#blog_angle_down
 .cover_footer
     min-height : 350px
     height: 65vh
-    cursor: pointer
+
+.read_next
+    cursor: pointer 
 
 /*Inline Discussion
 
@@ -137,3 +134,18 @@ mark + .popover
 
 .discussion_scroll_post
     overflow-x: auto
+
+.readable:empty:after 
+  content: "Start writing here..."  
+
+
+.customize_cover_button
+  position: absolute 
+  width: 100%
+  cursor: pointer
+
+
+.publish_button
+  position: absolute ;
+  top:2%;
+  right: 5%;

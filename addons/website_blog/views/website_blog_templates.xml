@@ -131,34 +131,41 @@
                 </div>
 
                 <div t-foreach="blog_posts" t-as="blog_post" class="mb32">
+                    <t t-if="blog_post.author_id.has_image">  
+                        <img class="img-circle pull-right mt16"
+                        t-att-src="'/website/image?model=res.partner&amp;field=image_small&amp;id='+str(blog_post.author_id.id)"
+                        style="width: 50px;"/>
+                    </t>
+                    <a t-attf-href="/blog/#{ slug(blog_post.blog_id) }/post/#{ slug(blog_post) }">
+                        <t t-if="not blog_post.name">
+                            <h2 t-field="blog_post.name" class="mb4">Blog Post Title</h2>                        
+                        </t>
+                        <t t-if="blog_post.name">
+                            <h2 t-field="blog_post.name" class="mb4"/>
+                        </t>                      
+                    </a>
 
-                  <img class="img-circle pull-right mt16"
-                    t-att-src="'/website/image?model=res.partner&amp;field=image_small&amp;id='+str(blog_post.author_id.id)"
-                    style="width: 50px;"/>
-
-                  <a t-attf-href="/blog/#{ slug(blog_post.blog_id) }/post/#{ slug(blog_post) }">
-                      <h2 t-field="blog_post.name" class="mb4"/>
-                  </a>
-
-                  <div class="text-muted">
-                      <h4
-                        t-field="blog_post.subtitle"
-                        class="mb4 mt4"/>
-                    <div name='blog_post_data' class='mb0'>
-                         <span t-field="blog_post.author_id" style="display: inline-block;" t-field-options='{
+                    <div class="text-muted">
+                        <t t-if="not blog_post.subtitle">
+                            <h4 t-field="blog_post.subtitle" class="mb4 mt4">SubTitle</h4>
+                        </t>
+                        <t t-if="blog_post.subtitle">
+                            <h4 t-field="blog_post.subtitle" class="mb4 mt4"/>
+                        </t>                    
+                        <div name='blog_post_data' class='mb0'>
+                            <span t-field="blog_post.author_id" style="display: inline-block;" t-field-options='{
                                 "widget": "contact",
                                 "fields": ["name"]
                             }'/>
-                        &#5760; <span t-field="blog_post.create_date" t-field-options='{"format": "MMMM yyyy"}'/>
-                        <span t-if="len(blog_post.message_ids) &gt; 0">
-                            &#5760; <t t-esc="len(blog_post.message_ids)"/>
-                            <t t-if="len(blog_post.message_ids) &lt;= 1" >comment</t>
-                            <t t-if="len(blog_post.message_ids) > 1">comments</t>
-                        </span>
-
-                        <span t-if="not blog_post.website_published" class="label label-danger">not published</span>
+                            &#5760; <span t-field="blog_post.create_date" t-field-options='{"format": "MMMM yyyy"}'/>
+                            <span t-if="len(blog_post.message_ids) &gt; 0">
+                                &#5760; <t t-esc="len(blog_post.message_ids)"/>
+                                <t t-if="len(blog_post.message_ids) &lt;= 1" >comment</t>
+                                <t t-if="len(blog_post.message_ids) > 1">comments</t>
+                            </span>
+                            <span t-if="not blog_post.website_published" class="label label-danger">not published</span>
+                        </div>
                     </div>
-                  </div>
 
                 </div>
               </div>
@@ -184,93 +191,136 @@
 
 <!-- Blog Post Complete -->
 <template id="blog_post_complete" name="Blog Post">
-  <t t-call="website_blog.index">
-
-    <div class="cover js_fullheight" id="title" t-attf-style="background-image: url(#{blog_post.background_image})" t-ignore="True">
-        <div class="container">
-          <div class="container text-right mt16">
-            <div class="btn-group css_non_editable_mode_hidden">
-                <a id="change_cover" class="btn btn-primary">
-                    Change Cover
-                </a>
-                <a id="clear_cover" class="btn btn-danger">
-                    <span class="fa fa-times"/>
-                </a>
+    <t t-call="website_blog.index">
+        <div t-attf-class="#{blogpost_cover_info['resize_class']}" id="title"  t-ignore="True">
+            <div class="js_fullheight" t-attf-style="background: #{blogpost_cover_info['background']};opacity:#{blogpost_cover_info['opacity']}"></div>
+            <div class="publish_button">
+                <div class="cover-storage oe_hidden"></div>
+                <t t-call="website.publish_management">
+                    <t t-set="object" t-value="blog_post"/>
+                    <t t-set="publish_edit" t-value="True"/>
+                    <li>
+                        <form class="duplicate hidden" action="/blogpost/duplicate">
+                            <input name="blog_post_id" t-att-value="blog_post.id"/>
+                        </form>
+                        <a href="#" class="duplicate" onclick="$(this).prev('form').submit()">Duplicate</a>
+                    </li>
+                </t>
             </div>
-            <div class="cover-storage oe_hidden"></div>
-            <t t-call="website.publish_management">
-                <t t-set="object" t-value="blog_post"/>
-                <t t-set="publish_edit" t-value="True"/>
-                <li>
-                    <form class="duplicate hidden" action="/blogpost/duplicate">
-                        <input name="blog_post_id" t-att-value="blog_post.id"/>
-                    </form>
-                    <a href="#" class="duplicate" onclick="$(this).prev('form').submit()">Duplicate</a>
-                </li>
-            </t>
-          </div>
-        </div>
-        <div class="blog_title">
-            <h1 t-field="blog_post.name" id="blog_post_name" t-att-data-blog-id="blog_post.id"/>
-            <h2 t-field="blog_post.subtitle"/>
-            <p class="post-meta text-muted text-center" name="blog_post_data"/>
-            <div>
-                <img class="img-circle" t-att-src="'/website/image?model=res.partner&amp;field=image_small&amp;id='+str(blog_post.author_id.id)" style="width: 30px; margin-right: 10px;"/>
-                <span t-field="blog_post.author_id" style="display: inline-block;" t-field-options='{
-                    "widget": "contact",
-                    "fields": ["name"]
-                }'/>
-            </div>
-            <div t-if="blog_post.background_image" id="blog_angle_down">
-                <strong><a href="#blog_content" class="fa fa-angle-down fa-3x fa-inverse mt32"/></strong>
-            </div>
-        </div>
-    </div>
-
-    <div id="blog_content" t-field="blog_post.content" class="mt32"/>
-
-    <section id="comments" class="read_width">
-        <hr/>
-        <ul class="media-list" id="comments-list">
-            <li t-foreach="comments" t-as="message" class="media">
-                <span class="pull-left">
-                    <img class="media-object img img-circle" t-att-src="'/website/image?model=mail.message&amp;field=author_avatar&amp;id='+str(message.id)" style="width: 30px"/>
-                </span>
-                <div class="media-body">
-                    <t t-call="website.publish_short">
-                        <t t-set="object" t-value="message"/>
-                    </t>
-                    <!-- <strong t-field="message.author_id"/> -->
-                    <span t-field="message.author_id" style="display: inline-block;" t-field-options='{
-                            "widget": "contact",
-                            "fields": ["name"]
-                        }'/>
-                    <span class="text-muted">on <span t-field="message.date"/></span>
-                    <div t-field="message.body" class="discussion_scroll_post"/>
-                </div>
-            </li>
-        </ul>
-    </section>
-
-    <t t-if="next_post">
-        <div class="cover cover_footer mb0 text-center" t-attf-style="background-image: url(#{next_post.background_image})" t-ignore="True">
             <div class="blog_title">
-                <a class="hidden js_next" t-attf-href="/blog/#{ slug(next_post.blog_id) }/post/#{ slug(next_post) }/#wrap"/>
-                <h1 t-field="next_post.name"/>
-                <h2 t-field="next_post.subtitle"/>
+                <h1 t-field="blog_post.name" id="blog_post_name" t-att-data-blog-id="blog_post.id" placeholder="Blog Post Title"/>
+                <h2 t-field="blog_post.subtitle" placeholder="Subtitle"/>
+                <p class="post-meta text-muted text-center" name="blog_post_data"/>
                 <div>
-                    <img class="img-circle" t-att-src="'/website/image?model=res.partner&amp;field=image_small&amp;id='+str(next_post.author_id.id)" style="width: 30px; margin-right: 10px;"/>
-                    <span t-field="next_post.author_id" style="display: inline-block;" t-field-options='{
+                    <t t-if="blog_post.author_id.has_image">
+                        <img class="img-circle" t-att-src="'/website/image?model=res.partner&amp;field=image_small&amp;id='+str(blog_post.author_id.id)" style="width: 30px; margin-right: 10px;"/>
+                    </t>
+                    <span t-field="blog_post.author_id" style="display: inline-block;" t-field-options='{
+                        "widget": "contact",
+                        "fields": ["name"]
+                    }'/>
+                </div>
+                <div t-if="blog_post.content" id="blog_angle_down">
+                    <strong><a href="#blog_content" class="fa fa-angle-down fa-3x fa-inverse mt32"/></strong>
+                </div>
+            </div>
+        </div>
+        <div class="container customize_cover_button" t-ignore="True">
+            <div class="row">
+                <div class="col-lg-6 col-lg-offset-3 text-center">
+                    <div class="btn-group css_non_editable_mode_hidden" >
+                        <div class="btn-group">
+                            <a data-toggle="dropdown" class="btn btn-primary btn-sm oe_cover_menu" title="Customize Cover">    Customize Cover 
+                                <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu" role="menu">
+                                <li><a href="#" id="change_cover">Change Cover</a></li>
+                                <li class="dropdown-submenu">
+                                    <a href="#">Resize</a>
+                                    <ul class="cover_resize dropdown-menu">
+                                        <li><a id="para-large">Full Screen</a></li>
+                                        <li><a id="container">Narrow</a></li>
+                                    </ul>
+                                </li>
+                                <li class="dropdown-submenu">
+                                    <a href="#">Color</a>
+                                    <ul class="dropdown-menu cover_background">
+                                        <li><a id="blue">Blue</a></li>
+                                        <li><a id="yellow">Yellow</a></li>
+                                        <li><a id="red">Red</a></li>
+                                        <li><a id="purple">Purple</a></li>
+                                        <li><a id="green">Green</a></li>
+                                    </ul>
+                                </li>
+                                <li class="dropdown-submenu">
+                                    <a href="#">Transparency</a>
+                                    <ul class="dropdown-menu cover_opacity">
+                                        <li><a id="1.0">None</a></li>
+                                        <li><a id="0.75">Low</a></li>
+                                        <li><a id="0.50">Mediam</a></li>
+                                        <li><a id="0.25">High</a></li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
+                        <a id="clear_cover" class="btn btn-default btn-sm " title="Clear Cover">
+                            <i t-ignore="True" class="fa fa-times"></i>
+                        </a>            
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="blog_content" t-field="blog_post.content" class="mt32">
+            <div class="container readable"></div>
+        </div>
+    
+        <section id="comments" class="read_width">
+            <hr/>
+            <ul class="media-list" id="comments-list">
+                <li t-foreach="comments" t-as="message" class="media">
+                    <span class="pull-left">
+                        <t t-if="blog_post.author_id.has_image">
+                            <img class="media-object img img-circle" t-att-src="'/website/image?model=mail.message&amp;field=author_avatar&amp;id='+str(message.id)" style="width: 30px"/>
+                        </t>
+                    </span>
+                    <div class="media-body">
+                        <t t-call="website.publish_short">
+                            <t t-set="object" t-value="message"/>
+                        </t>
+                        <!-- <strong t-field="message.author_id"/> -->
+                        <span t-field="message.author_id" style="display: inline-block;" t-field-options='{
                             "widget": "contact",
                             "fields": ["name"]
                         }'/>
-                </div>
-                <p class="mt32">Read Next <span class="fa fa-long-arrow-right"/></p>
-            </div>
-        </div>
-    </t>
+                        <span class="text-muted">on <span t-field="message.date"/></span>
+                        <div t-field="message.body" class="discussion_scroll_post col-sm-10 col-sm-offset-0"/>
+                    </div>
+                </li>
+            </ul>
+        </section>
 
-  </t>
+        <t t-if="next_post">        
+            <div t-attf-class="#{nextpost_cover_info['resize_class']} mb0 text-center"  t-ignore="True">
+                <div class="cover_footer" t-attf-style="background:#{nextpost_cover_info['background']} ;opacity:#{nextpost_cover_info['opacity']}"></div>
+                <div class="blog_title">
+                    <a class="hidden js_next" t-attf-href="/blog/#{ slug(next_post.blog_id) }/post/#{ slug(next_post) }/#wrap"/>
+                    <h1 t-field="next_post.name"/>
+                    <h2 t-field="next_post.subtitle"/>
+                    <div>
+                        <t t-if="next_post.author_id.has_image">
+                            <img class="img-circle" t-att-src="'/website/image?model=res.partner&amp;field=image_small&amp;id='+str(next_post.author_id.id)" style="width: 30px; margin-right: 10px;"/>
+                        </t>                            
+                        <span t-field="next_post.author_id" style="display: inline-block;" t-field-options='{
+                            "widget": "contact",
+                            "fields": ["name"]
+                            }'/>
+                    </div>
+                    <p class="read_next mt32">Read Next <span class="fa fa-long-arrow-right"/></p>
+                </div>
+            </div>
+        </t>
+    </t>
 </template>
 
 <!-- Options: Blog Post: breadcrumb -->
@@ -302,7 +352,9 @@
             <form id="comment" t-attf-action="/blogpost/comment" method="POST">
                 <div class="media">
                     <span class="pull-left">
-                        <img class="img img-circle media-object" t-att-src="'/website/image?model=res.partner&amp;field=image_small&amp;id='+str(user_id.partner_id.id)" style="width: 30px"/>
+                        <t t-if="blog_post.author_id.has_image">
+                            <img class="img img-circle media-object" t-att-src="'/website/image?model=res.partner&amp;field=image_small&amp;id='+str(user_id.partner_id.id)" style="width: 30px"/>
+                        </t>
                     </span>
                     <div class="media-body">
                         <input name="blog_post_id" t-att-value="blog_post.id" type="hidden"/>
@@ -359,7 +411,7 @@
 <!-- Option:Right Column for extra info -->
 
 <template id="index_right" name="Right Column"
-        inherit_id="website_blog.blog_post_short" optional="disabled">
+        inherit_id="website_blog.blog_post_short" optional="enabled">
     <xpath expr="//div[@id='main_column']" position="attributes">
         <attribute name="class">col-sm-8</attribute>
     </xpath>
@@ -370,7 +422,7 @@
 
 <!-- Option:Right Column: tags -->
 <template id="opt_blog_rc_tags" name="Tags"
-        inherit_id="website_blog.index_right" optional="disabled">
+        inherit_id="website_blog.index_right" optional="enabled">
     <xpath expr="//div[@id='blog_right_column']" position="inside">
         <section class="mt32">
         <h4>Tags</h4>
@@ -387,7 +439,7 @@
 
 <!-- Option:Right Column: archives -->
 <template id="opt_blog_rc_history" name="Archives"
-        inherit_id="website_blog.index_right" optional="disabled">
+        inherit_id="website_blog.index_right" optional="enabled">
     <xpath expr="//div[@id='blog_right_column']" position="inside">
         <section class="mt32">
         <h4>Archives</h4>
@@ -404,7 +456,7 @@
 
 <!-- Option:Right Column: about us -->
 <template id="opt_blog_rc_about_us" name="About Us" priority="2"
-        inherit_id="website_blog.index_right" optional="disabled">
+        inherit_id="website_blog.index_right" optional="enabled">
     <xpath expr="//div[@id='blog_right_column']" position="inside">
         <section class="mt32">
         <h4>About us</h4>
@@ -421,7 +473,7 @@
 
 <!-- Option:Right Column: follow us -->
 <template id="opt_blog_rc_follow_us" name="Follow us" priority="4"
-        inherit_id="website_blog.index_right" optional="disabled">
+        inherit_id="website_blog.index_right" optional="enabled">
     <xpath expr="//div[@id='blog_right_column']" position="inside">
         <section class="mt32">
             <h4>Follow us<small t-if="blog">: <t t-esc="blog.name"/></small></h4>
@@ -448,7 +500,7 @@
 
 <!-- Option:Right Column: blogs -->
 <template id="opt_blog_rc_blogs" name="Our Blogs" priority="6"
-        inherit_id="website_blog.index_right" optional="disabled">
+        inherit_id="website_blog.index_right" optional="enabled">
     <xpath expr="//div[@id='blog_right_column']" position="inside">
         <section class="mt32 mb32">
         <h4>Our Blogs</h4>

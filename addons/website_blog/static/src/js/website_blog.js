@@ -31,10 +31,11 @@ $(document).ready(function() {
             new openerp.website.blog_discussion({'content' : content, 'public_user':data[0]});
         });
     }
-
     $('.js_fullheight').css('min-height', $(window).height());
     $(".js_tweet").share({'author_name':$('#blog_author').text()});
-    $('.cover_footer').on('click',page_transist);
+    $('.read_next').on('click',page_transist);
+    if($('.customize_cover_button').length){
+        $('.customize_cover_button').css('top',$('.cover').offset().top+10);
+    }
     $('a[href^="#blog_content"]').on('click', animate);
-
 });

@@ -32,15 +32,10 @@ div#blog_angle_down a:hover {
 }
 
 .cover {
-  -webkit-background-size: cover;
-  -moz-background-size: cover;
-  -o-background-size: cover;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-color: black;
+  background: black;
   color: white;
   position: relative;
+  padding: 0;
 }
 .cover .blog_title {
   position: absolute;
@@ -56,9 +51,11 @@ div#blog_angle_down a:hover {
 .cover_footer {
   min-height: 350px;
   height: 65vh;
-  cursor: pointer;
 }
 
+.read_next {
+  cursor: pointer;
+}
 /*Inline Discussion */
 .discussion {
   padding: 5px 10px 10px;
@@ -153,4 +150,20 @@ mark + .popover {
 
 .discussion_scroll_post {
   overflow-x: auto;
+}
+
+.readable:empty:after {
+  content: 'Start writing here...';  
+}
+
+.customize_cover_button {
+  position: absolute ;
+  width: 100%;
+  cursor: pointer;
+}
+
+.publish_button {
+  position: absolute ;
+  top:2%;
+  right: 5%;
 }

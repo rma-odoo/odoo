@@ -20,7 +20,7 @@
             <field name="website_published" eval="True"/>
             <field name="website_meta_keywords">Odoo, email</field>
             <field name="website_meta_description">The Future of Emails</field>
-            <field name="background_image">/website_blog/static/src/img/post1.jpg</field>
+            <field name="cover_info">{"background": "rgb(8, 8, 8) url(/website_blog/static/src/img/post1.jpg) repeat scroll 0% 0% / cover", "opacity":"1", "resize_class": "cover container"}</field>      
             <field name="content"><![CDATA[
         <section class="mt16 mb16 readable">
             <iframe width="361" height="200" src="http://www.youtube.com/embed/EkbBFmIWoTE" frameborder="0" allowfullscreen></iframe>
@@ -121,7 +121,7 @@
             <field name="blog_id" ref="blog_blog_1"/>
             <field name="website_published" eval="True"/>
             <field name="tag_ids" eval="[(6, 0, [ref('blog_tag_1'), ref('blog_tag_2')])]"/>
-            <field name="background_image">/website_blog/static/src/img/post2.jpg</field>
+            <field name="cover_info">{"background": "rgb(0, 128, 0)", "opacity":"0.50", "resize_class": "cover"}</field>
             <field name="content">
 <![CDATA[<section class="row readable">
             <div class="col-md-12 mb32">
