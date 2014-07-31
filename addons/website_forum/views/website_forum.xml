@@ -47,6 +47,15 @@
     <t t-call="website.layout">
         <t t-set="head">
             <t t-call-assets="website_forum.assets_forum"/>
+            <meta property="og:type" content="website" />
+            <meta content="summary" name="twitter:card" />
+            <t t-if="host_url">
+                <meta name="twitter:domain" t-attf-content="#{host_url}" />
+                <meta property="og:image" t-attf-content="#{host_url}logo.png" />
+            </t>
+            <meta property="og:title" t-attf-content="#{sharing_content}" />
+            <meta property="og:description" content="Odoo Forum" />
+            <meta property="og:url" t-attf-content="#{url}" />
         </t>
         <div class="container mt16">
             <div class="navbar navbar-default">
@@ -580,13 +589,15 @@
                 <t t-call="website_forum.post_comment">
                     <t t-set="object" t-value="question"/>
                 </t>
+                <t t-if = "show_modal">
+                    <t t-call="website_forum.share_dialog" />
+                </t>
             </div>
         </div>
         <hr/>
 
         <div t-foreach="question.child_ids" t-as="answer" class="mt16 mb32">
-            <a t-attf-id="answer-#{str(answer.id)}"/>
-            <div t-attf-class="forum_answer" t-attf-id="answer_#{answer.id}" >
+            <div t-attf-class="forum_answer" t-attf-id="answer-#{answer.id}" style="display: inline-block">
                 <div class="col-md-2 hidden-xs text-center">
                     <t t-call="website_forum.vote">
                         <t t-set="post" t-value="answer"/>
@@ -667,6 +678,47 @@
             <span class="text-muted">(only one answer per question is allowed)</span>
         </div>
     </t>
+</template>
+
+<!-- Sharing Dialog -->
+<template id="share_dialog">
+    <div class="modal fade" id="share_dialog_box" tabindex="-1" role="dialog" aria-labelledby="shareDialog" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&amp;times;</span><span class="sr-only">Close</span></button>
+                    <t t-if = "'Just' in sharing_content">
+                        <t t-set="title" t-value="'Thanks for answering this question'" />
+                        <t t-set="body" t-value="'Share the question and your answer to get more feedback from contributors'" />
+                    </t>
+                    <t t-if = "'#help' in sharing_content">
+                        <t t-set="title" t-value="'Thanks for poasting your question'" />
+                        <t t-set="body" t-value="'Share your question to improve your chance of having an answer'" />
+                    </t>
+                    <h4 class="modal-title" id="share_dialog_title">
+                        <t t-esc="title" />
+                    </h4>
+                </div>
+                <div class="modal-body">
+                    <t t-esc="body" />
+                    <div id="share_buttons row span12" style="text-align: center">
+                        <a style="cursor: pointer" t-attf-onclick="javascript: window.open('https://twitter.com/intent/tweet?original_referer=' + encodeURIComponent('#{url}') + '&amp;text=' + encodeURIComponent('#{sharing_content}') + '&amp;url=' + encodeURIComponent('#{url}'), '', 'menubar=no, toolbar=no, resizable=yes, scrollbar=yes, height=600,width=600'); return false;" class="fa-stack fa-lg">
+                            <span class="fa fa-circle fa-stack-2x"></span>
+                            <span class="fa fa-twitter fa-stack-1x fa-inverse"></span>
+                        </a>
+                        <a style="cursor: pointer" t-attf-onclick="javascript: window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent('#{url}'),'','menubar=no, toolbar=no, resizable=yes, scrollbars=yes, height=600,width=600'); return false;" class="fa-stack fa-lg">
+                            <span class="fa fa-circle fa-stack-2x"></span>
+                            <span class="fa fa-facebook fa-stack-1x fa-inverse"></span>
+                        </a>
+                        <a style="cursor: pointer" t-attf-onclick="javascript: window.open('https://www.linkedin.com/shareArticle?mini=true&amp;url=' + encodeURIComponent('#{url}') + '&amp;title=' + encodeURIComponent('#{sharing_content}') + '&amp;summary=Odoo Forum&amp;source=Odoo forum','','menubar=no, toolbar=no, resizable=yes, srollbars=yes, height=600,width=600'); return false;" class="fa-stack fa-lg">
+                            <span class="fa fa-circle fa-stack-2x"></span>
+                            <span class="fa fa-linkedin fa-stack-1x fa-inverse"></span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </template>
 
 <!-- Utility template: Post a Comment -->

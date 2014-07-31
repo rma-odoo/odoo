@@ -189,7 +189,7 @@ class WebsiteForum(http.Controller):
                 'content': post.get('content'),
                 'tag_ids': question_tag_ids,
             }, context=context)
-        return werkzeug.utils.redirect("/forum/%s/question/%s" % (slug(forum), new_question_id))
+        return werkzeug.utils.redirect("/forum/%s/question/%s?sh=%s&type=q" % (slug(forum), new_question_id, new_question_id))
 
     @http.route(['''/forum/<model("forum.forum"):forum>/question/<model("forum.post", "[('forum_id','=',forum[0]),('parent_id','=',False)]"):question>'''], type='http', auth="public", website=True)
     def question(self, forum, question, **post):
@@ -197,6 +197,20 @@ class WebsiteForum(http.Controller):
         # increment view counter
         request.registry['forum.post'].set_viewed(cr, SUPERUSER_ID, [question.id], context=context)
 
+        url = request.httprequest.url
+        index_parameter = url.find('?')
+        show_modal = False
+        '''if index_parameter != -1:
+            url = url[:index_parameter]'''
+        if ('type' in post) and (post['type'] == 'a'):
+            sharing_content = "Just answered #odoo " + question.name
+            if ('sh' in post):
+                url += '?type=a#answer-' + post['sh']
+                show_modal = True
+        else:
+            sharing_content = question.name + " #odoo #help"
+        if ('sh' in post) and ('type' in post) and (post['type'] == 'q'):
+            show_modal = True
         if question.parent_id:
             redirect_url = "/forum/%s/question/%s" % (slug(forum), slug(question.parent_id))
             return werkzeug.utils.redirect(redirect_url, 301)
@@ -209,6 +223,10 @@ class WebsiteForum(http.Controller):
             'header': {'question_data': True},
             'filters': filters,
             'reversed': reversed,
+            'host_url': request.httprequest.host_url,
+            'url' : url,
+            'sharing_content' : sharing_content,
+            'show_modal' : show_modal,
         })
         return request.website.render("website_forum.post_description_full", values)
 
@@ -276,13 +294,13 @@ class WebsiteForum(http.Controller):
     def post_new(self, forum, post, **kwargs):
         if not request.session.uid:
             return login_redirect()
-        request.registry['forum.post'].create(
+        new_answer_id = request.registry['forum.post'].create(
             request.cr, request.uid, {
                 'forum_id': forum.id,
                 'parent_id': post.id,
                 'content': kwargs.get('content'),
             }, context=request.context)
-        return werkzeug.utils.redirect("/forum/%s/question/%s" % (slug(forum), slug(post)))
+        return werkzeug.utils.redirect("/forum/%s/question/%s?sh=%s&type=a" % (slug(forum), slug(post), new_answer_id))
 
     @http.route('/forum/<model("forum.forum"):forum>/post/<model("forum.post"):post>/comment', type='http', auth="public", methods=['POST'], website=True)
     def post_comment(self, forum, post, **kwargs):
