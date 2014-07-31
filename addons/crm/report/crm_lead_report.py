@@ -49,9 +49,10 @@ class crm_lead_report(osv.osv):
     _columns = {
         'date_deadline': fields.date('Exp. Closing', readonly=True, help="Expected Closing"),
         'create_date': fields.datetime('Creation Date', readonly=True),
-        'opening_date': fields.date('Assignation Date', readonly=True),
-        'date_closed': fields.date('Close Date', readonly=True),
+        'opening_date': fields.datetime('Assignation Date', readonly=True),
+        'date_closed': fields.datetime('Close Date', readonly=True),
         'date_last_stage_update': fields.datetime('Last Stage Update', readonly=True),
+        'nbr_cases': fields.integer("# of Cases", readonly=True),
 
         # durations
         'delay_open': fields.float('Delay to Assign',digits=(16,2),readonly=True, group_operator="avg",help="Number of Days to open the case"),
@@ -59,7 +60,7 @@ class crm_lead_report(osv.osv):
         'delay_expected': fields.float('Overpassed Deadline',digits=(16,2),readonly=True, group_operator="avg"),
 
         'user_id':fields.many2one('res.users', 'User', readonly=True),
-       'section_id':fields.many2one('crm.case.section', 'Sales Team', readonly=True),
+        'section_id':fields.many2one('crm.case.section', 'Sales Team', readonly=True),
         'country_id':fields.many2one('res.country', 'Country', readonly=True),
         'company_id': fields.many2one('res.company', 'Company', readonly=True),
         'probability': fields.float('Probability',digits=(16,2),readonly=True, group_operator="avg"),
@@ -87,9 +88,10 @@ class crm_lead_report(osv.osv):
                 SELECT
                     id,
                     c.date_deadline,
+                    count(id) as nbr_cases,
 
-                    date(c.date_open) as opening_date,
-                    date(c.date_closed) as date_closed,
+                    c.date_open as opening_date,
+                    c.date_closed as date_closed,
 
                     c.date_last_stage_update as date_last_stage_update,
 
@@ -114,6 +116,7 @@ class crm_lead_report(osv.osv):
                 FROM
                     crm_lead c
                 WHERE c.active = 'true'
+                GROUP BY c.id
             )""")
 
 
