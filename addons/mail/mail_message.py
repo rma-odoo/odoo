@@ -145,7 +145,8 @@ class mail_message(osv.Model):
         'parent_id': fields.many2one('mail.message', 'Parent Message', select=True,
             ondelete='set null', help="Initial thread message."),
         'child_ids': fields.one2many('mail.message', 'parent_id', 'Child Messages'),
-        'model': fields.char('Related Document Model', size=128, select=1),
+        'model_id': fields.many2one("ir.model", string="Application"),
+        'model': fields.char('Related Document Model', select=True),
         'res_id': fields.integer('Related Document ID', select=1),
         'record_name': fields.char('Message Record Name', help="Name get of the related document."),
         'notification_ids': fields.one2many('mail.notification', 'message_id',
@@ -788,6 +789,11 @@ class mail_message(osv.Model):
     def create(self, cr, uid, values, context=None):
         context = dict(context or {})
         default_starred = context.pop('default_starred', False)
+
+        if 'model' in values:
+            model_obj = self.pool['ir.model']
+            ids = model_obj.search(cr, uid, [('model', '=', values['model'])], context=context)
+            values['model_id'] = ids and ids[0] or False
 
         if 'email_from' not in values:  # needed to compute reply_to
             values['email_from'] = self._get_default_from(cr, uid, context=context)
