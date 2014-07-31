@@ -151,8 +151,6 @@ class sale_order(osv.osv):
     def _get_default_section_id(self, cr, uid, context=None):
         """ Gives default section by checking if present in the context """
         section_id = self._resolve_section_id_from_context(cr, uid, context=context) or False
-        if not section_id:
-            section_id = self.pool.get('res.users').browse(cr, uid, uid, context).default_section_id.id or False
         return section_id
 
     def _resolve_section_id_from_context(self, cr, uid, context=None):
@@ -165,7 +163,7 @@ class sale_order(osv.osv):
         if type(context.get('default_section_id')) in (int, long):
             return context.get('default_section_id')
         if isinstance(context.get('default_section_id'), basestring):
-            section_ids = self.pool.get('crm.case.section').name_search(cr, uid, name=context['default_section_id'], context=context)
+            section_ids = self.pool.get('crm.team').name_search(cr, uid, name=context['default_section_id'], context=context)
             if len(section_ids) == 1:
                 return int(section_ids[0][0])
         return None
@@ -235,7 +233,7 @@ class sale_order(osv.osv):
         'payment_term': fields.many2one('account.payment.term', 'Payment Term'),
         'fiscal_position': fields.many2one('account.fiscal.position', 'Fiscal Position'),
         'company_id': fields.many2one('res.company', 'Company'),
-        'section_id': fields.many2one('crm.case.section', 'Sales Team'),
+        'section_id': fields.many2one('crm.team', 'Sales Team'),
         'procurement_group_id': fields.many2one('procurement.group', 'Procurement group', copy=False),
 
     }
@@ -1215,8 +1213,6 @@ class account_invoice(osv.Model):
     def _get_default_section_id(self, cr, uid, context=None):
         """ Gives default section by checking if present in the context """
         section_id = self._resolve_section_id_from_context(cr, uid, context=context) or False
-        if not section_id:
-            section_id = self.pool.get('res.users').browse(cr, uid, uid, context).default_section_id.id or False
         return section_id
 
     def _resolve_section_id_from_context(self, cr, uid, context=None):
@@ -1229,13 +1225,13 @@ class account_invoice(osv.Model):
         if type(context.get('default_section_id')) in (int, long):
             return context.get('default_section_id')
         if isinstance(context.get('default_section_id'), basestring):
-            section_ids = self.pool.get('crm.case.section').name_search(cr, uid, name=context['default_section_id'], context=context)
+            section_ids = self.pool.get('crm.team').name_search(cr, uid, name=context['default_section_id'], context=context)
             if len(section_ids) == 1:
                 return int(section_ids[0][0])
         return None
 
     _columns = {
-        'section_id': fields.many2one('crm.case.section', 'Sales Team'),
+        'section_id': fields.many2one('crm.team', 'Sales Team'),
     }
 
     _defaults = {
