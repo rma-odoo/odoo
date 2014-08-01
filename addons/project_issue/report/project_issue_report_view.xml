@@ -46,7 +46,7 @@
                     <field name="partner_id" filter_domain="[('partner_id', 'child_of', self)]"/>
                     <field name="version_id"/>
                     <field name="stage_id"/>
-                    <filter string="My Task" domain="[('user_id','=',uid)]" />
+                    <filter string="My Issues" domain="[('user_id','=',uid)]" />
                     <filter string="Unassigned" name="unassigned" domain="[('user_id','=',False)]"/>
                     <separator/>
                     <filter string="New" name="new" domain="[('stage_id.sequence', '&lt;=', 1)]"/>
@@ -57,6 +57,7 @@
                         <filter string="Priority"  icon="terp-rating-rated" domain="[]" context="{'group_by':'priority'}" />
                         <filter string="Stage" icon="terp-stage" domain="[]" context="{'group_by':'stage_id'}"/>
                         <filter string="Company" icon="terp-go-home" domain="[]" context="{'group_by':'company_id'}" groups="base.group_multi_company"/>
+                        <separator/>
                         <filter string="Create Day" icon="terp-go-month" domain="[]" context="{'group_by':'create_date:day'}" help="Create Date"/>
                    </group>
                </search>

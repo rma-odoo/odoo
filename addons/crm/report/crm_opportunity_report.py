@@ -23,11 +23,11 @@ from openerp.osv import fields, osv
 from openerp import tools
 from openerp.addons.crm import crm
 
-class crm_lead_report(osv.osv):
-    """ CRM Lead Analysis """
-    _name = "crm.lead.report"
+class crm_opportunity_report(osv.osv):
+    """ CRM Opportunity Analysis """
+    _name = "crm.opportunity.report"
     _auto = False
-    _description = "CRM Lead Analysis"
+    _description = "CRM Opportunity Analysis"
     _rec_name = 'date_deadline'
     _inherit = ["crm.tracking.mixin"]
 
@@ -64,12 +64,12 @@ class crm_lead_report(osv.osv):
     def init(self, cr):
 
         """
-            CRM Lead Report
+            CRM Opportunity Report
             @param cr: the current row, from the database cursor
         """
-        tools.drop_view_if_exists(cr, 'crm_lead_report')
+        tools.drop_view_if_exists(cr, 'crm_opportunity_report')
         cr.execute("""
-            CREATE OR REPLACE VIEW crm_lead_report AS (
+            CREATE OR REPLACE VIEW crm_opportunity_report AS (
                 SELECT
                     id,
                     c.date_deadline,

@@ -64,7 +64,7 @@
                 <field name="date_effective"/>
                 <field name="date_created"/>
                 <field name="date_maturity"/>
-                <filter icon="terp-go-year" string="This F.Year" name="thisyear" context="{'year':'current_year'}" help="Journal Entries with period in current year"/>
+                <filter icon="terp-go-year" string="This F.Year" name="thisyear" domain="['|', ('date_effective', '=', False), '&amp;',('date_effective','&lt;=', time.strftime('%%Y-12-31')),('date_effective','&gt;=',time.strftime('%%Y-01-01'))]" help="Journal Entries with period in current year"/>
                 <filter icon="terp-go-month" string="This Period" name="period" context="{'period':'current_period'}" help="Journal Entries with period in current period"/>
                 <separator/>
                 <filter string="Unposted" icon="terp-document-new" domain="[('move_state','=','draft')]" help = "entries"/>
