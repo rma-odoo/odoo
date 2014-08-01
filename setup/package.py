@@ -28,7 +28,7 @@ import time
 import xmlrpclib
 from contextlib import contextmanager
 from glob import glob
-from os.path import dirname, join
+from os.path import basename, dirname, join
 from subprocess import check_output
 from tempfile import NamedTemporaryFile
 
@@ -82,18 +82,28 @@ class OdooDocker(object):
 
     def publish(self):
         os.remove(self.log_file.name)
+
+        extension = self.release.split('.')[1]
+        release_filename = 'odoo_%s-%s.%s' % (version, timestamp, extension)
+
+        # FIXME sle: shitty hack
+        if extension == 'tar':
+            extension = 'src'
+
+        system('mkdir -p %s' % join(self.pub_dir, extension))
+
         shutil.move(
             join(self.build_dir, self.release),
-            join(self.pub_dir, 'odoo_%s-%s.%s' % (version, timestamp, self.release.split('.')[1]))
+            join(self.pub_dir, extension, release_filename)
         )
-        # do the symlink
-        # bn = os.path.basename(i)
-        # latest = bn.replace(o.timestamp,'latest')
-        # latest_full = join(dest, latest)
-        # if bn != latest:
-        #     if os.path.islink(latest_full):
-        #         os.unlink(latest_full)
-        #     os.symlink(bn,latest_full)
+
+        # Latest/symlink handler
+        release_basename = basename(join(self.pub_dir, release_filename))
+        latest_basename = release_basename.replace(timestamp, 'latest')
+        latest_path = join(self.pub_dir, latest_basename)
+        if os.path.islink(latest_path):
+            os.unlink(latest_path)
+        os.symlink(release_basename, latest_path)
 
     def start(self, docker_image, build_dir, pub_dir):
         self.build_dir = build_dir
