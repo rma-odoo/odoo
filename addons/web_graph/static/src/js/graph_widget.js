@@ -88,8 +88,8 @@ openerp.web_graph.Graph = openerp.web.Widget.extend({
             groupable_types = ['many2one', 'char', 'boolean', 'selection', 'date', 'datetime'];
 
         _.each(this.fields, function (val, key) {
-            if (!_.contains(search_field_names, key) && 
-                _.contains(groupable_types, val.type) && 
+            if (!_.contains(search_field_names, key) &&
+                _.contains(groupable_types, val.type) &&
                 val.store === true) {
                 other_fields.push({
                     field: key,
@@ -100,7 +100,7 @@ openerp.web_graph.Graph = openerp.web.Widget.extend({
         return search_fields.concat(other_fields);
     },
 
-    // this method gets the fields that appear in the search view, under the 
+    // this method gets the fields that appear in the search view, under the
     // 'Groupby' heading
     get_search_fields: function () {
         var self = this;
@@ -123,7 +123,7 @@ openerp.web_graph.Graph = openerp.web.Widget.extend({
                 filter = groupby.filter,
                 raw_field = field.split(':')[0],
                 string = (field === raw_field) ? filter.attrs.string : self.fields[raw_field].string;
-            
+
             filter = (field === raw_field) ? filter : undefined;
 
             return { field: raw_field, string: string, filter: filter };
@@ -133,7 +133,7 @@ openerp.web_graph.Graph = openerp.web.Widget.extend({
     // Extracts the integer/float fields which are not 'id'
     get_measures: function() {
         return _.compact(_.map(this.fields, function (f, id) {
-            if (((f.type === 'integer') || (f.type === 'float')) && 
+            if (((f.type === 'integer') || (f.type === 'float')) &&
                 (id !== 'id') &&
                 (f.store !== false)) {
                 return {field:id, type: f.type, string: f.string};
@@ -344,8 +344,8 @@ openerp.web_graph.Graph = openerp.web.Widget.extend({
                            left:event.originalEvent.layerX,
                            top:event.originalEvent.layerY});
         this.$('.field-selection').next('.dropdown-menu').first().toggle();
-        
-        
+
+
     },
 
     field_selection: function (event) {
@@ -368,7 +368,7 @@ openerp.web_graph.Graph = openerp.web.Widget.extend({
         var self = this,
             header = this.pivot.get_header(header_id),
             update_groupby = !!groupby;
-        
+
         groupby = groupby || header.root.groupby[header.path.length];
 
         this.pivot.expand(header_id, groupby).then(function () {
@@ -383,7 +383,7 @@ openerp.web_graph.Graph = openerp.web.Widget.extend({
                 self.$row_clicked.after(doc_fragment);
             } else {
                 // expanding cols will redraw the full table
-                self.display_data();                
+                self.display_data();
             }
             if (update_groupby && self.graph_view) {
                 self.graph_view.register_groupby(self.pivot.rows.groupby, self.pivot.cols.groupby);
@@ -412,7 +412,7 @@ openerp.web_graph.Graph = openerp.web.Widget.extend({
 
     fold_col: function (header) {
         var update_groupby = this.pivot.fold(header);
-        
+
         this.display_data();
         if (update_groupby && this.graph_view) {
             this.graph_view.register_groupby(this.pivot.rows.groupby, this.pivot.cols.groupby);
@@ -515,7 +515,7 @@ openerp.web_graph.Graph = openerp.web.Widget.extend({
             for (j = 0; j < pivot.cells.length; j++) {
                 if (pivot.cells[j].x == row.id || pivot.cells[j].y == row.id) {
                     pivot_cells.push(pivot.cells[j]);
-                }              
+                }
             }
 
             for (j = 0; j < col_headers.length; j++) {
@@ -524,7 +524,7 @@ openerp.web_graph.Graph = openerp.web.Widget.extend({
                     if (pivot_cells[k].x == col_headers[j].id || pivot_cells[k].y == col_headers[j].id) {
                         values = pivot_cells[k].values;
                         break;
-                    }               
+                    }
                 }
                 if (!values) { values = new Array(pivot.measures.length);}
                 for (m = 0; m < pivot.measures.length; m++) {
@@ -625,9 +625,9 @@ openerp.web_graph.Graph = openerp.web.Widget.extend({
         doc_fragment.append($thead);
         this.$thead = $thead;
     },
-    
+
     draw_measure_row: function (measure_row) {
-        if (this.pivot.measures.length === 1) { return; }
+        //if (this.pivot.measures.length === 1) { return; }
         var $row = $('<tr>').append('<th>');
         _.each(measure_row, function (cell) {
             var $cell = $('<th>').addClass('measure_row').text(cell.text);
@@ -636,12 +636,12 @@ openerp.web_graph.Graph = openerp.web.Widget.extend({
         });
         this.$thead.append($row);
     },
-    
+
     draw_row: function (row) {
         var $row = $('<tr>')
             .attr('data-indent', row.indent)
             .append(this.make_header_cell(row));
-        
+
         var cells_length = row.cells.length;
         var cells_list = [];
         var cell, hcell;
@@ -681,13 +681,13 @@ openerp.web_graph.Graph = openerp.web.Widget.extend({
             show_controls = (this.width > 400 && this.height > 300 && dim_x + dim_y >=2),
             data;
 
-        // No groupby 
+        // No groupby
         if ((dim_x === 0) && (dim_y === 0)) {
             data = [{key: _t('Total'), values:[{
                 x: _t('Total'),
                 y: this.pivot.get_total()[0],
             }]}];
-        // Only column groupbys 
+        // Only column groupbys
         } else if ((dim_x === 0) && (dim_y >= 1)){
             data =  _.map(this.pivot.get_cols_with_depth(1), function (header) {
                 return {
@@ -695,7 +695,7 @@ openerp.web_graph.Graph = openerp.web.Widget.extend({
                     values: [{x:header.title, y: self.pivot.get_total(header)[0]}]
                 };
             });
-        // Just 1 row groupby 
+        // Just 1 row groupby
         } else if ((dim_x === 1) && (dim_y === 0))  {
             data = _.map(this.pivot.main_row().children, function (pt) {
                 var value = self.pivot.get_total(pt)[0],
