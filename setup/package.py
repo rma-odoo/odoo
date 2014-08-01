@@ -72,14 +72,14 @@ class OdooDocker(object):
         )
         if modules:
             print("Package test: successfuly installed %s modules" % len(modules))
+            self.publish()
         else:
             raise Exception("Installation of package failed")
 
     def publish(self):
-        pass
-        # shutil.rmtree(self.log_file.name)
-        # shutil.move(i, dest)
-        # # do the symlink
+        os.remove(self.log_file.name)
+        shutil.move(join(self.build_dir, self.release), self.pub_dir)
+        # do the symlink
         # bn = os.path.basename(i)
         # latest = bn.replace(o.timestamp,'latest')
         # latest_full = join(dest, latest)
@@ -88,10 +88,13 @@ class OdooDocker(object):
         #         os.unlink(latest_full)
         #     os.symlink(bn,latest_full)
 
-    def start(self, docker_image, build_dir):
+    def start(self, docker_image, build_dir, pub_dir):
+        self.build_dir = build_dir
+        self.pub_dir = pub_dir
+
         self.docker = pexpect.spawn(
             'docker run -v %s:/opt/release -p 127.0.0.1:%s:8069'
-            ' -t -i %s /bin/bash --noediting' % (build_dir, self.port, docker_image),
+            ' -t -i %s /bin/bash --noediting' % (self.build_dir, self.port, docker_image),
             timeout=self.timeout
         )
         time.sleep(2)  # let the bash start
@@ -103,16 +106,14 @@ class OdooDocker(object):
         system('docker rm -f %s' % self.id)
 
 @contextmanager
-def docker(docker_image, build_dir):
+def docker(docker_image, build_dir, pub_dir):
     _docker = OdooDocker()
     try:
-        _docker.start(docker_image, build_dir)
+        _docker.start(docker_image, build_dir, pub_dir)
         try:
             yield _docker
         except Exception, e:
             raise
-        finally:
-            _docker.publish()
     finally:
         _docker.end()
 
@@ -148,14 +149,15 @@ def build_rpm(o):
 # Docker testing
 #----------------------------------------------------------
 def test_tgz(o):
-    with docker('debian:stable', o.build_dir) as wheezy:
+    with docker('debian:stable', o.build_dir, o.pub) as wheezy:
+        wheezy.release = 'odoo.tar.gz'
         wheezy.system('apt-get update -qq && apt-get upgrade -qq -y')
         wheezy.system("apt-get install postgresql python-dev postgresql-server-dev-all python-pip build-essential libxml2-dev libxslt1-dev libldap2-dev libsasl2-dev libssl-dev libjpeg-dev -y")
         wheezy.system("service postgresql start")
         wheezy.system('su postgres -s /bin/bash -c "pg_dropcluster --stop 9.1 main"')
         wheezy.system('su postgres -s /bin/bash -c "pg_createcluster --start -e UTF-8 9.1 main"')
         wheezy.system('pip install -r /opt/release/requirements.txt')
-        wheezy.system('/usr/local/bin/pip install /opt/release/odoo.tar.gz')
+        wheezy.system('/usr/local/bin/pip install /opt/release/%s' % wheezy.release)
         wheezy.system("useradd --system --no-create-home openerp")
         wheezy.system('su postgres -s /bin/bash -c "createuser -s openerp"')
         wheezy.system('su postgres -s /bin/bash -c "createdb mycompany"')
@@ -165,20 +167,22 @@ def test_tgz(o):
         wheezy.test()
 
 def test_deb(o):
-    with docker('debian:stable', o.build_dir) as wheezy:
+    with docker('debian:stable', o.build_dir, o.pub) as wheezy:
+        wheezy.release = 'odoo.deb'
         wheezy.system('/usr/bin/apt-get update -qq && /usr/bin/apt-get upgrade -qq -y')
         wheezy.system("apt-get install postgresql -y")
         wheezy.system("service postgresql start")
         wheezy.system('su postgres -s /bin/bash -c "pg_dropcluster --stop 9.1 main"')
         wheezy.system('su postgres -s /bin/bash -c "pg_createcluster --start -e UTF-8 9.1 main"')
         wheezy.system('su postgres -s /bin/bash -c "createdb mycompany"')
-        wheezy.system('/usr/bin/dpkg -i /opt/release/odoo.deb')
+        wheezy.system('/usr/bin/dpkg -i /opt/release/%s' % wheezy.release)
         wheezy.system('/usr/bin/apt-get install -f -y')
         wheezy.system('su openerp -s /bin/bash -c "odoo.py -c /etc/openerp/openerp-server.conf &"')
         wheezy.test()
 
 def test_rpm(o):
-    with docker('centos:centos7', o.build_dir) as centos7:
+    with docker('centos:centos7', o.build_dir, o.pub) as centos7:
+        centos7.release = 'odoo.rpm'
         centos7.system('rpm -Uvh http://dl.fedoraproject.org/pub/epel/beta/7/x86_64/epel-release-7-0.2.noarch.rpm')
         centos7.system('yum update -y && yum upgrade -y')
         centos7.system('yum install python-pip gcc python-devel -y')
@@ -193,7 +197,7 @@ def test_rpm(o):
         centos7.system('su postgres -c "createdb mycompany"')
         centos7.system('export PYTHONPATH=${PYTHONPATH}:/usr/local/lib/python2.7/dist-packages')
         centos7.system('su postgres -c "createdb mycompany"')
-        centos7.system('yum install /opt/release/odoo.rpm -y')
+        centos7.system('yum install /opt/release/%s -y' % centos7.release)
         centos7.system('su openerp -s /bin/bash -c "openerp-server -c /etc/openerp/openerp-server.conf -d mycompany -i base &"')
         centos7.test()
 
@@ -244,8 +248,8 @@ def main():
     except:
         raise
     finally:
-        for deb in glob('%s/../openerp-*' % o.build_dir):
-            shutil.rmtree(deb)
+        for deb in glob('%s/../openerp_*' % o.build_dir):
+            os.remove(deb)
         shutil.rmtree(o.build_dir)
         if not o.no_testing:
             system("docker rm -f `docker ps -a | grep Exited | awk '{print $1 }'` 2>>/dev/null")
