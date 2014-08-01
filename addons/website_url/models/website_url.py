@@ -1,4 +1,7 @@
+import string
+import random
 from openerp.osv import osv, fields
+
 class website_alias(osv.Model):
     _name = "website.alias"
     _rec_name = 'code'
@@ -17,13 +20,23 @@ class website_alias(osv.Model):
     
     _columns = {
         'url': fields.char('Full URL', required=True),
-        'code': fields.char('Short URL Code', size=3,required=True),
+        'code': fields.char('Short URL Code', size=6, required=True),
         'count': fields.function(count_url,string='Number of Clicks', type='integer',
             store={'website.alias': (lambda self, cr, uid, ids, ctx: ids, ['code','url'], 20),
                    'website.alias.click': (alias_click,['alias_id'],20)
                    }),
     }
-    
+    def _get_randome_code_string(self, cr, uid, ctx={}):
+        size = 3
+        while True:
+            x = ''.join(random.choice(string.letters + string.digits) for _ in range(size))
+            if not x: size += 1 
+            else: return x
+
+    _defaults = {
+        'code': _get_randome_code_string,
+    }
+
     sql_constraints = [
         ('code', 'unique( code )', 'Code must be unique.'),
     ]
