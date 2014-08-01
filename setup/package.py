@@ -70,7 +70,9 @@ class OdooDocker(object):
         modules = xmlrpclib.ServerProxy('http://127.0.0.1:%s/xmlrpc/object' % str(self.port)).execute(
             'mycompany', 1, 'admin', 'ir.module.module', 'search', [('state', '=', 'installed')]
         )
-        if not modules:
+        if modules:
+            print("Package test: successfuly installed %s modules" % len(modules))
+        else:
             raise Exception("Installation of package failed")
 
     def publish(self):
@@ -181,8 +183,18 @@ def test_rpm(o):
         centos7.system('yum update -y && yum upgrade -y')
         centos7.system('yum install python-pip gcc python-devel -y')
         centos7.system('pip install pydot pyPdf vatnumber xlwt http://download.gna.org/pychart/PyChart-1.39.tar.gz')
+        centos7.system('yum install postgresql postgresql-server postgresql-libs postgresql-contrib postgresql-devel -y')
+        centos7.system('mkdir -p /var/lib/postgres/data')
+        centos7.system('chown -R postgres:postgres /var/lib/postgres/data')
+        centos7.system('chmod 0700 /var/lib/postgres/data')
+        centos7.system('su postgres -c "initdb -D /var/lib/postgres/data -E UTF-8"')
+        centos7.system('cp /usr/share/pgsql/postgresql.conf.sample /var/lib/postgres/data/postgresql.conf')
+        centos7.system('su postgres -c "/usr/bin/pg_ctl -D /var/lib/postgres/data start"')
+        centos7.system('su postgres -c "createdb mycompany"')
+        centos7.system('export PYTHONPATH=${PYTHONPATH}:/usr/local/lib/python2.7/dist-packages')
+        centos7.system('su postgres -c "createdb mycompany"')
         centos7.system('yum install /opt/release/odoo.rpm -y')
-        centos7.system('su - openerp -s /bin/bash -c "openerp-server -c /etc/openerp/openerp-server.conf &"')
+        centos7.system('su openerp -s /bin/bash -c "openerp-server -c /etc/openerp/openerp-server.conf -d mycompany -i base &"')
         centos7.test()
 
 #----------------------------------------------------------
@@ -215,15 +227,15 @@ def main():
     _prepare_build_dir(o)
 
     try:
-        # if not o.no_tarball:
-        #     build_tgz(o)
-        #     if not o.no_testing:
-        #         test_tgz(o)
+        if not o.no_tarball:
+            build_tgz(o)
+            if not o.no_testing:
+                test_tgz(o)
 
-        # if not o.no_debian:
-        #     build_deb(o)
-        #     if not o.no_testing:
-        #         test_deb(o)
+        if not o.no_debian:
+            build_deb(o)
+            if not o.no_testing:
+                test_deb(o)
 
         if not o.no_rpm:
             build_rpm(o)
