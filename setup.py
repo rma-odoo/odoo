@@ -18,19 +18,8 @@ setup(
     license=license,
     scripts=['openerp-server', 'openerp-gevent', 'odoo.py'],
     # Full packaging:
-    packages=find_packages() + ['%s-addons.' % lib_name + package_name for package_name in find_packages('addons')],
-    # Apps-platform packaging:
-    # packages=find_packages() +
-    # ['%s-addons.' % lib_name + package_name for package_name in [
-    #     'web', 'web.controllers', 'web.tests', 'web_calendar', 'web_diagram',
-    #     'web_diagram.controllers', 'web_gantt', 'web_graph', 'web_graph.controllers', 'web_kanban',
-    #     'web_kanban_gauge', 'web_kanban_sparkline', 'web_tests', 'web_tests.tests',
-    #     'web_tests_demo', 'web_view_editor',
-    # ]],
-    package_dir={
-        '%s' % lib_name: 'openerp',
-        '%s-addons' % lib_name: 'addons',
-    },
+    packages=find_packages(),
+    package_dir={'%s' % lib_name: 'openerp'},
     include_package_data=True,
     dependency_links=['http://download.gna.org/pychart/'],
     install_requires=[

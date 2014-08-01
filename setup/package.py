@@ -23,12 +23,14 @@
 import optparse
 import os
 import pexpect
-# import shutil
+import shutil
 import time
 from contextlib import contextmanager
 from glob import glob
 from os.path import join
 from subprocess import check_output
+from tempfile import NamedTemporaryFile
+import xmlrpclib
 
 
 #----------------------------------------------------------
@@ -54,7 +56,7 @@ def system(l, chdir=None):
 
 class OdooDocker(object):
     def __init__(self):
-        self.log_file = open('/tmp/logfile.log', 'w')  # FIXME sle: create temporary file
+        self.log_file = NamedTemporaryFile(mode='w+b', prefix="bash", suffix=".txt", delete=False)
         self.port = 8069  # FIXME sle: get free port
         self.prompt_re = '(\r\nroot@|bash-).*# '
         self.timeout = 600
@@ -62,6 +64,27 @@ class OdooDocker(object):
     def system(self, command):
         self.docker.sendline(command)
         self.docker.expect(self.prompt_re)
+
+    def test(self):
+        time.sleep(60)  # let Odoo start
+        modules = xmlrpclib.ServerProxy('http://127.0.0.1:%s/xmlrpc/object' % str(self.port)).execute(
+            'mycompany', 1, 'admin', 'ir.module.module', 'search', [('state', '=', 'installed')]
+        )
+        if not modules:
+            raise Exception("Installation of package failed")
+
+    def publish(self):
+        pass
+        # shutil.rmtree(self.log_file.name)
+        # shutil.move(i, dest)
+        # # do the symlink
+        # bn = os.path.basename(i)
+        # latest = bn.replace(o.timestamp,'latest')
+        # latest_full = join(dest, latest)
+        # if bn != latest:
+        #     if os.path.islink(latest_full):
+        #         os.unlink(latest_full)
+        #     os.symlink(bn,latest_full)
 
     def start(self, docker_image, build_dir):
         self.docker = pexpect.spawn(
@@ -85,8 +108,9 @@ def docker(docker_image, build_dir):
         try:
             yield _docker
         except Exception, e:
-            print(e)
-            # TODO sle: save the log
+            raise
+        finally:
+            _docker.publish()
     finally:
         _docker.end()
 
@@ -100,8 +124,8 @@ def _prepare_build_dir(o):
     """
     cmd = ['rsync', '-a', '--exclude', '.git', '--exclude', '*.pyc', '--exclude', '*.pyo']
     system(cmd + ['%s/' % o.odoo_dir, o.build_dir])
-    # for i in glob.glob(join(o.build_dir, 'addons/*')):
-    #     shutil.move(i, join(o.build_dir, 'openerp/addons'))
+    for i in glob(join(o.build_dir, 'addons/*')):
+        shutil.move(i, join(o.build_dir, 'openerp/addons'))
 
 def build_tgz(o):
     """.tgz build process"""
@@ -111,7 +135,7 @@ def build_tgz(o):
 def build_deb(o):
     """.deb build process"""
     system(['dpkg-buildpackage', '-rfakeroot', '-uc', '-us'], o.build_dir)
-    system(['cp', glob('%s../openerp_*.deb' % o.build_dir)[0], '%s/odoo.deb' % o.build_dir])
+    system(['cp', glob('%s/../openerp_*.deb' % o.build_dir)[0], '%s/odoo.deb' % o.build_dir])
 
 def build_rpm(o):
     """.rpm build process"""
@@ -135,15 +159,21 @@ def test_tgz(o):
         wheezy.system('su postgres -s /bin/bash -c "createdb mycompany"')
         wheezy.system('mkdir /var/lib/openerp')
         wheezy.system('chown openerp:openerp /var/lib/openerp')
-        wheezy.system('su openerp -s /bin/bash -c "odoo.py --addons-path=/usr/local/lib/python2.7/dist-packages/openerp/addons,/usr/local/lib/python2.7/dist-packages/openerp-addons -d mycompany -i base"')
+        wheezy.system('su openerp -s /bin/bash -c "odoo.py --addons-path=/usr/local/lib/python2.7/dist-packages/openerp/addons -d mycompany -i base  &"')
+        wheezy.test()
 
 def test_deb(o):
     with docker('debian:stable', o.build_dir) as wheezy:
-        # apt-get will output the prompt and mess up the expect so force it to be quiet
         wheezy.system('/usr/bin/apt-get update -qq && /usr/bin/apt-get upgrade -qq -y')
+        wheezy.system("apt-get install postgresql -y")
+        wheezy.system("service postgresql start")
+        wheezy.system('su postgres -s /bin/bash -c "pg_dropcluster --stop 9.1 main"')
+        wheezy.system('su postgres -s /bin/bash -c "pg_createcluster --start -e UTF-8 9.1 main"')
+        wheezy.system('su postgres -s /bin/bash -c "createdb mycompany"')
         wheezy.system('/usr/bin/dpkg -i /opt/release/odoo.deb')
         wheezy.system('/usr/bin/apt-get install -f -y')
-        wheezy.system('service openerp start')
+        wheezy.system('su openerp -s /bin/bash -c "odoo.py -c /etc/openerp/openerp-server.conf &"')
+        wheezy.test()
 
 def test_rpm(o):
     with docker('centos:centos7', o.build_dir) as centos7:
@@ -152,8 +182,8 @@ def test_rpm(o):
         centos7.system('yum install python-pip gcc python-devel -y')
         centos7.system('pip install pydot pyPdf vatnumber xlwt http://download.gna.org/pychart/PyChart-1.39.tar.gz')
         centos7.system('yum install /opt/release/odoo.rpm -y')
-        # Systemd doesn't run inside docker
-        centos7.system('su openerp -s /bin/bash -c "openerp-server -c /etc/openerp/openerp-server.conf"')
+        centos7.system('su - openerp -s /bin/bash -c "openerp-server -c /etc/openerp/openerp-server.conf &"')
+        centos7.test()
 
 #----------------------------------------------------------
 # Options and Main
@@ -177,7 +207,6 @@ def options():
     # derive other options
     o.odoo_dir = root
     o.timestamp = timestamp
-    o.version_full = '%s-%s' % (o.version, o.timestamp)
     return o
 
 
@@ -186,15 +215,15 @@ def main():
     _prepare_build_dir(o)
 
     try:
-        if not o.no_tarball:
-            build_tgz(o)
-            if not o.no_testing:
-                test_tgz(o)
+        # if not o.no_tarball:
+        #     build_tgz(o)
+        #     if not o.no_testing:
+        #         test_tgz(o)
 
-        if not o.no_debian:
-            build_deb(o)
-            if not o.no_testing:
-                test_deb(o)
+        # if not o.no_debian:
+        #     build_deb(o)
+        #     if not o.no_testing:
+        #         test_deb(o)
 
         if not o.no_rpm:
             build_rpm(o)
@@ -203,6 +232,9 @@ def main():
     except:
         raise
     finally:
+        for deb in glob('%s/../openerp-*' % o.build_dir):
+            shutil.rmtree(deb)
+        shutil.rmtree(o.build_dir)
         if not o.no_testing:
             system("docker rm -f `docker ps -a | grep Exited | awk '{print $1 }'` 2>>/dev/null")
 
