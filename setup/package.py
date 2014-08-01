@@ -25,17 +25,21 @@ import os
 import pexpect
 import shutil
 import time
+import xmlrpclib
 from contextlib import contextmanager
 from glob import glob
-from os.path import join
+from os.path import dirname, join
 from subprocess import check_output
 from tempfile import NamedTemporaryFile
-import xmlrpclib
 
 
 #----------------------------------------------------------
 # Utils
 #----------------------------------------------------------
+execfile(join(dirname(__file__), '..', 'openerp', 'release.py'))
+
+timestamp = time.strftime("%Y%m%d-%H%M%S", time.gmtime())
+
 def mkdir(d):
     if not os.path.isdir(d):
         os.makedirs(d)
@@ -78,7 +82,10 @@ class OdooDocker(object):
 
     def publish(self):
         os.remove(self.log_file.name)
-        shutil.move(join(self.build_dir, self.release), self.pub_dir)
+        shutil.move(
+            join(self.build_dir, self.release),
+            join(self.pub_dir, 'odoo_%s-%s.%s' % (version, timestamp, self.release.split('.')[1]))
+        )
         # do the symlink
         # bn = os.path.basename(i)
         # latest = bn.replace(o.timestamp,'latest')
@@ -206,13 +213,11 @@ def test_rpm(o):
 #----------------------------------------------------------
 def options():
     op = optparse.OptionParser()
-    timestamp = time.strftime("%Y%m%d-%H%M%S", time.gmtime())
     root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     build_dir = "%s-%s" % (root, timestamp)
 
     op.add_option("-b", "--build-dir", default=build_dir, help="build directory (%default)", metavar="DIR")
     op.add_option("-p", "--pub", default=None, help="pub directory (%default)", metavar="DIR")
-    op.add_option("-v", "--version", default='8.0', help="version (%default)")
     op.add_option("", "--no-testing", action="store_true", help="don't test the builded packages")
 
     op.add_option("", "--no-debian", action="store_true", help="don't build the debian package")
@@ -222,7 +227,6 @@ def options():
     (o, args) = op.parse_args()
     # derive other options
     o.odoo_dir = root
-    o.timestamp = timestamp
     return o
 
 
