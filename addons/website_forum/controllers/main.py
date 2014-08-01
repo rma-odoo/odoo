@@ -198,14 +198,16 @@ class WebsiteForum(http.Controller):
         request.registry['forum.post'].set_viewed(cr, SUPERUSER_ID, [question.id], context=context)
 
         url = request.httprequest.url
-        index_parameter = url.find('?')
         show_modal = False
-        '''if index_parameter != -1:
-            url = url[:index_parameter]'''
+        index_parameter = url.find('?')
+        if index_parameter != -1:
+            url = url[:index_parameter]
+        print("URL : {}".format(url))
         if ('type' in post) and (post['type'] == 'a'):
             sharing_content = "Just answered #odoo " + question.name
+            url += '?type=a'
             if ('sh' in post):
-                url += '?type=a#answer-' + post['sh']
+                url += '#answer-' + post['sh']
                 show_modal = True
         else:
             sharing_content = question.name + " #odoo #help"

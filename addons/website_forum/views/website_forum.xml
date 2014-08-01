@@ -689,11 +689,11 @@
                     <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&amp;times;</span><span class="sr-only">Close</span></button>
                     <t t-if = "'Just' in sharing_content">
                         <t t-set="title" t-value="'Thanks for answering this question'" />
-                        <t t-set="body" t-value="'Share the question and your answer to get more feedback from contributors'" />
+                        <t t-set="body" t-value="'Share the question and your answer to get more feedback from contributors. On average: 89% of the questions shared on social networks get an answer within 4 hours and questions shared on two social networks have 45% more chance to get an answer than unshared questions (Of course, compute right numbers).'" />
                     </t>
                     <t t-if = "'#help' in sharing_content">
-                        <t t-set="title" t-value="'Thanks for poasting your question'" />
-                        <t t-set="body" t-value="'Share your question to improve your chance of having an answer'" />
+                        <t t-set="title" t-value="'Thanks for posting your question'" />
+                        <t t-set="body" t-value="'Share your question to improve your chance of having an answer. By sharing your answer, you will get 10 additional karma points if your answer is selected as the right one. See what you can do with karma. (This last sentence is a link)'" />
                     </t>
                     <h4 class="modal-title" id="share_dialog_title">
                         <t t-esc="title" />
