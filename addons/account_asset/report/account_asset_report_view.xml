@@ -37,6 +37,7 @@
                     <filter string="Asset" name="asset" context="{'group_by':'asset_id'}"/>
                     <filter string="Asset Category" name="asset_category" icon="terp-stock_symbol-selection" context="{'group_by':'asset_category_id'}"/>
                     <filter string="Company" icon="terp-go-home" context="{'group_by':'company_id'}" groups="base.group_multi_company"/>
+                    <separator/>
                     <filter string="Purchase Month" icon="terp-go-month"
                             domain="[]" context="{'group_by':'purchase_date:month'}" help="Date of asset purchase"/>
                     <filter string="Depreciation Month" icon="terp-go-today"

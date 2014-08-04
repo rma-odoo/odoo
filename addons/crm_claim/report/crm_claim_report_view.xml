@@ -58,6 +58,7 @@
                         <filter string="Stage" icon="terp-stage" domain="[]" context="{'group_by':'stage_id'}" />
                         <filter string="Category" icon="terp-stock_symbol-selection" domain="[]" context="{'group_by':'categ_id'}" />
                         <filter string="Company" icon="terp-go-home" domain="[]" context="{'group_by':'company_id'}" groups="base.group_multi_company"/>
+                        <separator/>
                         <filter string="Claim Month" icon="terp-go-month" domain="[]" context="{'group_by':'claim_date:month'}" help="Month of claim"/>
                     </group>
                 </search>

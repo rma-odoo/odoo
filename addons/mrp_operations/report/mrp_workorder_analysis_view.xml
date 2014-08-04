@@ -57,6 +57,7 @@
                         <filter string="Production" icon="terp-accessories-archiver" domain="[]" context="{'group_by':'production_id'}"/>
                         <filter string="Status" icon="terp-stock_effects-object-colorize" context="{'group_by':'state'}"/>
                         <filter string="Product" name="Product" icon="terp-accessories-archiver" context="{'group_by':'product_id'}" />
+                        <separator/>
                         <filter string="Month Planned" name="terp-go-month" icon="terp-go-month" context="{'group_by':'date:month'}" help="Planned Month"/>
                     </group>
                 </search>
