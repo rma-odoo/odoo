@@ -25,6 +25,8 @@
 import calendar
 import datetime
 from datetime import date
+from dateutil.relativedelta import relativedelta
+import json
 import math
 import time
 from operator import attrgetter
@@ -564,4 +566,79 @@ class hr_employee(osv.Model):
         'leave_date_to': fields.function(_get_leave_status, multi='leave_status', type='date', string='To Date'),
         'leaves_count': fields.function(_leaves_count, multi='_leaves_count', type='integer', string='Number of Leaves (current month)'),
         'approved_leaves_count': fields.function(_leaves_count, multi='_leaves_count', type='integer', string='Approved Leaves not in Payslip', help="These leaves are approved but not taken into account for payslip"),
+    }
+
+class hr_department(osv.osv):
+    _inherit = 'hr.department'
+
+    def _get_monthly_data(self, cr, uid, ids, field_name, arg, context=None):
+        obj = self.pool['hr.holidays']
+        month_begin = date.today().replace(day=1)
+        date_begin = (month_begin - relativedelta(months=self._period_number - 1)).strftime(tools.DEFAULT_SERVER_DATE_FORMAT)
+        date_end = month_begin.replace(day=calendar.monthrange(month_begin.year, month_begin.month)[1]).strftime(tools.DEFAULT_SERVER_DATE_FORMAT)
+
+        res = {}
+        for id in ids:
+            res[id] = {}
+            domain_absence = [
+                ('type', '=', 'remove'),
+                ('state', '=', 'validate'),
+                ('department_id', '=', id), 
+                ('date_from', '>=', date_begin),
+                ('date_to', '<=', date_end),
+            ]
+            domain_request = [
+                ('type', '=', 'add'),
+                ('state', '=', 'validate'),
+                ('department_id', '=', id), 
+                ('create_date', '>=', date_begin),
+                ('create_date', '<=', date_end),
+            ]
+            res[id]['monthly_absence'] = json.dumps(self.__get_bar_values(cr, uid, obj, domain_absence, ['date_from'], 'date_from_count', 'date_from', context=context))
+            res[id]['monthly_request'] = json.dumps(self.__get_bar_values(cr, uid, obj, domain_request, ['create_date'], 'create_date_count', 'create_date', context=context))
+        return res
+
+    def _leave_count(self, cr, uid, ids, field_name, arg, context=None):
+        Holiday = self.pool['hr.holidays']
+        res = {}
+        today = datetime.date.today().strftime(tools.DEFAULT_SERVER_DATETIME_FORMAT)
+
+        for department_id in ids:
+            leave_to_approve =  Holiday.search_count(cr, uid, [
+                ('department_id', '=', department_id), 
+                ('state', '=', 'confirm'),
+                ('type', '=', 'remove')], context=context)
+            allocation_to_approve = Holiday.search_count(cr, uid, [
+                ('department_id', '=', department_id), 
+                ('state', '=', 'confirm'),
+                ('type', '=', 'add'),
+                ], context=context)
+            absence_of_today = Holiday.search_count(cr, uid, [
+                ('department_id', '=', department_id), 
+                ('date_from', '<=', today),
+                ('date_to', '>=', today),
+                ('type', '=', 'remove'),
+                ('state', '=', 'validate'),
+                ], context=context)
+            res[department_id] = {
+                'leave_to_approve_count': leave_to_approve, 
+                'allocation_to_approve_count': allocation_to_approve,
+                'absence_of_today': absence_of_today,
+            }
+        return res
+
+    def _get_total_employee(self, cr, uid, ids, name, args, context=None):
+        Employee = self.pool['hr.employee']
+        return {
+            department_id: Employee.search_count(cr,uid, [('department_id', '=', department_id)], context=context)
+            for department_id in ids
+        }
+
+    _columns = {
+        'absence_of_today': fields.function(_leave_count, multi='_leave_count', type='integer'),
+        'leave_to_approve_count': fields.function(_leave_count, multi='_leave_count', type='integer'),
+        'allocation_to_approve_count': fields.function(_leave_count, multi='_leave_count', type='integer'),
+        'total_employee': fields.function(_get_total_employee, type="integer"),
+        'monthly_absence': fields.function(_get_monthly_data, type='char', multi='_get_monthly_data'),
+        'monthly_request': fields.function(_get_monthly_data, type='char', multi='_get_monthly_data'),
     }

@@ -371,3 +371,29 @@ class hr_evaluation_interview(osv.Model):
         response = response_obj.browse(cr, uid, interview.request_id.id, context=context)
         context.update({'survey_token': response.token})
         return survey_obj.action_start_survey(cr, uid, [interview.survey_id.id], context=context)
+
+class hr_department(osv.osv):
+    _inherit = 'hr.department'
+
+    def _interview_request_count(self, cr, uid, ids, field_name, arg, context=None):
+        interview = self.pool['hr.evaluation.interview']
+        return {
+            department_id: interview.search_count(cr, uid, [
+                ('user_to_review_id.department_id', '=', department_id),
+                ('state', '=', 'waiting_answer')], context=context)
+            for department_id in ids
+        }
+
+    def _appraisal_to_start_count(self, cr, uid, ids, name, args, context=None):
+        Evaluation = self.pool['hr_evaluation.evaluation']
+        return {
+            department_id: Evaluation.search_count(cr,uid, [
+                ('employee_id.department_id', '=', department_id),
+                ('state', '=', 'draft')], context=context)
+            for department_id in ids
+        }
+
+    _columns = {
+        'appraisal_to_start_count': fields.function(_appraisal_to_start_count, type='integer'),
+        'interview_request_count': fields.function(_interview_request_count, type='integer'),
+    }

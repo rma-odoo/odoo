@@ -139,7 +139,7 @@
                         <field name="survey" invisible="1"/>
                         <field name="response_id" invisible="1"/>
                         <field name="job_id" on_change="onchange_job(job_id)"/>
-                        <field name="department_id" on_change="onchange_department_id(department_id, stage_id)"/>
+                        <field name="department_id" on_change="onchange_department_id(department_id, stage_id)" groups="hr.group_multi_departments"/>
                         <field name="company_id" />
                         <label for="availability"/>
                         <div>
@@ -202,7 +202,7 @@
                 <separator/>
                 <filter string="New Mail" name="message_unread" domain="[('message_unread','=',True)]"/>
                 <field name="job_id"/>
-                <field name="department_id"/>
+                <field name="department_id" groups="hr.group_multi_departments"/>
                 <field name="user_id"/>
                 <field name="stage_id" domain="[]"/>
                 <separator/>
@@ -259,7 +259,7 @@
                         <ul class="oe_kanban_tooltip">
                             <li t-if="record.type_id.raw_value"><b>Degree:</b> <field name="type_id"/></li>
                             <li t-if="record.partner_id.raw_value"><b>Contact:</b> <field name="partner_id"/></li>
-                            <li t-if="record.department_id.raw_value"><b>Departement:</b> <field name="department_id"/></li>
+                            <li t-if="record.department_id.raw_value"><b>Departement:</b> <field name="department_id" groups="hr.group_multi_departments"/></li>
                         </ul>
                     </t>
                     <t t-name="kanban-box">
@@ -432,7 +432,7 @@
                                             <field name="name"/>
                                         </div>
                                         <div class="text-center oe_job oe_department oe_kanban_ellipsis">
-                                            <strong><field name="department_id"/>
+                                            <strong><field name="department_id" groups="hr.group_multi_departments"/>
                                             <span t-if="record.manager_id.value" class="oe_manager_name">
                                                 (<t t-esc="record.manager_id.value"/>)
                                             </span></strong>
@@ -513,7 +513,7 @@
             <tree string="Stages">
                 <field name="sequence" invisible="1"/>
                 <field name="name"/>
-                <field name="department_id"/>
+                <field name="department_id" groups="hr.group_multi_departments"/>
                 <field name="fold"/>
             </tree>
         </field>
@@ -529,7 +529,7 @@
                 <group string="Stage Definition">
                     <group>
                         <field name="name"/>
-                        <field name="department_id"/>
+                        <field name="department_id" groups="hr.group_multi_departments"/>
                     </group>
                     <group>
                         <field name="sequence"/>
@@ -645,6 +645,45 @@
         action="hr_recruitment_source_action"
         groups="base.group_no_one"
         sequence="10"/>
+
+    <record model="ir.actions.act_window" id="link_hr_job_new_applications">
+        <field name="name">New Applications</field>
+        <field name="res_model">hr.applicant</field>
+        <field name="view_mode">tree,kanban,form,graph,calendar</field>
+        <field name="context">{
+            'search_default_department_id': [active_id],
+            'default_department_id': active_id,
+        }</field>
+        <field name="domain">[('stage_id.sequence','&lt;=','1')]</field>
+    </record>
+
+    <!--Hr Department Inherit Kanban view-->
+    <record model="ir.ui.view" id="hr_applicant_department_kanban_view">
+        <field name="name">hr.applicant.department.kanban.view</field>
+        <field name="model">hr.department</field>
+        <field name="inherit_id" ref="hr.view_department_kanban"/>
+        <field name="arch" type="xml">
+            <data>
+                <xpath expr="//templates" position="before">
+                    <field name="new_applicant_count"/>
+                    <field name="new_hired_employee"/>
+                    <field name="expected_employee"/>
+                </xpath>
+                <xpath expr="//div[@class='oe_to_do']" position="inside">
+                    <div class="oe_items"><a name="%(link_hr_job_new_applications)d" type="action">
+                        <t t-esc="record.new_applicant_count.raw_value or 0"/> New Applicant</a>
+                    </div>
+                </xpath>
+                <xpath expr="//div[@name='gauge_to_do']" position="inside">
+                    <div class="oe_to_do">
+                        <field name="new_hired_employee" widget="gauge" 
+                            options="{'max_field': 'expected_employee', 'label': 'Hired Employees',}"
+                            style="width:160px; height: 120px; cursor: pointer;">New Hired Employee</field>
+                    </div>
+                </xpath>
+            </data>
+        </field>
+    </record>
 
     </data>
 </openerp>

@@ -20,8 +20,13 @@
 ##############################################################################
 
 import time
+import calendar
+from datetime import date
+from dateutil.relativedelta import relativedelta
+import json
 
 from openerp.osv import fields, osv
+from openerp.tools import DEFAULT_SERVER_DATE_FORMAT
 from openerp.tools.translate import _
 
 import openerp.addons.decimal_precision as dp
@@ -476,5 +481,32 @@ class account_move_line(osv.osv):
                     if new_status_is_paid:
                         expense_obj.write(cr, uid, [expense.id], {'state': 'paid'}, context=context)
         return res
+
+class hr_department(osv.osv):
+    _inherit = 'hr.department'
+
+    def _get_monthly_expense_amount(self, cr, uid, ids, field_name, arg, context=None):
+        obj = self.pool['hr.expense.expense']
+        month_begin = date.today().replace(day=1)
+        date_begin = (month_begin - relativedelta(months=self._period_number - 1)).strftime(DEFAULT_SERVER_DATE_FORMAT)
+        date_end = month_begin.replace(day=calendar.monthrange(month_begin.year, month_begin.month)[1]).strftime(DEFAULT_SERVER_DATE_FORMAT)
+
+        res = {}
+        for id in ids:
+            domain = [('department_id', '=', id), ('date', '>=', date_begin), ('date', '<=', date_end)]
+            res[id] = json.dumps(self.__get_bar_values(cr, uid, obj, domain, ['amount', 'date'], 'amount', 'date', context=context))
+        return res
+
+    def _expense_to_approve_count(self, cr, uid, ids, field_name, arg, context=None):
+        Expense = self.pool['hr.expense.expense']
+        return {
+            department_id: Expense.search_count(cr,uid, [('department_id', '=', department_id), ('state', '=', 'confirm')], context=context)
+            for department_id in ids
+        }
+
+    _columns = {
+        'expense_to_approve_count': fields.function(_expense_to_approve_count, type='integer'),
+        'monthly_expense_amount': fields.function(_get_monthly_expense_amount, type='char'),
+    }
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

@@ -18,12 +18,13 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ##############################################################################
-
+import calendar
 import time
-from datetime import datetime
+from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
 from pytz import timezone
 import pytz
+import json
 
 from openerp.osv import fields, osv
 from openerp.tools import DEFAULT_SERVER_DATE_FORMAT, DEFAULT_SERVER_DATETIME_FORMAT
@@ -675,5 +676,32 @@ class hr_employee(osv.osv):
 
     _columns = {
         'timesheet_count': fields.function(_timesheet_count, type='integer', string='Timesheets'),
+    }
+
+class hr_department(osv.osv):
+    _inherit = 'hr.department'
+
+    def _get_monthly_timesheet_amount(self, cr, uid, ids, field_name, arg, context=None):
+        obj = self.pool['hr_timesheet_sheet.sheet.day']
+        month_begin = date.today().replace(day=1)
+        date_begin = (month_begin - relativedelta(months=self._period_number - 1)).strftime(DEFAULT_SERVER_DATE_FORMAT)
+        date_end = month_begin.replace(day=calendar.monthrange(month_begin.year, month_begin.month)[1]).strftime(DEFAULT_SERVER_DATE_FORMAT)
+
+        res = {}
+        for id in ids:
+            domain = [('sheet_id.department_id', '=', id), ('name', '>=', date_begin), ('name', '<=', date_end)]
+            res[id] = json.dumps(self.__get_bar_values(cr, uid, obj, domain, ['total_timesheet', 'name'], 'total_timesheet', 'name', context=context))
+        return res
+
+    def _timesheet_to_approve_count(self, cr, uid, ids, field_name, arg, context=None):
+        timesheet = self.pool['hr_timesheet_sheet.sheet']
+        return {
+            department_id: timesheet.search_count(cr,uid, [('department_id', '=', department_id), ('state', '=', 'confirm')], context=context)
+            for department_id in ids
+        }
+
+    _columns = {
+        'timesheet_to_approve_count': fields.function(_timesheet_to_approve_count, type='integer'),
+        'monthly_timesheet_amount': fields.function(_get_monthly_timesheet_amount, type='char'),
     }
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

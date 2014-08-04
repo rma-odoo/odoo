@@ -614,3 +614,35 @@ class applicant_category(osv.osv):
     _columns = {
         'name': fields.char('Name', required=True, translate=True),
     }
+
+class hr_department(osv.osv):
+    _inherit = 'hr.department'
+    
+    def _new_applicant_count(self, cr, uid, ids, name, args, context=None):
+        Applicant = self.pool['hr.applicant']
+        return {
+            department_id: Applicant.search_count(cr,uid, [('department_id', '=', department_id), ('stage_id.sequence', '<=', '1')], context=context)
+            for department_id in ids
+        }
+
+    def _get_employee_stats(self, cr, uid, ids, name, args, context=None):
+        Job = self.pool['hr.job']
+        res = {}
+        for department_id in ids:
+            expected_employee = 0
+            hired_employees = 0
+            jobs = Job.search_read(cr, uid, [('department_id', '=', department_id)], context=context)
+            for employees in jobs:
+                hired_employees = hired_employees + employees['no_of_hired_employee']
+                expected_employee = expected_employee + employees['no_of_recruitment']
+            res[department_id] = {
+                'new_hired_employee': hired_employees,
+                'expected_employee': expected_employee,
+            }
+        return res
+
+    _columns = {
+        'new_applicant_count': fields.function(_new_applicant_count, type='integer'),
+        'new_hired_employee': fields.function(_get_employee_stats, type='integer', multi=True),
+        'expected_employee': fields.function(_get_employee_stats, type='integer', multi=True),
+    }

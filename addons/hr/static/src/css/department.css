@@ -1,0 +1,43 @@
+.openerp .oe_kanban_view .oe_kanban_department {
+  width: 400px;
+  min-height: 254px !important;
+  cursor: default;
+}
+.openerp .oe_kanban_view .oe_kanban_department img.oe_department_avatar {
+  position: absolute;
+  width: 35px;
+  height: 35px;
+  margin-left: 330px;
+  margin-top: -13px;
+}
+.openerp .oe_kanban_view .oe_kanban_department .oe_items_list {
+  position: relative;
+  margin: 10px 0 10px 9px;
+  min-height: 100px;
+  height: 110px;
+}
+.openerp .oe_kanban_view .oe_kanban_department .oe_items_list .oe_items {
+  height: 22px;
+}
+.openerp .oe_kanban_view .oe_kanban_department .oe_items_list a:hover {
+  text-decoration: underline !important;
+}
+.openerp .oe_kanban_view .oe_kanban_department .oe_items_list .oe_to_approve {
+  width: 200px;
+  height: 100px;
+  margin: 0 !important;
+  position: relative;
+  display: inline-block;
+  float: left;
+}
+.openerp .oe_kanban_view .oe_kanban_department .oe_items_list .oe_to_do {
+  width: 160px;
+  height: 100px;
+  position: relative;
+  display: inline-block;
+  float: left;
+}
+.openerp .oe_kanban_view .oe_kanban_department .oe_items_list div a:nth-child(2n) {
+  position: absolute;
+  left: 150px;
+}
