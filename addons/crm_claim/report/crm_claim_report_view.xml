@@ -22,7 +22,7 @@
             <field name="model_id">crm.claim.report</field>
             <field name="domain">[]</field>
             <field name="user_id" eval="False"/>
-            <field name="context">{'group_by': ['subject'], 'measure': ['email', 'delay_close']}</field>
+            <field name="context">{'group_by': ['subject'], 'measures': ['email', 'delay_close']}</field>
         </record>
 
 <!-- CRM Claim Report Search View -->

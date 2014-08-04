@@ -83,7 +83,8 @@ instance.web_graph.GraphView = instance.web.View.extend({
         }
         var self = this,
             groupbys = this.get_groupbys_from_searchview(),
-            col_group_by = groupbys.col_group_by;
+            col_group_by = groupbys.col_group_by,
+            measures = groupbys.measures;
 
         if (!this.graph_widget) {
             if (group_by.length) {
@@ -92,22 +93,25 @@ instance.web_graph.GraphView = instance.web.View.extend({
             if (col_group_by.length) {
                 this.widget_config.col_groupby = col_group_by;
             }
+            if (measures.lenght) {
+                this.widget_config.measures = measures;
+            }
             this.graph_widget = new openerp.web_graph.Graph(this, this.model, domain, this.widget_config);
             this.graph_widget.appendTo(this.$el);
             this.ViewManager.on('switch_mode', this, function (e) {
                 if (e === 'graph') {
                     var group_bys = self.get_groupbys_from_searchview();
-                    this.graph_widget.set(domain, group_bys.group_by, group_bys.col_group_by);
+                    this.graph_widget.set(domain, group_bys.group_by, group_bys.col_group_by, group_bys.measures);
                 }
             });
             return;
         }
 
-        this.graph_widget.set(domain, group_by, col_group_by);
+        this.graph_widget.set(domain, group_by, col_group_by, measures);
     },
 
     get_groupbys_from_searchview: function () {
-        var result = { group_by: [], col_group_by: []},
+        var result = { group_by: [], col_group_by: [], measures: []},
             searchdata = this.search_view.build_search_data();
 
         _.each(searchdata.groupbys, function (data) {
@@ -115,6 +119,9 @@ instance.web_graph.GraphView = instance.web.View.extend({
             result.group_by = result.group_by.concat(data.group_by);
             if (data.col_group_by) {
                 result.col_group_by = result.col_group_by.concat(data.col_group_by);
+            }
+            if (data.measures) {
+                result.measures = result.measures.concat(data.measures);
             }
         });
 
@@ -124,6 +131,9 @@ instance.web_graph.GraphView = instance.web.View.extend({
         _.each(searchdata.contexts, function (context) {
             if (context.col_group_by) {
                 result.col_group_by = result.col_group_by.concat(context.col_group_by);
+            }
+            if (context.measures) {
+                result.measures = result.measures.concat(context.measures);
             }
         });
         return result;
@@ -144,9 +154,10 @@ instance.web_graph.GraphView = instance.web.View.extend({
             groupbys = this.get_groupbys_from_searchview(),
             search_row_groupby = groupbys.group_by,
             search_col_groupby = groupbys.col_group_by,
+            search_measures = groupbys.measures,
             row_gb_changed = !_.isEqual(_.pluck(row_groupby, 'field'), search_row_groupby),
-            col_gb_changed = !_.isEqual(_.pluck(col_groupby, 'field'), search_col_groupby);
-
+            col_gb_changed = !_.isEqual(_.pluck(col_groupby, 'field'), search_col_groupby),
+            measures_gb_changed = !_.isEqual(_.pluck(col_groupby, 'field'), search_col_groupby);
         if (!_.has(this.search_view, '_s_groupby')) { return; }
 
         if (!row_gb_changed && !col_gb_changed) {
@@ -156,7 +167,7 @@ instance.web_graph.GraphView = instance.web.View.extend({
         if (row_gb_changed && col_gb_changed) {
             // when two changes to the search view will be done, the method do_search
             // will be called twice, once with the correct groupby and incorrect col_groupby,
-            // and once with correct informations. This flag is necessary to prevent the 
+            // and once with correct informations. This flag is necessary to prevent the
             // incorrect informations to propagate and trigger useless queries
             this.ignore_do_search = true;
         }
@@ -226,11 +237,3 @@ instance.web_graph.GraphView = instance.web.View.extend({
     },
 });
 };
-
-
-
-
-
-
-
-

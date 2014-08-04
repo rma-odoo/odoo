@@ -33,21 +33,21 @@
             <field name="model_id">crm.lead.report</field>
             <field name="domain">[]</field>
             <field name="user_id" eval="False"/>
-            <field name="context">{'group_by': ['country_id', 'section_id'], 'col_group_by': ['date_deadline'], 'search_default_opportunity': 0, 'measure': ['total_revenue']}</field>
+            <field name="context">{'group_by': ['country_id', 'section_id'], 'col_group_by': ['date_deadline'], 'search_default_opportunity': 0, 'measures': ['total_revenue']}</field>
         </record>
         <record id="filter_leads_revenue_per_lead" model="ir.filters">
             <field name="name">Revenue Per Lead</field>
             <field name="model_id">crm.lead.report</field>
             <field name="domain">[]</field>
             <field name="user_id" eval="False"/>
-            <field name="context">{'group_by': ['partner_id'], 'col_group_by': ['date_deadline:month'], 'search_default_opportunity': 0, 'measure': ['total_revenue']}</field>
+            <field name="context">{'group_by': ['partner_id'], 'col_group_by': ['date_deadline:month'], 'search_default_opportunity': 0, 'measures': ['total_revenue']}</field>
         </record>
         <record id="filter_leads_overpassed_deadline" model="ir.filters">
             <field name="name">Overpassed Deadline</field>
             <field name="model_id">crm.lead.report</field>
             <field name="domain">[]</field>
             <field name="user_id" eval="False"/>
-            <field name="context">{'group_by': ['section_id'], 'col_group_by': ['partner_id'], 'search_default_opportunity': 0, 'measure': ['delay_expected']}</field>
+            <field name="context">{'group_by': ['section_id'], 'col_group_by': ['partner_id'], 'search_default_opportunity': 0, 'measures': ['delay_expected']}</field>
         </record>
         <record id="filter_leads_salesperson" model="ir.filters">
             <field name="name">By Salespersons</field>
