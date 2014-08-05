@@ -56,7 +56,6 @@ openerp.web_graph.PivotTable = openerp.web.Class.extend({
 	},
 
     set: function (domain, row_groupby, col_groupby, measures_groupby) {
-		console.log(measures_groupby);
         var self = this;
         if (this.updating) {
             return this.updating.then(function () {
