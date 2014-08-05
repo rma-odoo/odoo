@@ -172,18 +172,18 @@ openerp.web_graph.Graph = openerp.web.Widget.extend({
             col_reduced = is_strict_beginning_of(col_gbs, this.pivot.cols.groupby),
             measures_reduced = is_strict_beginning_of(measures_gbs, this.pivot.measures);
 
-        if (!dom_changed && row_reduced && !col_gb_changed) {
+        if (!dom_changed && row_reduced && !col_gb_changed && !measures_gb_changed) {
             this.pivot.fold_with_depth(this.pivot.rows, row_gbs.length);
             this.display_data();
             return;
         }
-        if (!dom_changed && col_reduced && !row_gb_changed) {
+        if (!dom_changed && col_reduced && !row_gb_changed && !measures_gb_changed) {
             this.pivot.fold_with_depth(this.pivot.cols, col_gbs.length);
             this.display_data();
             return;
         }
 
-        if (!dom_changed && col_reduced && row_reduced) {
+        if (!dom_changed && col_reduced && row_reduced && !measures_gb_changed) {
             this.pivot.fold_with_depth(this.pivot.rows, row_gbs.length);
             this.pivot.fold_with_depth(this.pivot.cols, col_gbs.length);
             this.display_data();
