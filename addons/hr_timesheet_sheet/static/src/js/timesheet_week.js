@@ -235,13 +235,14 @@ openerp.hr_timesheet_week = function(instance) {
             var ignored_fields = self.ignore_fields();
             _.each(self.accounts, function(account) {
                 var auth_keys = _.extend(_.clone(account.account_defaults), {
-                    name: true, amount:true, unit_amount: true, date: true, account_id:true,
+                    id: true, name: true, amount:true, unit_amount: true, date: true, account_id:true, date_start: true,
                 });
                 _.each(account.days, function(day) {
                     _.each(day.lines, function(line) {
                         if (line.unit_amount !== 0) {
                             var tmp = _.clone(line);
-                            tmp.id = undefined;
+                            tmp.id = line.id;
+                            tmp.date_start = line.date_start;
                             _.each(line, function(v, k) {
                                 if (v instanceof Array) {
                                     tmp[k] = v[0];

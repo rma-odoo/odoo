@@ -82,7 +82,7 @@ openerp.hr_timesheet_day = function(instance) {
                             });
                             //Sorting days accounts based on account_id
                             days = _.each(days, function(day) {
-                                return _.sortBy(day.accoutn_group, function(el) {
+                                return _.sortBy(day.account_group, function(el) {
                                     return new_account_names[el.account_id];
                                 });
                             });
@@ -213,12 +213,13 @@ openerp.hr_timesheet_day = function(instance) {
             var ignored_fields = self.ignore_fields();
                 _.each(self.days, function(day) {
                     var auth_keys = _.extend(_.clone(day.account_defaults), {
-                    name: true, amount:true, unit_amount: true, date: true, account_id:true, date_start:true
+                    id: true, name: true, amount:true, unit_amount: true, date: true, account_id:true, date_start: true,
                     });
                     _.each(day.account_group, function(account) {
                         _.each(account,function(line){
                             var tmp = _.clone(line);
-                            tmp.id = undefined;
+                            tmp.id = line.id;
+                            tmp.date_start = line.date_start;
                             _.each(line, function(v, k) {
                                 if (v instanceof Array) {
                                     tmp[k] = v[0];
@@ -301,6 +302,7 @@ openerp.hr_timesheet_day = function(instance) {
             _.each(this.days[this.count].account_group,function(account) {
                 var d = self.days[self.count].day.toString("yyyy-MM-dd")
                 _.each(account,function(account) {
+                    account.id = undefined;
                     account.date = d;
                     account.name = self.description_line;
                     account.date_start = false;
@@ -333,11 +335,9 @@ openerp.hr_timesheet_day = function(instance) {
                 self.$el.find("i.text-success").each(function(){
                     var el_hour = $(this).parent().parent().find("span.hour");
                     var el_minute = $(this).parent().parent().find("span.minute");
-                    var hour = el_hour.text();
-                    var minute = el_minute.text();
-                    minute = parseInt(minute) + 1;
+                    var minute = parseInt(el_minute.text()) + 1;
                     if(minute > 60) {
-                        el_hour.text(parseInt(hour) + 1);
+                        el_hour.text(parseInt(el_hour.text()) + 1);
                         minute = 0;
                     }
                     el_minute.text(minute);
@@ -360,7 +360,7 @@ openerp.hr_timesheet_day = function(instance) {
             var account = this.days[this.count].account_group[act_id];
             var el_clock = $(input).find("i.fa-clock-o");
             var el_cog = $(input).find('i.fa-cog');
-            if(!_.has(account[0], "id") && (!account[0].id === "undefined")){
+            if((!_.has(account[0], "id")) || account[0].id == undefined){
                 alert("First you need to save record.");
                 return;
             }
