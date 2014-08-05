@@ -26,7 +26,8 @@ instance.web_graph.GraphView = instance.web.View.extend({
         this.model = new instance.web.Model(dataset.model, {group_by_no_leaf: true});
         this.search_view = parent.searchview;
         this.col_search_field = {
-            get_context: function() { return { col_group_by: self.graph_widget.get_col_groupbys()};},
+            get_context: function() { return { col_group_by: self.graph_widget.get_col_groupbys(),
+                measures: self.graph_widget.get_current_measures()};},
             get_domain: function () {},
             get_groupby: function () {},
         };

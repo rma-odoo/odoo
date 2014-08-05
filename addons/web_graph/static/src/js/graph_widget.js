@@ -243,6 +243,10 @@ openerp.web_graph.Graph = openerp.web.Widget.extend({
         return _.pluck(this.pivot.cols.groupby, 'field');
     },
 
+    get_current_measures: function () {
+        return _.pluck(this.pivot.measures, 'field');
+    },
+
     // ----------------------------------------------------------------------
     // UI code
     // ----------------------------------------------------------------------

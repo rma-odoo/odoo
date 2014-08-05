@@ -249,7 +249,7 @@ my.InputView = instance.web.Widget.extend({
             // Read text content (ignore pasted HTML)
             var data = this.$el.text();
             if (!data)
-                return; 
+                return;
             // paste raw text back in
             this.$el.empty().text(data);
             this.el.normalize();
@@ -340,7 +340,7 @@ instance.web.SearchView = instance.web.Widget.extend(/** @lends instance.web.Sea
         },
         'click .oe_searchview_unfold_drawer': function (e) {
             e.stopImmediatePropagation();
-            if (this.drawer) 
+            if (this.drawer)
                 this.drawer.toggle();
         },
         'keydown .oe_searchview_input, .oe_searchview_facet': function (e) {
@@ -555,7 +555,7 @@ instance.web.SearchView = instance.web.Widget.extend(/** @lends instance.web.Sea
     },
     /**
      * @param {openerp.web.search.SearchQuery | undefined} Undefined if event is change
-     * @param {openerp.web.search.Facet} 
+     * @param {openerp.web.search.Facet}
      * @param {Object} [options]
      */
     renderFacets: function (collection, model, options) {
@@ -608,7 +608,7 @@ instance.web.SearchView = instance.web.Widget.extend(/** @lends instance.web.Sea
 
         return this.drawer_ready
             .then(this.proxy('setup_default_query'))
-            .then(function () { 
+            .then(function () {
                 self.trigger("search_view_loaded", data);
                 self.ready.resolve();
             });
@@ -667,6 +667,8 @@ instance.web.SearchView = instance.web.Widget.extend(/** @lends instance.web.Sea
                     domains.push(domain);
                 }
                 var context = field.get_context(facet);
+                console.log(field);
+                console.log(context);
                 if (context) {
                     contexts.push(context);
                 }
@@ -688,7 +690,7 @@ instance.web.SearchView = instance.web.Widget.extend(/** @lends instance.web.Sea
             groupbys: groupbys,
             errors: errors
         };
-    }, 
+    },
     /**
      * Performs the search view collection of widget data.
      *
@@ -1180,7 +1182,7 @@ instance.web.search.FilterGroup = instance.web.search.Input.extend(/** @lends in
             .without('{}')
             .reject(_.isEmpty)
             .value();
-
+        console.log("h" + contexts);
         if (!contexts.length) { return; }
         if (contexts.length === 1) { return contexts[0]; }
         return _.extend(new instance.web.CompoundContext(), {
