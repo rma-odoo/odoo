@@ -310,6 +310,10 @@ THE SOFTWARE.
 		fillDow = function () {
 		    pMoment.lang(picker.options.language);
 		    var html = $('<tr>'), weekdaysMin = pMoment.weekdaysMin(), i;
+            if (picker.options.calendarWeeks === true){
+                html.append('<th class="cw">&nbsp</th>');
+            }
+            //     
 		    if (pMoment()._lang._week.dow == 0) { // starts on Sunday
 		        for (i = 0; i < 7; i++) {
 		            html.append('<th class="dow">' + weekdaysMin[i] + '</th>');
@@ -369,6 +373,9 @@ THE SOFTWARE.
                 if (prevMonth.weekday() === pMoment().startOf('week').weekday()) {
                     row = $('<tr>');
                     html.push(row);
+                    if (picker.options.calendarWeeks === true){
+                        row.append('<td class="cw">'+prevMonth.week()+'</td>');
+                    }
                 }
                 clsName = '';
                 if (prevMonth.year() < year || (prevMonth.year() == year && prevMonth.month() < month)) {
@@ -1163,6 +1170,7 @@ THE SOFTWARE.
     $.fn.datetimepicker.defaults = {
         pickDate: true,
         pickTime: true,
+        calendarWeeks: true,
         useMinutes: true,
         useSeconds: false,
         useCurrent: true,
