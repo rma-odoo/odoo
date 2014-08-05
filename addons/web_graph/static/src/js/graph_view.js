@@ -94,7 +94,7 @@ instance.web_graph.GraphView = instance.web.View.extend({
             if (col_group_by.length) {
                 this.widget_config.col_groupby = col_group_by;
             }
-            if (measures.lenght) {
+            if (measures.length) {
                 this.widget_config.measures = measures;
             }
             this.graph_widget = new openerp.web_graph.Graph(this, this.model, domain, this.widget_config);
