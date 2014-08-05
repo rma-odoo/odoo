@@ -190,7 +190,7 @@ openerp.web_graph.Graph = openerp.web.Widget.extend({
             return;
         }
 
-        if (dom_changed || row_gb_changed || col_gb_changed) {
+        if (dom_changed || row_gb_changed || col_gb_changed || measures_gb_changed) {
             this.pivot.set(domain, row_gbs, col_gbs, measures_gbs).then(this.proxy('display_data'));
         }
 
