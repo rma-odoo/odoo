@@ -667,8 +667,6 @@ instance.web.SearchView = instance.web.Widget.extend(/** @lends instance.web.Sea
                     domains.push(domain);
                 }
                 var context = field.get_context(facet);
-                console.log(field);
-                console.log(context);
                 if (context) {
                     contexts.push(context);
                 }
@@ -1182,7 +1180,7 @@ instance.web.search.FilterGroup = instance.web.search.Input.extend(/** @lends in
             .without('{}')
             .reject(_.isEmpty)
             .value();
-        console.log("h" + contexts);
+            
         if (!contexts.length) { return; }
         if (contexts.length === 1) { return contexts[0]; }
         return _.extend(new instance.web.CompoundContext(), {
