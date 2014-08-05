@@ -715,7 +715,7 @@ class purchase_order(osv.osv):
             'location_id': order.partner_id.property_stock_supplier.id,
             'location_dest_id': order.location_id.id,
             'picking_id': picking_id,
-            'partner_id': order.dest_address_id.id or order.partner_id.id,
+            'partner_id': order.dest_address_id.id or order.picking_type_id.warehouse_id.partner_id.id or False,
             'move_dest_id': False,
             'state': 'draft',
             'purchase_line_id': order_line.id,
