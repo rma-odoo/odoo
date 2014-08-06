@@ -37,6 +37,10 @@
 }
 .openerp .oe_timesheet_weekly .oe_view_nocontent .oe_view_nocontent_create:before {
   margin: -5px 0 0 -95px;
+  -o-transform: scaleY(-1);
+  -ms-transform: scaleY(-1);
+  -moz-transform: scaleY(-1);
+  -webkit-transform: scaleY(-1);
   transform: scaleY(-1);
 }
 .openerp .oe_timesheet_weekly .oe_view_nocontent {

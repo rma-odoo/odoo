@@ -213,7 +213,7 @@ openerp.hr_timesheet_day = function(instance) {
             var ignored_fields = self.ignore_fields();
                 _.each(self.days, function(day) {
                     var auth_keys = _.extend(_.clone(day.account_defaults), {
-                    id: true, name: true, amount:true, unit_amount: true, date: true, account_id:true, date_start: true,
+                    id: true, name: true, amount:true, unit_amount: true, date: true, account_id:true, date_start: true, sheet_id: true,
                     });
                     _.each(day.account_group, function(account) {
                         _.each(account,function(line){
@@ -360,9 +360,34 @@ openerp.hr_timesheet_day = function(instance) {
             var account = this.days[this.count].account_group[act_id];
             var el_clock = $(input).find("i.fa-clock-o");
             var el_cog = $(input).find('i.fa-cog');
+            var sheet_id = undefined;
+            for(var i = 0; i < this.days.length; i++){
+                $.each(this.days[i].account_group, function(j) {
+                    var data = self.days[i].account_group[j][0];
+                    if(data.sheet_id != undefined){
+                        sheet_id = (data.sheet_id instanceof Array) ? data.sheet_id[0] : data.sheet_id;
+                    }
+                });
+            }
             if((!_.has(account[0], "id")) || account[0].id == undefined){
-                alert("First you need to save record.");
-                return;
+                if(sheet_id != undefined){
+                    new instance.web.Model("hr.analytic.timesheet").call('create',[{
+                        'name' : account[0].name,
+                        'general_account_id' : (account[0].general_account_id instanceof Array) ? account[0].general_account_id[0] : account[0].general_account_id,
+                        'date' : account[0].date,
+                        'sheet_id' : sheet_id,
+                        'user_id' : (account[0].user_id instanceof Array) ? account[0].user_id[0] : account[0].user_id,
+                        'account_id' : account[0].account_id ,
+                        'unit_amount' : account[0].unit_amount,
+                        'date_start' : self.get_current_UTCDate(),
+                        'journal_id' : (account[0].journal_id instanceof Array) ? account[0].journal_id[0] : account[0].journal_id}])
+                    .then(function(res) {
+                        account[0].id = res;
+                    });
+                } else {
+                    alert("First you have to save record.");
+                    return;
+                }
             }
             if(!el_clock.hasClass("text-success")){
                 el_clock.addClass("text-success");
