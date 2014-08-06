@@ -34,8 +34,7 @@ class MailMail(osv.Model):
             index,length = body.index(url),len(url)
             alais_id = website_alias.create(cr, uid, {'url':url}, context=context)
             code = website_alias.browse(cr, uid, alais_id, context=context).code
-            parsed_uri = urlparse(url)
-            domain = 'uri.scheme/uri.netloc/'.format(uri=parsed_uri)
+            domain = '{uri.scheme}://{uri.netloc}/'.format(uri=urlparse(url))
             track_url = urljoin(domain, '/r/%(code)s' % {'code': code,})
             body = body[:index -1] + track_url + body[index+length+1:]
         print "newwwwwwwwwwwwwwwwww",body
