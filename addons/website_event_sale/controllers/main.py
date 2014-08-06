@@ -44,7 +44,7 @@ class website_event(website_event):
         for ticket_id, item in tickets.items():
             quantity, attendee_list = item
             ticket = ticket_obj.browse(cr, SUPERUSER_ID, int(ticket_id), context=context)
-            order_obj._cart_update(cr, uid, [sale_order.id], product_id=ticket.product_id.id, add_qty=int(quantity), context=dict(context, event_ticket_id=ticket.id, attendee_list=attendee_list))
+            sale_order._cart_update(product_id=ticket.product_id.id, add_qty=int(quantity), context=context, attendee={'attendee_list': attendee_list, 'event_ticket_id': ticket.id})
         return request.redirect("/shop/checkout")
 
     def _add_event(self, event_name="New Event", context={}, **kwargs):

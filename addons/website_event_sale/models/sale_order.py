@@ -11,7 +11,8 @@ class sale_order(osv.Model):
         line_ids = super(sale_order, self)._cart_find_product_line(cr, uid, ids, product_id, line_id, context=context)
         if line_id:
             return line_ids
-        event_ticket_id = context.get('event_ticket_id', False)
+        attendee = kwargs.get('attendee', {})
+        event_ticket_id = attendee and int(attendee.get('event_ticket_id', False))
         for so in self.browse(cr, uid, ids, context=context):
             if event_ticket_id:
                 domain = [('order_id', '=', so.id), ('event_ticket_id', '=', event_ticket_id)]
@@ -19,10 +20,10 @@ class sale_order(osv.Model):
                 domain = [('id', 'in', line_ids)]
             return self.pool.get('sale.order.line').search(cr, SUPERUSER_ID, domain, context=context)
 
-    def _website_product_id_change(self, cr, uid, ids, order_id, product_id, line_id=None, context=None):
+    def _website_product_id_change(self, cr, uid, ids, order_id, product_id, line_id=None, context=None, **kwargs):
         values = super(sale_order,self)._website_product_id_change(cr, uid, ids, order_id, product_id, line_id=line_id, context=None)
-        event_ticket_id = context.get('event_ticket_id', False)
-        attendee_list = context.get('attendee_list', [])
+        attendee = kwargs.get('attendee', {})
+        event_ticket_id = attendee and int(attendee.get('event_ticket_id', False))
         if not event_ticket_id:
             if line_id:
                 line = self.pool.get('sale.order.line').browse(cr, SUPERUSER_ID, line_id, context=context)
@@ -45,7 +46,7 @@ class sale_order(osv.Model):
             values['name'] = "%s: %s" % (ticket.event_id.name, ticket.name)
             event_attendee_ids = []
             attendee_obj = self.pool.get('sale.order.event.attendee')
-            for attendee in attendee_list:
+            for attendee in attendee.get('attendee_list', []):
                 if line_id:
                     attendee_ids = attendee_obj.search(cr, uid, [
                             ('sale_order_line_id', '=', line_id),
