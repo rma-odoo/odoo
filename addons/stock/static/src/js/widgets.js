@@ -146,7 +146,7 @@ function openerp_picking_widgets(instance){
             this.$('.oe_searchbox').keyup(function(event){
                 self.on_searchbox($(this).val());
             });
-            this.$('.js_pick_pack').click(function(){ self.getParent().pack(); });
+            this.$('.js_putinpack').click(function(){ self.getParent().pack(); });
             this.$('.js_drop_down').click(function(){ self.getParent().drop_down();});
             this.$('.js_clear_search').click(function(){
                 self.on_searchbox('');
