@@ -708,7 +708,6 @@
     </t>
 </template>
 
-
 <!-- Utility template: Post a Comment -->
 <template id="post_comment">
     <div class="row clearfix">

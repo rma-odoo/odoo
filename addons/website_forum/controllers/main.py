@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 from datetime import datetime
-from datetime import timedelta
 import werkzeug.urls
 import werkzeug.wrappers
 import simplejson
@@ -191,7 +190,6 @@ class WebsiteForum(http.Controller):
                 'content': post.get('content'),
                 'tag_ids': question_tag_ids,
             }, context=context)
-
         stat_data = Post.statistical_data(cr, uid, context=context)
         body = "On average {}% of the questions shared on social networks get an answer within {} hours \
                 and questions shared on two social networks have {}% more chance to get an answer than \

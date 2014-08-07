@@ -558,7 +558,6 @@ class Post(osv.Model):
         res_id = post.parent_id and "%s#answer-%s" % (post.parent_id.id, post.id) or post.id
         return "/forum/%s/question/%s" % (post.forum_id.id, res_id)
 
-
 class PostReason(osv.Model):
     _name = "forum.post.reason"
     _description = "Post Closing Reason"
