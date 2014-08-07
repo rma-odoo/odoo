@@ -134,6 +134,7 @@ class _column(object):
             ('_origin', self),                  # field interfaces self
             ('copy', self.copy),
             ('index', self.select),
+            ('manual', self.manual),
             ('string', self.string),
             ('help', self.help),
             ('readonly', self.readonly),
@@ -145,8 +146,10 @@ class _column(object):
             ('translate', self.translate),
             ('domain', self._domain),
             ('context', self._context),
+            ('change_default', self.change_default),
+            ('deprecated', self.change_default),
         ]
-        return dict(item for item in items if items[1])
+        return dict(item for item in items if item[1])
 
     def restart(self):
         pass
