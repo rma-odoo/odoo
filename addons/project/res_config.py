@@ -61,6 +61,14 @@ class project_configuration(osv.osv_memory):
         'generate_project_alias': fields.boolean("Automatically generate an email alias at the project creation",
             help="Odoo will generate an email alias at the project creation from project name."),
     }
+    
+    def _default_project_alias_domain(self, cr, uid, ids, context=None):
+        self.pool.get('ir.values').set_default(cr, uid, 'project.config.settings', 'generate_project_alias', True)
+        return True
+        
+    _defaults = {
+        'generate_project_alias': _default_project_alias_domain,
+    }
 
     def get_default_time_unit(self, cr, uid, fields, context=None):
         user = self.pool.get('res.users').browse(cr, uid, uid, context=context)
