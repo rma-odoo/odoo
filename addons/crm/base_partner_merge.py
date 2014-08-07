@@ -161,30 +161,29 @@ class MergePartnerAutomatic(osv.TransientModel):
             cr.execute(query, ())
             columns = []
             for data in cr.fetchall():
-                if data[0] != column:
+                if data[0] not in (column, 'res_id', 'res_model'):
                     columns.append(data[0])
 
             query_dic = {
                 'table': table,
                 'column': column,
-                'value': columns[0],
             }
+
             if len(columns) <= 1:
                 # unique key treated
-                query = """
-                    UPDATE "%(table)s" as ___tu
-                    SET %(column)s = %%s
-                    WHERE
-                        %(column)s = %%s AND
-                        NOT EXISTS (
-                            SELECT 1
-                            FROM "%(table)s" as ___tw
-                            WHERE
-                                %(column)s = %%s AND
-                                ___tu.%(value)s = ___tw.%(value)s
-                        )""" % query_dic
+                query_upd = 'UPDATE "%(table)s" SET %(column)s = %%s WHERE %(column)s = %%s' % query_dic
+                query_del = 'DELETE FROM %(table)s WHERE %(column)s = %%s' % query_dic
+
                 for partner_id in partner_ids:
-                    cr.execute(query, (dst_partner.id, partner_id, dst_partner.id))
+                    try:
+                        cr.execute("SAVEPOINT update_res_partner_value_savepoint")
+                        cr.execute(query_upd, (dst_partner.id, partner_id))
+                    except:
+                        cr.execute("ROLLBACK TO update_res_partner_value_savepoint")
+                        cr.execute(query_del, (partner_id,))
+                    else:
+                        cr.execute("RELEASE SAVEPOINT update_res_partner_value_savepoint")
+
             else:
                 cr.execute("SAVEPOINT recursive_partner_savepoint")
                 try:
