@@ -48,14 +48,12 @@
         <t t-set="head">
             <t t-call-assets="website_forum.assets_forum"/>
             <meta property="og:type" content="website" />
-            <meta content="summary" name="twitter:card" />
-            <t t-if="host_url">
-                <meta name="twitter:domain" t-attf-content="#{host_url}" />
-                <meta property="og:image" t-attf-content="#{host_url}logo.png" />
-            </t>
-            <meta property="og:title" t-attf-content="#{sharing_content}" />
-            <meta property="og:description" content="Odoo Forum" />
-            <meta property="og:url" t-attf-content="#{url}" />
+            <meta property="og:description" content="Odoo Form" />
+            <!-- JSH-Note : Following tags are dynamic in nature. Decide proper way to impliment it.
+            <meta property="og:image" content="" />
+            <meta property="og:title" content="" />
+            <meta property="og:url" content="" />
+            -->
         </t>
         <div class="container mt16">
             <div class="navbar navbar-default">
@@ -178,7 +176,7 @@
         </div>
         <div class="col-md-10 clearfix">
             <div class="question-name">
-                <a t-attf-href="/forum/#{ slug(forum) }/question/#{ slug(question) }" t-field="question.name"/>
+                <a t-attf-href="/forum/#{ slug(forum) }/question/#{ slug(question) }" id="question_name" t-field="question.name"/>
                     <span t-if="not question.active"><b> [Deleted]</b></span>
                     <span t-if="question.state == 'close'"><b> [Closed]</b></span>
             </div>
@@ -340,8 +338,8 @@
                 $("[data-toggle='popover']").popover();
             });
         </script>
-        <form t-attf-action="/forum/#{ slug(forum) }/question/new" method="post" role="form" class="tag_text">
-            <input type="text" name="question_name" required="True" t-attf-value="#{question_name}"
+        <form t-attf-data-target="/forum/#{ slug(forum) }/question/new" method="post" role="form" class="tag_text">
+            <input type="text" name="question_name" id="question_name_ask" required="True" t-attf-value="#{question_name}"
                 class="form-control mb16" placeholder="Your Question Title..."/>
             <input type="hidden" name="karma" t-attf-value="#{user.karma}" id="karma"/>
             <textarea name="content" required="True" class="form-control load_editor">
@@ -355,7 +353,39 @@
         <script type="text/javascript">
             CKEDITOR.replace("content");
         </script>
+        <t t-call="website_forum.share_dialog" />
     </t>
+</template>
+
+<!-- Share Dialog -->
+<template id="share_dialog">
+    <div class="modal fade" id="share_dialog_box" tabindex="-1" role="dialog" aria-labelledby="shareDialog" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&amp;times;</span><span class="sr-only">Close</span></button>
+                    <h4 class="modal-title" id="share_dialog_title">
+                    </h4>
+                </div>
+                <div class="modal-body">
+                    <div id="share_buttons row span12" style="text-align: center">
+                        <a style="cursor: pointer" onclick="open_share_dialog('twitter')" class="fa-stack fa-lg">
+                            <span class="fa fa-square fa-stack-2x"></span>
+                            <span class="fa fa-twitter fa-stack-1x fa-inverse"></span>
+                        </a>
+                        <a style="cursor: pointer" onclick="open_share_dialog('facebook')" class="fa-stack fa-lg">
+                            <span class="fa fa-square fa-stack-2x"></span>
+                            <span class="fa fa-facebook fa-stack-1x fa-inverse"></span>
+                        </a>
+                        <a style="cursor: pointer" onclick="open_share_dialog('linked-in')" class="fa-stack fa-lg">
+                            <span class="fa fa-square fa-stack-2x"></span>
+                            <span class="fa fa-linkedin fa-stack-1x fa-inverse"></span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </template>
 
 <!-- Edition: edit a post -->
@@ -433,7 +463,7 @@
         - no need to answer the same question twice. Also, please <b>don't forget to vote</b>
         - it really helps to select the best questions and answers!
     </p>
-    <form t-attf-action="/forum/#{ slug(forum) }/post/#{slug(question)}/new" method="post" role="form">
+    <form t-attf-data-target="/forum/#{ slug(forum) }/post/#{slug(question)}/new" id="forum_post_answer" method="post" role="form">
         <input type="hidden" name="karma" t-attf-value="#{user.karma}" id="karma"/>
         <textarea name="content" class="form-control load_editor" required="True"/>
         <button class="btn btn-primary" id="btn_ask_your_question">Post Your Answer</button>
@@ -441,6 +471,7 @@
     <script type="text/javascript">
         CKEDITOR.replace("content");
     </script>
+    <t t-call="website_forum.share_dialog" />
 </template>
 
 <template id="vote">
@@ -479,7 +510,7 @@
             </div>
             <div t-attf-class="col-md-10 #{not question.active and 'alert alert-danger' or ''}">
                 <h1 class="mt0">
-                    <a t-attf-href="/forum/#{ slug(forum) }/question/#{ slug(question) }" t-field="question.name"/>
+                    <a t-attf-href="/forum/#{ slug(forum) }/question/#{ slug(question) }" id="question_name" t-field="question.name"/>
                     <span t-if="not question.active"><b> [Deleted]</b></span>
                     <span t-if="question.state == 'close'"><b> [Closed]</b></span>
                 </h1>
@@ -589,9 +620,6 @@
                 <t t-call="website_forum.post_comment">
                     <t t-set="object" t-value="question"/>
                 </t>
-                <t t-if = "show_modal">
-                    <t t-call="website_forum.share_dialog" />
-                </t>
             </div>
         </div>
         <hr/>
@@ -680,46 +708,6 @@
     </t>
 </template>
 
-<!-- Sharing Dialog -->
-<template id="share_dialog">
-    <div class="modal fade" id="share_dialog_box" tabindex="-1" role="dialog" aria-labelledby="shareDialog" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&amp;times;</span><span class="sr-only">Close</span></button>
-                    <t t-if = "'Just' in sharing_content">
-                        <t t-set="title" t-value="'Thanks for answering this question'" />
-                        <t t-set="body" t-value="'Share the question and your answer to get more feedback from contributors. On average: 89% of the questions shared on social networks get an answer within 4 hours and questions shared on two social networks have 45% more chance to get an answer than unshared questions (Of course, compute right numbers).'" />
-                    </t>
-                    <t t-if = "'#help' in sharing_content">
-                        <t t-set="title" t-value="'Thanks for posting your question'" />
-                        <t t-set="body" t-value="'Share your question to improve your chance of having an answer. By sharing your answer, you will get 10 additional karma points if your answer is selected as the right one. See what you can do with karma. (This last sentence is a link)'" />
-                    </t>
-                    <h4 class="modal-title" id="share_dialog_title">
-                        <t t-esc="title" />
-                    </h4>
-                </div>
-                <div class="modal-body">
-                    <t t-esc="body" />
-                    <div id="share_buttons row span12" style="text-align: center">
-                        <a style="cursor: pointer" t-attf-onclick="javascript: window.open('https://twitter.com/intent/tweet?original_referer=' + encodeURIComponent('#{url}') + '&amp;text=' + encodeURIComponent('#{sharing_content}') + '&amp;url=' + encodeURIComponent('#{url}'), '', 'menubar=no, toolbar=no, resizable=yes, scrollbar=yes, height=600,width=600'); return false;" class="fa-stack fa-lg">
-                            <span class="fa fa-circle fa-stack-2x"></span>
-                            <span class="fa fa-twitter fa-stack-1x fa-inverse"></span>
-                        </a>
-                        <a style="cursor: pointer" t-attf-onclick="javascript: window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent('#{url}'),'','menubar=no, toolbar=no, resizable=yes, scrollbars=yes, height=600,width=600'); return false;" class="fa-stack fa-lg">
-                            <span class="fa fa-circle fa-stack-2x"></span>
-                            <span class="fa fa-facebook fa-stack-1x fa-inverse"></span>
-                        </a>
-                        <a style="cursor: pointer" t-attf-onclick="javascript: window.open('https://www.linkedin.com/shareArticle?mini=true&amp;url=' + encodeURIComponent('#{url}') + '&amp;title=' + encodeURIComponent('#{sharing_content}') + '&amp;summary=Odoo Forum&amp;source=Odoo forum','','menubar=no, toolbar=no, resizable=yes, srollbars=yes, height=600,width=600'); return false;" class="fa-stack fa-lg">
-                            <span class="fa fa-circle fa-stack-2x"></span>
-                            <span class="fa fa-linkedin fa-stack-1x fa-inverse"></span>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</template>
 
 <!-- Utility template: Post a Comment -->
 <template id="post_comment">

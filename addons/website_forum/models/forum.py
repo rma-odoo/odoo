@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from datetime import datetime
+from datetime import timedelta
 
 import openerp
 from openerp import tools
@@ -272,6 +273,10 @@ class Post(osv.Model):
                 'forum.post': (_get_post_from_hierarchy, ['parent_id', 'child_ids', 'is_correct'], 10),
             }
         ),
+        # share
+        'on_twitter' : fields.boolean("Shared on Twiiter"),
+        'on_facebook' : fields.boolean("Shared on Facebook"),
+        'on_linked_in' : fields.boolean("Shared on Linked-in"),
         # closing
         'closed_reason_id': fields.many2one('forum.post.reason', 'Reason'),
         'closed_uid': fields.many2one('res.users', 'Closed by', select=1),
@@ -308,6 +313,48 @@ class Post(osv.Model):
         'favourite_ids': list(),
         'child_ids': list(),
     }
+
+    def statistical_data(self, cr, uid, context=None):
+        res = {}
+        total_questions = len(self.search(cr, uid, [('parent_id', '=', False)], context=context))
+        question_ids = self.search(cr, uid, ['|', '|', ('on_twitter', '=', True), ('on_facebook', '=', True), ('on_linked_in', '=', True), ('parent_id', '=', False)], context=context)
+        total_shared_questions = len(question_ids)
+
+        # Percentage of Questions shared on any social network
+        res['percentage'] = round((float(total_shared_questions) / float(total_questions)) * 100)
+
+        questions = self.browse(cr, uid, question_ids, context=context)
+        responce_time = timedelta()
+        n = 0
+        for question in questions:
+            if question.child_ids:
+                answer_create_dates = [answer.create_date for answer in question.child_ids]
+                first_answer_date = datetime.strptime(min(answer_create_dates), '%Y-%m-%d %H:%M:%S')
+                question_create_date = datetime.strptime(question.create_date, '%Y-%m-%d %H:%M:%S')
+                responce_time += (first_answer_date - question_create_date)
+                n += 1
+
+        # Average replay time of all the shared questions
+        if responce_time:
+            responce_time = responce_time / n
+            # Finding hours by dividing total seconds with 3600(60 for min * 60 for hour)
+            res['average'] = round(responce_time.total_seconds() / 3600)
+        else:
+            res['average'] = 0
+
+        question_ids = self.search(cr, uid, ['|', '|', '&',('on_twitter', '=', True), ('on_facebook', '=', True), '&', ('on_linked_in', '=', True), ('on_facebook', '=', True), '&', ('on_linked_in', '=', True), ('on_twitter', '=', True), ('child_count', '!=', 0)], context=context)
+        # total_shared = Total number of questions shared on any two social network.
+        total_shared_questions = len(question_ids)
+
+        # total_question = Total number of questions shared and answred by users.
+        total_question = len(self.search(cr, uid, ['|', '|', ('on_twitter', '=', True), ('on_facebook', '=', True), ('on_linked_in', '=', True), ('child_count', '!=', 0)], context=context))
+
+        if total_question:
+            # Probablity of questions shared on more than two social networks and answered by users.
+            res['probablity'] = (float(total_shared_questions)/ float(total_question)) * 100
+        else:
+            res['probablity'] = 0
+        return res
 
     def create(self, cr, uid, vals, context=None):
         if context is None:
@@ -519,7 +566,6 @@ class PostReason(osv.Model):
     _columns = {
         'name': fields.char('Post Reason', required=True, translate=True),
     }
-
 
 class Vote(osv.Model):
     _name = 'forum.post.vote'

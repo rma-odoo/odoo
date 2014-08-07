@@ -1,4 +1,72 @@
+function open_share_dialog(social_network) {
+    var url = location.origin + location.pathname
+    if ($("#question_name_ask").length === 0) {
+        var text_to_share = "Just answered #odoo question " + url + " " + $("#question_name").text()
+    } else {
+        url = location.origin + $("#share_dialog_box").data("url");
+        var text_to_share = $("#question_name_ask").val() + " #odoo #help " + url
+    }
+    if (social_network == 'twitter') {
+        var sharing_url = 'https://twitter.com/intent/tweet?original_referer=' + encodeURIComponent(url) + '&amp;text=' + encodeURIComponent(text_to_share);
+        $("#share_dialog_box").data("twitter", true);
+    } else if (social_network == 'linked-in') {
+        var sharing_url = 'https://www.linkedin.com/shareArticle?mini=true&amp;url=' + encodeURIComponent(url) + '&amp;title=' + encodeURIComponent(text_to_share) + '&amp;summary=Odoo Forum&amp;source=Odoo forum';
+        $("#share_dialog_box").data("linked_in", true);
+    } else {
+        var sharing_url = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url);
+        $("#share_dialog_box").data("facebook" , true);
+    }
+    window.open(sharing_url, '', 'menubar=no, toolbar=no, resizable=yes, scrollbar=yes, height=600,width=600');
+    return false;
+}
+
+function decode_like_post(values_serialize) {
+    decode_values = {};
+    for (value in values_serialize) {
+        decode_values[values_serialize[value]['name']] = values_serialize[value]['value'];
+    }
+    return decode_values;
+}
+
+function redirect_user ($form) {
+    var path = $form.data("target");
+    openerp.jsonRpc(path,  "call", decode_like_post($form.serializeArray()))
+        .then(function(result) {
+            $(".modal-title").text(result['title']);
+            $(".modal-body").prepend(result['body']);
+            $("#share_dialog_box").data({
+                "id" : result['question_id'],
+                "twitter" : false,
+                "facebook" : false,
+                "linked_in" : false,
+                "url" : result['redirect_url'],
+            }).on('hidden.bs.modal', function() {
+                var vals = [parseInt($("#share_dialog_box").data('id'))]
+                vals.push ({
+                    'on_twitter' : $(this).data("twitter"),
+                    'on_facebook' : $(this).data("facebook"),
+                    'on_linked_in' : $(this).data("linked_in"),
+                });
+                var Post = openerp.website.session.model('forum.post')
+                Post.call('write', vals).then(function(data) {
+                    window.location = result['redirect_url'];
+                });
+            }).modal("show"); });
+}
+
 $(document).ready(function () {
+
+    $(".tag_text").submit(function(event) {
+        event.preventDefault();
+        CKEDITOR.instances['content'].destroy();
+        redirect_user($(this));
+    });
+
+    $("#forum_post_answer").submit(function(event) {
+        event.preventDefault();
+        CKEDITOR.instances['content'].destroy();
+        redirect_user($(this));
+    });
 
     $('.karma_required').on('click', function (ev) {
         var karma = $(ev.currentTarget).data('karma');
@@ -14,16 +82,6 @@ $(document).ready(function () {
             }
         }
     });
-
-    if(typeof $("#share_dialog_box") !== 'undefined') {
-        $("#share_dialog_box").modal("show");
-    }
-    var transition_value = "background-color 1s";
-    $(location.hash).css({"-webkit-transition" : transition_value, "-moz-transition" : transition_value, "transition" : transition_value, "-o-transition" : transition_value})
-    .one("webkitTransitionEnd transitionend oTransitionEnd MSTransitionEnd",
-        function() {
-            $(this).removeClass("label-primary");
-        }).addClass("label-primary");
 
     $('.vote_up,.vote_down').not('.karma_required').on('click', function (ev) {
         ev.preventDefault();

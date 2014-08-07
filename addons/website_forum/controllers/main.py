@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from datetime import datetime
+from datetime import timedelta
 import werkzeug.urls
 import werkzeug.wrappers
 import simplejson
@@ -168,7 +169,7 @@ class WebsiteForum(http.Controller):
         values = self._prepare_forum_values(forum=forum, searches={},  header={'ask_hide': True})
         return request.website.render("website_forum.ask_question", values)
 
-    @http.route('/forum/<model("forum.forum"):forum>/question/new', type='http', auth="user", methods=['POST'], website=True)
+    @http.route('/forum/<model("forum.forum"):forum>/question/new', type='json', auth="user", methods=['POST'], website=True)
     def question_create(self, forum, **post):
         cr, uid, context = request.cr, request.uid, request.context
         Tag = request.registry['forum.tag']
@@ -182,14 +183,26 @@ class WebsiteForum(http.Controller):
                 else:
                     question_tag_ids.append((0, 0, {'name': tag, 'forum_id': forum.id}))
 
-        new_question_id = request.registry['forum.post'].create(
+        Post = request.registry['forum.post']
+        new_question_id = Post.create(
             request.cr, request.uid, {
                 'forum_id': forum.id,
                 'name': post.get('question_name'),
                 'content': post.get('content'),
                 'tag_ids': question_tag_ids,
             }, context=context)
-        return werkzeug.utils.redirect("/forum/%s/question/%s?sh=%s&type=q" % (slug(forum), new_question_id, new_question_id))
+
+        stat_data = Post.statistical_data(cr, uid, context=context)
+        body = "On average {}% of the questions shared on social networks get an answer within {} hours \
+                and questions shared on two social networks have {}% more chance to get an answer than \
+                unshared questions".format(stat_data['percentage'], stat_data['average'], stat_data['probablity'])
+        res = {
+            'redirect_url' : '/forum/%s/question/%s' % (slug(forum), new_question_id),
+            'title' : 'Thanks for posting your Question !',
+            'body' : body,
+            'question_id' : new_question_id,
+        }
+        return res
 
     @http.route(['''/forum/<model("forum.forum"):forum>/question/<model("forum.post", "[('forum_id','=',forum[0]),('parent_id','=',False)]"):question>'''], type='http', auth="public", website=True)
     def question(self, forum, question, **post):
@@ -197,22 +210,6 @@ class WebsiteForum(http.Controller):
         # increment view counter
         request.registry['forum.post'].set_viewed(cr, SUPERUSER_ID, [question.id], context=context)
 
-        url = request.httprequest.url
-        show_modal = False
-        index_parameter = url.find('?')
-        if index_parameter != -1:
-            url = url[:index_parameter]
-        print("URL : {}".format(url))
-        if ('type' in post) and (post['type'] == 'a'):
-            sharing_content = "Just answered #odoo " + question.name
-            url += '?type=a'
-            if ('sh' in post):
-                url += '#answer-' + post['sh']
-                show_modal = True
-        else:
-            sharing_content = question.name + " #odoo #help"
-        if ('sh' in post) and ('type' in post) and (post['type'] == 'q'):
-            show_modal = True
         if question.parent_id:
             redirect_url = "/forum/%s/question/%s" % (slug(forum), slug(question.parent_id))
             return werkzeug.utils.redirect(redirect_url, 301)
@@ -225,10 +222,6 @@ class WebsiteForum(http.Controller):
             'header': {'question_data': True},
             'filters': filters,
             'reversed': reversed,
-            'host_url': request.httprequest.host_url,
-            'url' : url,
-            'sharing_content' : sharing_content,
-            'show_modal' : show_modal,
         })
         return request.website.render("website_forum.post_description_full", values)
 
@@ -292,7 +285,7 @@ class WebsiteForum(http.Controller):
     # Post
     # --------------------------------------------------
 
-    @http.route('/forum/<model("forum.forum"):forum>/post/<model("forum.post"):post>/new', type='http', auth="public", methods=['POST'], website=True)
+    @http.route('/forum/<model("forum.forum"):forum>/post/<model("forum.post"):post>/new', type='json', auth="public", methods=['POST'], website=True)
     def post_new(self, forum, post, **kwargs):
         if not request.session.uid:
             return login_redirect()
@@ -302,7 +295,14 @@ class WebsiteForum(http.Controller):
                 'parent_id': post.id,
                 'content': kwargs.get('content'),
             }, context=request.context)
-        return werkzeug.utils.redirect("/forum/%s/question/%s?sh=%s&type=a" % (slug(forum), slug(post), new_answer_id))
+        res = {
+            'redirect_url' : "/forum/%s/question/%s" % (slug(forum), slug(post)),
+            'title' : 'Thanks for posting your Answer !',
+            'body' : "By Sharing your answer, you will get 10 additional karma points if your answer is selected as the right one.\
+                    <a>see what you can do with karma.</a>",
+            'question_id' : post.id,
+        }
+        return res
 
     @http.route('/forum/<model("forum.forum"):forum>/post/<model("forum.post"):post>/comment', type='http', auth="public", methods=['POST'], website=True)
     def post_comment(self, forum, post, **kwargs):
