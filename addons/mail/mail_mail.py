@@ -294,7 +294,7 @@ class mail_mail(osv.Model):
                 for email in email_list:
                     msg = ir_mail_server.build_email(
                         email_from = mail.email_from,
-                        email_to = email.get('email_to'),
+                        email_to = email.get('email_to') or ['<%s>' %(partner.email) for partner in mail.partner_ids],
                         subject = email.get('subject'),
                         body = email.get('body'),
                         body_alternative = email.get('body_alternative'),
