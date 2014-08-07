@@ -883,6 +883,7 @@ class sale_order_line(osv.osv):
         'company_id': fields.related('order_id', 'company_id', type='many2one', relation='res.company', string='Company', store=True, readonly=True),
         'delay': fields.float('Delivery Lead Time', required=True, help="Number of days between the order confirmation and the shipping of the products to the customer", readonly=True, states={'draft': [('readonly', False)]}),
         'procurement_ids': fields.one2many('procurement.order', 'sale_line_id', 'Procurements'),
+        'product_tmpl_id': fields.related('product_id', 'product_tmpl_id', type='many2one', relation='product.template', string='Product Template'),
     }
     _order = 'order_id desc, sequence, id'
     _defaults = {
@@ -1059,7 +1060,7 @@ class sale_order_line(osv.osv):
         result = {}
         warning_msgs = ''
         product_obj = product_obj.browse(cr, uid, product, context=context_partner)
-
+        result['product_tmpl_id'] = product_obj.product_tmpl_id.id
         uom2 = False
         if uom:
             uom2 = product_uom_obj.browse(cr, uid, uom)

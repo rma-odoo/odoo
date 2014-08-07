@@ -122,6 +122,7 @@
                                     </header>
                                     <group>
                                         <group>
+                                            <field name="product_tmpl_id" invisible="1"/>
                                             <field name="product_id"
                                                 context="{'partner_id':parent.partner_id, 'quantity':product_uom_qty, 'pricelist':parent.pricelist_id, 'uom':product_uom}"
                                                 groups="base.group_user"
