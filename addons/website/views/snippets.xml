@@ -974,23 +974,23 @@
 
     <div data-snippet-id='resize'
         data-selector="section, :not(.gallery > .container) > .carousel, .parallax"
-        data-selector-children=".oe_structure, [data-oe-type=html]">
+        data-drop-in=".oe_structure, [data-oe-type=html]">
     </div>
 
     <div data-snippet-id='margin-x'
         data-selector=".row > [class*='col-md-']"
-        data-selector-vertical-children='.row'>
+        data-drop-in-vertical='.row'>
     </div>
 
     <div data-snippet-id='content'
         data-selector="blockquote, .well, .panel, .oe_share"
-        data-selector-siblings="p, h1, h2, h3, blockquote, .well, .panel, .oe_share"
-        data-selector-children=".content">
+        data-drop-near="p, h1, h2, h3, blockquote, .well, .panel, .oe_share"
+        data-drop-in=".content">
     </div>
 
     <div data-snippet-id='separator'
         data-selector="hr"
-        data-selector-children=".oe_structure, [data-oe-type=html]">
+        data-drop-in=".oe_structure, [data-oe-type=html]">
     </div>
 
     <div data-snippet-id='parallax'
