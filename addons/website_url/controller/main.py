@@ -14,10 +14,11 @@ class Website_Url(http.Controller):
             country_id = request.registry.get('res.country').search(request.cr, SUPERUSER_ID, [('code','=',request.session.geoip.get('country_code'))])
             vals = {
                     'alias_id':rec.get('id'),
-                    'create_id':datetime.datetime.now().date(),
+                    'create_date':datetime.datetime.now().date(),
                     'ip':request.httprequest.remote_addr,
                     'country_id': country_id and country_id[0] or False
                     }
             request.registry.get('website.alias.click').create(request.cr, SUPERUSER_ID, vals, context=request.context)
-        return werkzeug.utils.redirect(rec.get('url'))
+            print "reccccccccccccc",rec.get('url')
+            return werkzeug.utils.redirect(rec.get('url'))
 

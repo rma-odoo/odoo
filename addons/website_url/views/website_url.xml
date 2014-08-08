@@ -12,8 +12,8 @@
                     <sheet>
                         <group>
                             <field name="url"/>
-                            <field name="code"/>
-                            <field name="count"/>
+                            <field name="code" class="oe_read_only" />
+                            <field name="count" class="oe_read_only" />
                         </group>
                     </sheet>
                 </form>

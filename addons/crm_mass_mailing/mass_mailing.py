@@ -26,6 +26,7 @@ class MassMailingCampaign(osv.Model):
 class MailMail(osv.Model):
     _name = 'mail.mail'
     _inherit = ['mail.mail']
+
     def convert_link(self,cr, uid, body, context=None):
         url_regex = r'https?://[^\s<>"]+|www\.[^\s<>"]+'
         urls = re.findall(url_regex, body)
@@ -34,11 +35,11 @@ class MailMail(osv.Model):
             index,length = body.index(url),len(url)
             alais_id = website_alias.create(cr, uid, {'url':url}, context=context)
             code = website_alias.browse(cr, uid, alais_id, context=context).code
-            domain = '{uri.scheme}://{uri.netloc}/'.format(uri=urlparse(url))
-            track_url = urljoin(domain, '/r/%(code)s' % {'code': code,})
+            base_url = self.pool.get('ir.config_parameter').get_param(cr, uid, 'web.base.url')
+            track_url = urljoin(base_url, '/r/%(code)s' % {'code': code,})
             body = body[:index -1] + track_url + body[index+length+1:]
-        print "newwwwwwwwwwwwwwwwww",body
         return body
+
     def send_get_mail_body(self, cr, uid, mail, partner=None, context=None):
         body = super(MailMail, self).send_get_mail_body(cr, uid, mail, partner=partner, context=context)
         return self.convert_link(cr, uid, body, context)

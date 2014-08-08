@@ -37,9 +37,11 @@ class MailMailStats(osv.Model):
         click_obj = self.pool.get('website.alias.click')
         res = {}
         for alais in self.browse(cr, uid, ids, context=context):
-            return res
+            max_id = max([al.id for al in alais.alais_click_ids if al])
+            alais_click = self.pool.get('website.alias.click').browse(cr, uid, max_id, context=context)
+            res[alais.id] = alais_click.click_date
+        return res
 
-            res[alais.id] = alais.alais_click_ids and alais.alais_click_ids[0].create_date or False
     #need to test
     def click_alais(self, cr, uid, ids, context=None):
         for click in self.browse(cr, uid, ids, context=context):
