@@ -52,7 +52,6 @@ class base_language_install(osv.osv_memory):
                 context = {'overwrite': True}
             modobj.update_translations(cr, uid, mids, lang, context or {})
             self.write(cr, uid, ids, {'state': 'done'}, context=context)
-            self.pool.get('res.users').write(cr, uid, uid, {'lang': lang}, context=context)
         return {
             'name': _('Language Pack'),
             'view_type': 'form',

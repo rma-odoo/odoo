@@ -1951,7 +1951,7 @@
     </div>
 </t>
 <t t-name="alertbox">
-    <div id="alertbox" class="alert alert-warning" style="line-height:0px;margin-bottom:3px;">You have updated the <b><t t-esc="widget.string"/></b> for <b><t t-esc="widget.get_value()"/></b> in <b> <t t-esc="widget.view.session.user_context.lang"/></b>. 
+    <div id="alertbox" class="alert alert-warning" style="line-height:0px;margin-bottom:3px;">You have updated the <b><t t-esc="widget.string"/></b> for <b><t t-esc="widget.get_value()"/></b> in <b> <t t-esc="lang"/></b>. 
         <a href="#">Update translations</a>
         <a class="close" data-dismiss="alert" href="#" aria-hidden="true" style=" line-height: 0px;">x</a>
     </div>

@@ -722,13 +722,15 @@ instance.web.FormView = instance.web.View.extend(instance.web.form.FieldManagerM
         });
         this.$el.find('#alertbox').remove();
         
-        _.each(_.keys(values), function(field_name){
-           var trans_field = _.find(self.translatable_fields, function(field){ return field_name == field.name; });
-            if(trans_field){
-                var temp = $(QWeb.render('alertbox', {'widget':trans_field}));
-                self.$el.find('.oe_form_sheet').prepend(temp);
-                $(temp).find('a:first').click(trans_field.on_translate);
-            }
+        return new instance.web.Model('res.lang').call('search_read',[ [['code','=', this.session.user_context.lang]], ['name'] ], {context: self.dataset.context}).then(function(result){
+            _.each(_.keys(values), function(field_name){
+                    var trans_field = _.find(self.translatable_fields, function(field){ return field_name == field.name; });
+                    if(trans_field){
+                        var temp = $(QWeb.render('alertbox', {'widget':trans_field,'lang':result[0].name}));
+                        self.$el.find('.oe_form_sheet').prepend(temp);
+                        $(temp).find('a:first').click(trans_field.on_translate);
+                    }
+            });
         });
     },
     on_button_cancel: function(event) {
