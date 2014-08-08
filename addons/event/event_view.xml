@@ -199,12 +199,12 @@
                     <field name="color"/>
                     <templates>
                     <t t-name="kanban-box">
-                      <div t-attf-class="oe_kanban_color_#{kanban_getcolor(record.color.raw_value)} oe_kanban_card oe_event_kanban_view">
+                      <div t-attf-class="oe_kanban_color_#{kanban_getcolor(record.color.raw_value)} oe_kanban_card oe_kanban_global_click oe_event_kanban_view">
                            <div class="oe_dropdown_toggle oe_dropdown_kanban">
                                 <span class="oe_e">í</span>
                                 <ul class="oe_dropdown_menu">
                                     <t t-if="widget.view.is_action_enabled('edit')">
-                                        <li><a type="edit">Edit...</a></li>
+                                        <li><a type="edit">Event Setting</a></li>
                                     </t>
                                     <t t-if="widget.view.is_action_enabled('delete')">
                                         <li><a type="delete">Delete</a></li>
@@ -229,10 +229,11 @@
                                         <a name="%(act_event_list_register_event)d" type="action">
                                           <t t-if="(record.seats_reserved.raw_value + record.seats_unconfirmed.raw_value) > 0"> 
                                           <t t-esc="record.seats_reserved.raw_value + record.seats_unconfirmed.raw_value"/> Attendees</t>
-                                          <t t-if="(record.seats_reserved.raw_value + record.seats_unconfirmed.raw_value) lte 0">No Attendees</t>
+                                          <t t-if="(record.seats_reserved.raw_value + record.seats_unconfirmed.raw_value) lte 0">
+                                          <t t-esc="record.seats_reserved.raw_value + record.seats_unconfirmed.raw_value"/> Attendees</t>
                                         </a>
                                         <t t-if="record.seats_max.raw_value > 0">
-                                            <field name="seats_reserved" widget="gauge" options="{'max_field': 'seats_max' , 'levelcolors': ['#a9d70b', '#f9c802', '#ff0000']}" style="width:130px; height: 100px; cursor: pointer;"/>
+                                            <field name="seats_reserved" widget="gauge" options="{'max_field': 'seats_max' , 'on_change': 'action_seats_max', 'gauge_value_field': 'seats_max','levelcolors': ['#a9d70b', '#f9c802', '#ff0000']}" style="width:130px; height: 100px; cursor: pointer;"/>
                                         </t>
                                     </div>
                                     <div class="col-md-4" name="event_kanban_view" id="oe_event_tracks">

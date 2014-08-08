@@ -6,12 +6,10 @@
             <field name="name">Event Sponsors</field>
             <field name="model">event.sponsor</field>
             <field name="arch" type="xml">
-                <tree string="Event Sponsor">
-                    <field name="event_id"/>
-                    <field name="sponsor_type_id"/>
+                <tree string="Event Sponsor" editable="bottom">
                     <field name="partner_id"/>
+                    <field name="sponsor_type_id"/>
                     <field name="url"/>
-                    <field name="sequence"/>
                 </tree>
             </field>
         </record>
@@ -257,22 +255,29 @@
                     <xpath expr="//templates" position="before">
                         <field name="count_tracks"/>
                         <field name="sponsor_ids"/>
+                        <field name="show_tracks"/>
                     </xpath>
                     <xpath expr="//div[@name='event_kanban_view']" position="inside">
                       <div class="oe_event_tracks">
                       <a name="%(website_event_track.act_event_list_tracks)d" 
                         type="action" >
                         <t t-if="record.count_tracks.raw_value > 0">
-                        <t t-esc="record.count_tracks.raw_value" /> Tracks</t>
-                        <t t-if="record.count_tracks.raw_value lte 0">No Tracks</t></a>
+                        <t t-esc="record.count_tracks.raw_value" /> Tracks</t></a>
+                        <t t-if="record.count_tracks.raw_value lte 0" />
                       </div><br/>
                       <div class="oe_event_sponsors">
                       <a name="%(website_event_track.action_event_sponsors)d" 
                         type="action" >
                         <t t-if="record.sponsor_ids.raw_value.length > 0"> 
-                        <t t-esc="record.sponsor_ids.raw_value.length" /> Sponsors</t>
-                        <t t-if="record.sponsor_ids.raw_value.length lte 0">No Sponsor</t></a>
+                        <t t-esc="record.sponsor_ids.raw_value.length" /> Sponsors</t></a>
+                        <t t-if="record.sponsor_ids.raw_value.length lte 0" />
                       </div><br/><br/>
+                    </xpath>
+                    <xpath expr="//div[@name='event_kanban_view'][last()]" position="inside">
+                      <div class="oe_event_agenda">
+                         <t t-if="record.show_tracks.raw_value">
+                         <a t-attf-href="{record.website_url.raw_value}/agenda">Agenda</a></t>
+                      </div>
                     </xpath>
                 </data>
             </field>

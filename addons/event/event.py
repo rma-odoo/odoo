@@ -118,6 +118,10 @@ class event_event(models.Model):
     date_tz = fields.Selection('_tz_get', string='Timezone',
                         default=lambda self: self._context.get('tz', 'UTC'))
 
+    @api.model
+    def action_seats_max(self, id, value):
+        return self.search([('id','=',id)]).write({'seats_max': value})
+
     @api.one
     @api.depends('date_tz', 'date_begin')
     def _compute_date_begin_tz(self):
@@ -381,8 +385,9 @@ class event_registration(models.Model):
     @api.onchange('partner_id')
     def _onchange_partner(self):
         if self.partner_id:
-            contact = self.partner_id.address_get().get('default', False)
-            if contact:
+            contact_id = self.partner_id.address_get().get('default', False)
+            if contact_id:
+                contact = self.env['res.partner'].search([('id', '=', contact_id)])
                 self.name = contact.name
                 self.email = contact.email
                 self.phone = contact.phone

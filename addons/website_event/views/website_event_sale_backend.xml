@@ -28,8 +28,8 @@
                         <field name="website_url"/>
                     </xpath>
                     <xpath expr="//div[@name='event_kanban_view'][last()]" position="inside">
-                      <div class="oe_event_agenda">
-                         <a t-attf-href="{record.website_url.raw_value}/agenda">Agenda</a>
+                      <div class="oe_event_website_link">
+                         <a t-attf-href="{record.website_url.raw_value}">Public View</a>
                       </div>
                     </xpath>
                 </data>

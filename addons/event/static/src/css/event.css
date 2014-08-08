@@ -24,7 +24,7 @@
   padding-top: 35px;
   padding-right:0px !important;
 }
-.oe_event_tracks, .oe_event_sponsors, .oe_event_agenda{
+.oe_event_tracks, .oe_event_sponsors, .oe_event_agenda .oe_event_website_link{
   text-align:center;
   display: inline;
   vertical-align: middle;
