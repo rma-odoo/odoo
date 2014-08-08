@@ -1,6 +1,13 @@
 import string
 import random
+from urlparse import urlparse
+from urlparse import urljoin
 from openerp.osv import osv, fields
+
+ALLOWED_SCHEMES = ['http', 'https', 'ftp', 'ftps']
+
+def VALIDATE_URL(url):
+    return urlparse(url)[0] in ALLOWED_SCHEMES and 2048 >= len(url)
 
 class website_alias(osv.Model):
     _name = "website.alias"
@@ -40,7 +47,13 @@ class website_alias(osv.Model):
                    'website.alias.click': (alias_click,['alias_id'],20)
                    }),
     }
-
+    def create_shorten_url(self, cr, uid, url, context=None):
+        if not VALIDATE_URL(url): return False
+        base_url = self.pool.get('ir.config_parameter').get_param(cr, uid, 'web.base.url')
+        new_id = self.create(cr, uid, url, context=context)
+        code = self.browse(cr, uid, new-id, context=context).code
+        return urljoin(base_url, '/r/%(code)s' % {'code': code,})
+ 
     sql_constraints = [
         ('code', 'unique( code )', 'Code must be unique.'),
     ]
