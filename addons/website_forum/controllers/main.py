@@ -201,6 +201,14 @@ class WebsiteForum(http.Controller):
             'question_id' : new_question_id,
         }
         return res
+    @http.route(['''/forum/<model("forum.forum"):forum>/question/<model("forum.post", "[('forum_id','=',forum[0]),('parent_id','=',False)]"):question>/answer'''], type='http', auth="public", website=True)
+    def answer(self, forum, question, **post):
+        cr, uid, context = request.cr, request.uid, request.context
+        print("request.http {}".format(request.httprequest.base_url))
+        values = {
+            'question': question,
+        }
+        return request.website.render("website_forum.answer_share", values)
 
     @http.route(['''/forum/<model("forum.forum"):forum>/question/<model("forum.post", "[('forum_id','=',forum[0]),('parent_id','=',False)]"):question>'''], type='http', auth="public", website=True)
     def question(self, forum, question, **post):

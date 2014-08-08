@@ -42,18 +42,35 @@
     </form>
 </template>
 
+<template id="opengraph_tags">
+    <meta property="og:type" content="website"/>
+    <meta property="og:description" content="Odoo Form"/>
+    <meta property="og:title" t-attf-content="#{title}" />
+    <meta property="og:url" t-att-content="url_for(request.httprequest.base_url)" />
+    <meta property="og:image" t-att-content="url_for(request.httprequest.host_url + 'logo.png')"/>
+</template>
+
+<!-- Share page for Opengraph Scrapper -->
+<template id="answer_share">
+    <t t-call="website_forum.opengraph_tags">
+        <t t-set="url" t-value="url_for(request.httprequest.base_url.replace('/answer', ''))"/>
+        <t t-set="title" t-value="'Just answered #answer question ' + url + ' ' + question.name"/>
+    </t>
+    <script type="text/javascript">
+        window.location.href = window.location.href.replace('/answer', '')
+    </script>
+</template>
+
 <!-- Page Index -->
 <template id="header" name="Forum Index">
     <t t-call="website.layout">
         <t t-set="head">
             <t t-call-assets="website_forum.assets_forum"/>
-            <meta property="og:type" content="website" />
-            <meta property="og:description" content="Odoo Form" />
-            <!-- JSH-Note : Following tags are dynamic in nature. Decide proper way to impliment it.
-            <meta property="og:image" content="" />
-            <meta property="og:title" content="" />
-            <meta property="og:url" content="" />
-            -->
+            <t t-if="question">
+                <t t-call="website_forum.opengraph_tags">
+                    <t t-set="title" t-value="question.name + ' #odoo #help ' + url_for(request.httprequest.base_url)" />
+                </t>
+            </t>
         </t>
         <div class="container mt16">
             <div class="navbar navbar-default">

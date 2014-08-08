@@ -13,7 +13,7 @@ function open_share_dialog(social_network) {
         var sharing_url = 'https://www.linkedin.com/shareArticle?mini=true&amp;url=' + encodeURIComponent(url) + '&amp;title=' + encodeURIComponent(text_to_share) + '&amp;summary=Odoo Forum&amp;source=Odoo forum';
         $("#share_dialog_box").data("linked_in", true);
     } else {
-        var sharing_url = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url);
+        var sharing_url = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url + '/answer');
         $("#share_dialog_box").data("facebook" , true);
     }
     window.open(sharing_url, '', 'menubar=no, toolbar=no, resizable=yes, scrollbar=yes, height=600,width=600');
