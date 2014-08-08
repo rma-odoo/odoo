@@ -830,7 +830,7 @@
 
 <template id="snippet_options">
 
-    <div data-snippet-id='blog-style'
+    <div data-option='blog-style'
         data-selector="section:not(.carousel):not(.parallax):not(.gallery)">
         <li class="dropdown-submenu">
             <a tabindex="-1" href="#">Style</a>
@@ -841,7 +841,7 @@
         </li>
     </div>
 
-    <div data-snippet-id='background'
+    <div data-option='background'
         data-selector="section, :not(.gallery > .container) > .carousel, .parallax">
         <li class="dropdown-submenu" data-select_class="oe_img_bg">
             <a tabindex="-1" href="#">Background</a>
@@ -885,7 +885,7 @@
         </li>
     </div>
      
-    <div data-snippet-id='gallery' data-selector=".gallery">
+    <div data-option='gallery' data-selector=".gallery">
         <li class="dropdown-submenu">
             <a tabindex="-2" href="#">Mode</a>
             
@@ -950,7 +950,7 @@
         </li>
     </div>
 
-    <div data-snippet-id='carousel'
+    <div data-option='carousel'
         data-selector=":not(.gallery > .container) > .carousel">
         <li class="dropdown-submenu">
             <a tabindex="-2" href="#">Slideshow speed</a>
@@ -968,32 +968,32 @@
         <li data-remove_slide="true"> <a href="#" >Remove Slide</a></li>
     </div>
 
-    <div data-snippet-id='margin-y'
+    <div data-option='margin-y'
         data-selector="section, .row > [class*='col-md-'], :not(.gallery > .container) > .carousel, .parallax, hr">
     </div>
 
-    <div data-snippet-id='resize'
+    <div data-option='resize'
         data-selector="section, :not(.gallery > .container) > .carousel, .parallax"
         data-drop-in=".oe_structure, [data-oe-type=html]">
     </div>
 
-    <div data-snippet-id='margin-x'
+    <div data-option='margin-x'
         data-selector=".row > [class*='col-md-']"
         data-drop-in-vertical='.row'>
     </div>
 
-    <div data-snippet-id='content'
+    <div data-option='content'
         data-selector="blockquote, .well, .panel, .oe_share"
         data-drop-near="p, h1, h2, h3, blockquote, .well, .panel, .oe_share"
         data-drop-in=".content">
     </div>
 
-    <div data-snippet-id='separator'
+    <div data-option='separator'
         data-selector="hr"
         data-drop-in=".oe_structure, [data-oe-type=html]">
     </div>
 
-    <div data-snippet-id='parallax'
+    <div data-option='parallax'
         data-selector=".parallax">
         <li class="dropdown-submenu">
             <a tabindex="-1" href="#">Scroll Speed</a>
@@ -1008,12 +1008,12 @@
         </li>
     </div>
 
-    <div data-snippet-id='media'
+    <div data-option='media'
         data-selector="img:not(.cke_iframe), .media_iframe_video, span.fa, i.fa, .glyphicon">
         <li><a href="#" class="edition">Change...</a></li>
     </div>
 
-    <div data-snippet-id='transform'
+    <div data-option='transform'
         data-selector="img:not(.cke_iframe), .media_iframe_video, span.fa, i.fa">
         <li class="dropdown-submenu">
             <a tabindex="-1" href="#">Style</a>
