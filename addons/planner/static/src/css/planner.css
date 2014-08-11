@@ -3,13 +3,18 @@
   height: 10px;
   margin: 10px 20px 0 0;
 }
-#oe_main_menu_navbar.navbar .oe_planner_systray div.progress {
-  height: 10px;
+#oe_main_menu_navbar.navbar .oe_planner_systray div.oe_planner_progress {
   cursor: pointer;
+}
+#oe_main_menu_navbar.navbar .oe_planner_systray .oe_planner_progress div.progress {
+  height: 13px;
 }
 
 .planner-dialog {
   width: 90%;
   margin-left: auto;
   margin-right: auto;
+}
+.planner-dialog .oe_planner .planner_footer .btn-default {
+  background-color: #bdbaba;
 }

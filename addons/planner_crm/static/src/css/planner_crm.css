@@ -1,3 +1,6 @@
+.oe_planner .footer-well {
+  height: 130px;
+}
 .oe_planner #planner_page2 .dropdown-menu, .oe_planner #planner_page3 .dropdown-menu {
   min-width: 290px;
 }

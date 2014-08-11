@@ -149,12 +149,14 @@
                                                 <span class="caret"></span>
                                                 </button>
                                                 <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1">
-                                                    <li class="fa fa-check"> Better visibility on team activities</li>
-                                                    <li class="fa fa-check"> Have clear forecasts on sales</li>
-                                                    <li class="fa fa-check"> Grow leads acquisition</li>
-                                                    <li class="fa fa-check"> Improve sales performance</li>
-                                                    <li class="fa fa-check"> Upsell to existing customers</li>
-                                                    <li class="fa fa-check"> Better structure the sales process</li>
+                                                    <ul>
+                                                        <li> Better visibility on team activities</li>
+                                                        <li> Have clear forecasts on sales</li>
+                                                        <li> Grow leads acquisition</li>
+                                                        <li> Improve sales performance</li>
+                                                        <li> Upsell to existing customers</li>
+                                                        <li> Better structure the sales process</li>
+                                                    </ul>
                                                 </ul>
                                             </div>
                                         </td>
@@ -200,12 +202,14 @@
                                                 <span class="caret"></span>
                                                 </button>
                                                 <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1">
-                                                    <li class="fa fa-check"> Sales Forecasts (month+1)</li>
-                                                    <li class="fa fa-check"> Win / Loss Ratio</li>
-                                                    <li class="fa fa-check"> Revenue by Salesperson</li>
-                                                    <li class="fa fa-check"> Time to Close a Deal</li>
-                                                    <li class="fa fa-check"> Time to Qualify a Lead</li>
-                                                    <li class="fa fa-check"> Leads by Source</li>
+                                                    <ul>
+                                                        <li> Sales Forecasts (month+1)</li>
+                                                        <li> Win / Loss Ratio</li>
+                                                        <li> Revenue by Salesperson</li>
+                                                        <li> Time to Close a Deal</li>
+                                                        <li> Time to Qualify a Lead</li>
+                                                        <li> Leads by Source</li>
+                                                    </ul>
                                                 </ul>
                                             </div>
                                         </td>
@@ -240,17 +244,17 @@
                                 <table class="table table-condensed">
                                     <tr>
                                         <td style="border:none"></td>
-                                        <td style="border:none"></td>
-                                        <td style="border:none">
+                                        <td style="border:none" colspan="2">
                                             <h4 class="pull-left"><strong>Stages</strong> from the first contact to won deals</h4>
-                                            <span class="pull-right fa fa-lightbulb-o">
+                                            <div class="pull-right">
+                                                <span class="fa fa-lightbulb-o fa-lg"/>
                                                 <select id="input_element_pipeline">
                                                     <option value="odoo_default">Odoo Default</option>
                                                     <option value="solution_selling">Solution Selling</option>
                                                     <option value="b2c">B2C</option>
                                                     <option value="b2b">B2B</option>
                                                 </select>
-                                            </span>
+                                            </div>
                                         </td>
                                     </tr>
                                     <tr>
@@ -333,17 +337,17 @@
                         </div>
                         <div class="row">
                             <div class="col-md-8">
-                                <div class="well well-lg">
+                                <div class="well well-lg footer-well">
                                     <span><strong>Recommended actions:</strong></span>
                                     <li><a href="#">Configure your sales pipeline </a>with your work above</li>
                                     <li><a href="#">Enter your three first opportunities</a> as an exercise</li>
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <div class="well well-lg">
+                                <div class="well well-lg footer-well">
                                     <span><strong>Need help to structure your sale process ?</strong></span><br/>
                                     <a href="" class="fa fa-comment-o" style="margin-right:10px">Live Chat on</a>
-                                    <a href="" class="fa fa-envelope-o">Email<br/> Our CRM Expert</a>
+                                    <a href="" class="fa fa-envelope-o">Email Our CRM Expert</a>
                                 </div>
                             </div>
                         </div>
@@ -404,17 +408,17 @@
                             </div>
                             <div class="row">
                                 <div class="col-md-8">
-                                    <div class="well well-lg">
+                                    <div class="well well-lg footer-well">
                                         <span><strong>Contact us to customize your application:</strong><br/>
                                         We have special options for unlimited number of customizations !
                                         </span>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
-                                    <div class="well well-lg">
+                                    <div class="well well-lg footer-well">
                                         <span><strong>Contact us now:</strong></span><br/>
                                         <a href="#" class="fa fa-comment-o" style="margin-right:10px">Live Chat on</a>
-                                        <a href="#" class="fa fa-envelope-o">Email<br/> Our CRM Expert</a>
+                                        <a href="#" class="fa fa-envelope-o">Email Our CRM Expert</a>
                                     </div>
                                 </div>
                             </div>
@@ -566,17 +570,17 @@
                             </div>
                             <div class="row">
                                 <div class="col-md-8">
-                                    <div class="well well-lg">
+                                    <div class="well well-lg footer-well">
                                         <span><strong>Need help to import your data ?</strong><br/>
                                         Odoo's importation service can handle the whole process for you.
                                         </span>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
-                                    <div class="well well-lg">
+                                    <div class="well well-lg footer-well">
                                         <span><strong>Contact us now:</strong></span><br/>
                                         <a href="#" class="fa fa-comment-o" style="margin-right:10px">Live Chat on</a>
-                                        <a href="#" class="fa fa-envelope-o">Email<br/> Our CRM Expert</a>
+                                        <a href="#" class="fa fa-envelope-o">Email Our CRM Expert</a>
                                     </div>
                                 </div>
                             </div>
@@ -722,7 +726,7 @@
                             </div>
                             <div class="row">
                                 <div class="col-md-8">
-                                    <div class="well well-lg">
+                                    <div class="well well-lg footer-well">
                                         <span><strong>We are here to help you:</strong><br/>
                                         if you don't succeed in getting your favorite KPIs, 
                                         contact us and we will help you create custom reports.
@@ -730,10 +734,10 @@
                                     </div>
                                 </div>
                                 <div class="col-md-4">
-                                    <div class="well well-lg">
+                                    <div class="well well-lg footer-well">
                                         <span><strong>Contact us now:</strong></span><br/>
                                         <a href="" class="fa fa-comment-o" style="margin-right:10px">Live Chat on</a>
-                                        <a href="" class="fa fa-envelope-o">Email<br/> Our CRM Expert</a>
+                                        <a href="" class="fa fa-envelope-o">Email Our CRM Expert</a>
                                     </div>
                                 </div>
                             </div>

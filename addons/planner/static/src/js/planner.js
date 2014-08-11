@@ -59,7 +59,7 @@
     instance.web.PlannerManager = instance.web.Widget.extend({
         template: "PlannerManager",
         events: {
-            'click .progress': 'toggle_dialog'
+            'click .oe_planner_progress': 'toggle_dialog'
         },
 
         init: function() {
@@ -125,16 +125,19 @@
             var active_menu = self.$el.find(".oe_planner li a span[data-check="+btn.attr('data-progress')+"]");
             //get all inputs of current page
             var input_element = self.$el.find(".oe_planner div[id="+btn.attr('data-progress')+"] input[id^='input_element'], select[id^='input_element']");
+            var next_button = self.$el.find(".oe_planner a[data-parent="+btn.attr('data-progress')+"]")
             if (!btn.hasClass('fa-check-square-o')) {
                 //find menu element and marked as check
                 active_menu.addClass('fa-check');
                 //mark checked on button
-                btn.addClass('fa-check-square-o').removeClass('fa-square-o');
+                btn.addClass('fa-check-square-o btn-default').removeClass('fa-square-o btn-primary');
+                next_button.addClass('btn-primary').removeClass('btn-default');
                 self.update_input_value(input_element, true);
                 self.values[btn.attr('id')] = 'checked';
                 self.progress = self.progress + 1;
             } else {
-                btn.removeClass('fa-check-square-o').addClass('fa fa-square-o');
+                btn.removeClass('fa-check-square-o btn-default').addClass('fa fa-square-o btn-primary');
+                next_button.addClass('btn-default').removeClass('btn-primary');
                 active_menu.removeClass('fa-check');
                 self.values[btn.attr('id')] = '';
                 self.update_input_value(input_element, false);
@@ -220,7 +223,8 @@
                         self.progress = self.progress + 1;
                         //checked menu
                         self.$el.find(".oe_planner li a span[data-check="+$('#'+id).attr('data-progress')+"]").addClass('fa-check');
-                        self.$el.find('#'+id).addClass('fa-check-square-o').removeClass('fa-square-o');
+                        var page_id = self.$el.find('#'+id).addClass('fa-check-square-o btn-default').removeClass('fa-square-o btn-primary').attr('data-progress');
+                        self.$el.find(".oe_planner .planner_footer a[data-parent="+page_id+"]").addClass('btn-primary').removeClass('btn-default');
                     }
                 } else if ($('#'+id).prop("tagName") == 'INPUT' && ($('#'+id).attr('type') == 'checkbox' || $('#'+id).attr('type') == 'radio')) {
                     if (val == 'checked') self.$el.find('#'+id).attr('checked', 'checked');
