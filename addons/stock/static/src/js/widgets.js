@@ -312,12 +312,24 @@ function openerp_picking_widgets(instance){
 
                 }
             });
-            this.$('.js_submit_pack').change(function(event){
-                var op_id = $(this).parents("[data-package-id]:first").data('package-id');
-                var value = $("select", this).val();
-                self.getParent().set_package_pack(op_id, value);
-                return false;
+            this.$('.js_pack_configure').click(function(){
+                var pack_id = $(this).parents("[data-package-id]:first").data('package-id');
+                var ul_id = $(this).parents("[data-ulid]:first").data('ulid');
+                self.$('#js_packconf_select').val(ul_id);
+                self.$('#js_packconf_select').addClass('pack');
+                self.$('#js_packconf_select').data('pack-id',pack_id);
+                self.$el.siblings('#js_PackConfModal').modal();
             });
+            this.$('.js_validate_pack').click(function(){
+                //get current selection
+                var select_dom_element = self.$('#js_packconf_select');
+                var ul_id = self.$('#js_packconf_select option:selected').data('ul-id');
+                var pack_id = select_dom_element.data('pack-id');
+                self.$el.siblings('#js_PackConfModal').modal('hide');
+                self.getParent().set_package_pack(pack_id, ul_id);
+                $('.container_head[data-package-id="'+pack_id+'"]').data('ulid', ul_id);
+            });
+            
             //remove navigtion bar from default openerp GUI
             $('td.navbar').html('<div></div>');
         },

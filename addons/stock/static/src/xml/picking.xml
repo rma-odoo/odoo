@@ -46,6 +46,30 @@
             </div>
         </div>
 
+        <div class="modal fade" id="js_PackConfModal" tabindex="-1" role="dialog" aria-labelledby="PackConfModal" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+                        <h4 class="modal-title" id="myModalLabel">Configure package</h4>
+                    </div>
+                    <div class="modal-body">
+                        <p>Package type</p>
+                        <select id="js_packconf_select" class="form-control">
+                            <option class="js_loc_option" data-ul-id="false"></option>
+                            <t t-foreach="widget.get_logisticunit()" t-as="loc">
+                                <option class="js_loc_option" t-att-data-ul-id="loc.id" t-att-value="loc.id"><t t-esc="loc.name"/></option>
+                            </t>
+                        </select>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary js_validate_pack">Validate package</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <div class="row">
                 <div>
                     <div class="col-sm-4 col-xs-6">
@@ -104,7 +128,7 @@
 
                 <tbody>
                     <t t-foreach="widget.get_rows()" t-as="row">
-                        <tr t-att-class="row.classes + 'js_pack_op_line'" t-att-data-id="row.cols.id" t-att-data-container-id="row.cols.container_id" t-att-data-package-id="row.cols.package_id">
+                        <tr t-att-class="row.classes + 'js_pack_op_line'" t-att-data-id="row.cols.id" t-att-data-container-id="row.cols.container_id" t-att-data-package-id="row.cols.package_id" t-att-data-ulid="row.cols.ul_id">
                             <td t-att-class="'brctbl-col1 text-left' + row.cols.head_container ? ' js_unfold' : ''">
                                 <t t-if="!row.cols.head_container &amp;&amp; row.cols.container"><span class="fa fa-level-up fa-rotate-90" style="margin-left:10px;margin-right:10px;"></span></t>
                                 <t t-esc="row.cols.product" />
@@ -123,7 +147,7 @@
                                 <t t-if="(row.cols.processed == 'true' || row.cols.container)">
                                     <t t-esc="row.cols.rem" />
                                 </t>
-                                <t t-if="row.cols.head_container">
+                                <!--<t t-if="row.cols.head_container">
                                     <span class="js_pick_pack">Pack</span>
                                     <form class="js_submit_pack">
                                         <select class="form-control js_pick_pack ">
@@ -139,7 +163,7 @@
                                             </t>
                                         </select>
                                     </form>
-                                </t>
+                                </t>-->
                             </td>
                             <td class="brctbl-col3 text-center">
                                 <t t-esc="row.cols.qty"/> <t t-esc="row.cols.uom" />
@@ -164,6 +188,7 @@
                                         </t>
                                         <t t-if="row.cols.head_container">
                                             <li><a class="js_pack_change_dst" href="#">Change destination location</a></li>
+                                            <li><a class="js_pack_configure" href="#">Configure package</a></li>
                                             <li class="divider"></li>
                                             <li><a class="js_delete_pack" href="#">Remove from package</a></li>
                                             <li><a class="js_print_pack" href="#">Print package label</a></li>
