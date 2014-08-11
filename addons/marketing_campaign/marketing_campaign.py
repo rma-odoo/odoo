@@ -82,10 +82,10 @@ this campaign to be run"),
                                 ('manual', 'With Manual Confirmation'),
                                 ('active', 'Normal')],
                                  'Mode', required=True, help= \
-"""Test - It creates and process all the activities directly (without waiting for the delay on transitions) but does not send emails or produce reports.
-Test in Realtime - It creates and processes all the activities directly but does not send emails or produce reports.
+"""Test - It creates and process all the activities directly (without waiting for the delay on transitions) but does not send emails.
+Test in Realtime - It creates and processes all the activities directly but does not send emails.
 With Manual Confirmation - the campaigns runs normally, but the user has to validate all workitem manually.
-Normal - the campaign runs normally and automatically sends all emails and reports (be very careful with this mode, you're live!)"""),
+Normal - the campaign runs normally and automatically sends all emails (be very careful with this mode, you're live!)"""),
         'state': fields.selection([('draft', 'New'),
                                    ('running', 'Running'),
                                    ('cancelled', 'Cancelled'),
@@ -367,7 +367,6 @@ class marketing_campaign_activity(osv.osv):
 
     _action_types = [
         ('email', 'Email'),
-        ('report', 'Report'),
         ('action', 'Custom Action'),
         # TODO implement the subcampaigns.
         # TODO implement the subcampaign out. disallow out transitions from
@@ -394,13 +393,9 @@ class marketing_campaign_activity(osv.osv):
         'type': fields.selection(_action_types, 'Type', required=True,
                                   help="""The type of action to execute when an item enters this activity, such as:
    - Email: send an email using a predefined email template
-   - Report: print an existing Report defined on the resource item and save it into a specific directory
    - Custom Action: execute a predefined action, e.g. to modify the fields of the resource record
   """),
         'email_template_id': fields.many2one('email.template', "Email Template", help='The email to send when this activity is activated'),
-        'report_id': fields.many2one('ir.actions.report.xml', "Report", help='The report to generate when this activity is activated', ),
-        'report_directory_id': fields.many2one('document.directory','Directory',
-                                help="This folder is used to store the generated reports"),
         'server_action_id': fields.many2one('ir.actions.server', string='Action',
                                 help= "The action to perform when this activity is activated"),
         'to_ids': fields.one2many('marketing.campaign.transition',
@@ -435,21 +430,6 @@ class marketing_campaign_activity(osv.osv):
             return act_ids
         return super(marketing_campaign_activity, self).search(cr, uid, args,
                                            offset, limit, order, context, count)
-
-    #dead code
-    def _process_wi_report(self, cr, uid, activity, workitem, context=None):
-        report_data, format = render_report(cr, uid, [], activity.report_id.report_name, {}, context=context)
-        attach_vals = {
-            'name': '%s_%s_%s'%(activity.report_id.report_name,
-                                activity.name,workitem.partner_id.name),
-            'datas_fname': '%s.%s'%(activity.report_id.report_name,
-                                        activity.report_id.report_type),
-            'parent_id': activity.report_directory_id.id,
-            'datas': base64.encodestring(report_data),
-            'file_type': format
-        }
-        self.pool.get('ir.attachment').create(cr, uid, attach_vals)
-        return True
 
     def _process_wi_email(self, cr, uid, activity, workitem, context=None):
         return self.pool.get('email.template').send_mail(cr, uid,
@@ -786,18 +766,8 @@ class marketing_campaign_workitem(osv.osv):
                                  wi_obj.res_id)
             }
 
-        elif wi_obj.activity_id.type == 'report':
-            datas = {
-                'ids': [wi_obj.res_id],
-                'model': wi_obj.object_id.model
-            }
-            res = {
-                'type' : 'ir.actions.report.xml',
-                'report_name': wi_obj.activity_id.report_id.report_name,
-                'datas' : datas,
-            }
         else:
-            raise osv.except_osv(_('No preview'),_('The current step for this item has no email or report to preview.'))
+            raise osv.except_osv(_('No preview'),_('The current step for this item has no email to preview.'))
         return res
 
 
@@ -808,19 +778,5 @@ class email_template(osv.osv):
     }
 
     # TODO: add constraint to prevent disabling / disapproving an email account used in a running campaign
-
-
-class report_xml(osv.osv):
-    _inherit = 'ir.actions.report.xml'
-    def search(self, cr, uid, args, offset=0, limit=None, order=None, context=None, count=False):
-        if context is None:
-            context = {}
-        object_id = context.get('object_id')
-        if object_id:
-            model = self.pool.get('ir.model').browse(cr, uid, object_id, context=context).model
-            args.append(('model', '=', model))
-        return super(report_xml, self).search(cr, uid, args, offset, limit, order, context, count)
-
-
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
