@@ -313,10 +313,9 @@ function openerp_picking_widgets(instance){
                 }
             });
             this.$('.js_pack_configure').click(function(){
-                var pack_id = $(this).parents("[data-package-id]:first").data('package-id');
-                var ul_id = $(this).parents("[data-ulid]:first").data('ulid');
+                var pack_id = $(this).parents(".js_pack_op_line:first").data('package-id');
+                var ul_id = $(this).parents(".js_pack_op_line:first").data('ulid');
                 self.$('#js_packconf_select').val(ul_id);
-                self.$('#js_packconf_select').addClass('pack');
                 self.$('#js_packconf_select').data('pack-id',pack_id);
                 self.$el.siblings('#js_PackConfModal').modal();
             });
@@ -326,8 +325,10 @@ function openerp_picking_widgets(instance){
                 var ul_id = self.$('#js_packconf_select option:selected').data('ul-id');
                 var pack_id = select_dom_element.data('pack-id');
                 self.$el.siblings('#js_PackConfModal').modal('hide');
-                self.getParent().set_package_pack(pack_id, ul_id);
-                $('.container_head[data-package-id="'+pack_id+'"]').data('ulid', ul_id);
+                if (pack_id){
+                    self.getParent().set_package_pack(pack_id, ul_id);
+                    $('.container_head[data-package-id="'+pack_id+'"]').data('ulid', ul_id);
+                }
             });
             
             //remove navigtion bar from default openerp GUI

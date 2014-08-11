@@ -56,9 +56,9 @@
                     <div class="modal-body">
                         <p>Package type</p>
                         <select id="js_packconf_select" class="form-control">
-                            <option class="js_loc_option" data-ul-id="false"></option>
-                            <t t-foreach="widget.get_logisticunit()" t-as="loc">
-                                <option class="js_loc_option" t-att-data-ul-id="loc.id" t-att-value="loc.id"><t t-esc="loc.name"/></option>
+                            <option class="js_packing_option" data-ul-id="false"></option>
+                            <t t-foreach="widget.get_logisticunit()" t-as="ul">
+                                <option class="js_packing_option" t-att-data-ul-id="ul.id" t-att-value="ul.id"><t t-esc="ul.name"/></option>
                             </t>
                         </select>
                     </div>
@@ -171,8 +171,8 @@
                                         </t>
                                         <t t-if="row.cols.head_container">
                                             <li><a class="js_pack_change_dst" href="#">Change destination location</a></li>
-                                            <li><a class="js_pack_configure" href="#">Configure package</a></li>
                                             <li class="divider"></li>
+                                            <li><a class="js_pack_configure" href="#">Configure package</a></li>
                                             <li><a class="js_delete_pack" href="#">Remove from package</a></li>
                                             <li><a class="js_print_pack" href="#">Print package label</a></li>
                                         </t>
