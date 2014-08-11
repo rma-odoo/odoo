@@ -584,6 +584,7 @@ instance.web.ViewManager =  instance.web.Widget.extend({
     start: function() {
         this._super();
         var self = this;
+        $(".oe_secondary_menus_container").scrollTop(0,0);
         this.$el.find('.oe_view_manager_switch a').click(function() {
             self.switch_mode($(this).data('view-type'));
         }).tooltip();
