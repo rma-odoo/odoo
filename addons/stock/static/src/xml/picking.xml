@@ -147,23 +147,6 @@
                                 <t t-if="(row.cols.processed == 'true' || row.cols.container)">
                                     <t t-esc="row.cols.rem" />
                                 </t>
-                                <!--<t t-if="row.cols.head_container">
-                                    <span class="js_pick_pack">Pack</span>
-                                    <form class="js_submit_pack">
-                                        <select class="form-control js_pick_pack ">
-                                            <option class="js_loc_option" data-ul-id="false"></option>
-                                            <t t-foreach="widget.get_logisticunit()" t-as="ul">
-                                                <t t-if="ul.id==row.cols.ul_id">
-                                                    <option class="js_loc_option" selected="true" t-att-value="ul.id"><t t-esc="ul.name"/></option>
-                                                </t>
-                                                <t t-if="ul.id!=row.cols.ul_id">
-                                                    <option class="js_loc_option" t-att-value="ul.id"><t t-esc="ul.name"/></option>
-                                                </t>
-
-                                            </t>
-                                        </select>
-                                    </form>
-                                </t>-->
                             </td>
                             <td class="brctbl-col3 text-center">
                                 <t t-esc="row.cols.qty"/> <t t-esc="row.cols.uom" />
