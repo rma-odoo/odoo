@@ -11,26 +11,6 @@
     </data>
     <data>
 
-        <!-- Document directory -->
-        <record id="document_directory_marketingcampaign" model="document.directory">
-            <field eval="0" name="ressource_tree"/>
-            <field eval="[(6,0,[])]" name="group_ids"/>
-            <field name="user_id" ref="base.user_root"/>
-            <field eval="&quot;&quot;&quot;Marketing Campaign&quot;&quot;&quot;" name="name"/>
-            <field eval="&quot;&quot;&quot;[]&quot;&quot;&quot;" name="domain"/>
-            <field eval="&quot;&quot;&quot;directory&quot;&quot;&quot;" name="type"/>
-        </record>
-        <record id="document_directory_campaign1" model="document.directory">
-            <field eval="0" name="ressource_tree"/>
-            <field eval="[(6,0,[])]" name="group_ids"/>
-            <field name="user_id" ref="base.user_root"/>
-            <field eval="&quot;&quot;&quot;Odoo OnDemand Free Trial 2010&quot;&quot;&quot;" name="name"/>
-            <field eval="&quot;&quot;&quot;[]&quot;&quot;&quot;" name="domain"/>
-            <field name="parent_id" ref="document_directory_marketingcampaign"/>
-            <field eval="&quot;&quot;&quot;ressource&quot;&quot;&quot;" name="type"/>
-            <field name="ressource_type_id" ref="marketing_campaign.model_marketing_campaign"/>
-        </record>
-
         <!-- Email tempalte -->
         <record id="email_template_1" model="email.template">
             <field name="subject">Thanks for showing interest in Odoo</field>
@@ -160,10 +140,8 @@
             <field name="name">Propose a 1 month free trial for an OnDemand offer</field>
             <field name="server_action_id" ref="action_dummy"/>
             <field name="campaign_id" ref="marketing_campaign_openerpondemandfreetrial0"/>
-            <field name="report_directory_id" ref="document_directory_campaign1"/>
-            <field name="type">email</field>
+            <field name="email_template_id" ref="email_template_1"/>
             <field eval="1" name="start"/>
-            <field name="report_id" ref="mc_crm_lead_demo_report"/>
         </record>
         <record id="marketing_campaign_activity_1" model="marketing.campaign.activity">
             <field name="name">Thanks for showing interest</field>
@@ -189,9 +167,7 @@
             <field name="name">Propose to buy the Odoo Book</field>
            <field name="server_action_id" ref="action_dummy"/>
             <field name="campaign_id" ref="marketing_campaign_openerpondemandfreetrial0"/>
-            <field name="report_directory_id" ref="document_directory_campaign1"/>
-            <field name="type">email</field>
-            <field name="report_id" ref="mc_crm_lead_demo_report"/>
+            <field name="email_template_id" ref="email_template_3"/>
         </record>
 
         <record id="marketing_campaign_activity_5" model="marketing.campaign.activity">
@@ -224,7 +200,7 @@
             <field name="name">Thanks for subscribing to technical training</field>
             <field name="server_action_id" ref="action_dummy"/>
             <field name="campaign_id" ref="marketing_campaign_openerpondemandfreetrial0"/>
-        <field name="email_template_id" ref="email_template_8"/>
+            <field name="email_template_id" ref="email_template_8"/>
         </record>
 
         <!-- Tranisition -->
@@ -232,7 +208,6 @@
             <field name="activity_from_id" ref="marketing_campaign_activity_0"/>
             <field name="activity_to_id" ref="marketing_campaign_activity_1"/>
         </record>
-
         <record id="marketing_campaign_transition_1" model="marketing.campaign.transition">
             <field name="activity_from_id" ref="marketing_campaign_activity_0"/>
             <field name="activity_to_id" ref="marketing_campaign_activity_2"/>
