@@ -69,8 +69,7 @@ class ReportVoucher(models.AbstractModel):
 
     @api.model
     def _get_ref(self, voucher_id, move_ids):
-        voucher_line_obj = self.env['account.voucher.line']
-        voucher= voucher_line_obj.search([('partner_id', '=', move_ids.partner_id.id), ('voucher_id', '=', voucher_id)])
+        voucher = self.env['account.voucher.line'].search([('partner_id', '=', move_ids.partner_id.id), ('voucher_id', '=', voucher_id)])
         if voucher:
             return voucher[0].name
         else:
